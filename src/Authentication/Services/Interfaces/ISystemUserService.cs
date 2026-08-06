@@ -7,8 +7,10 @@ using Altinn.Platform.Authentication.Core.Models;
 using Altinn.Platform.Authentication.Core.Models.AccessPackages;
 using Altinn.Platform.Authentication.Core.Models.Parties;
 using Altinn.Platform.Authentication.Core.Models.Rights;
+using Altinn.Platform.Authentication.Core.Models.Rights.ConnectionsDtos;
 using Altinn.Platform.Authentication.Core.Models.SystemUsers;
 using Altinn.Platform.Authentication.Core.SystemRegister.Models;
+using Altinn.Platform.Authentication.Model;
 using Microsoft.FeatureManagement;
 
 namespace Altinn.Platform.Authentication.Services.Interfaces;
@@ -120,18 +122,19 @@ public interface ISystemUserService
     /// <param name="party">The User id for the Facilitator for the Agent SystemUser currently logged in at the FrontEnd.</param> 
     /// <returns>List of Agent SystemUsers</returns>
     Task<List<SystemUserInternalDTO>?> GetListOfAgentSystemUsersForParty(int party);
-
+    
     /// <summary>
     /// Creates a new delegation of a customer to an Agent SystemUser.
     /// The service is idempotent.
     /// </summary>
     /// <param name="systemUser">SystemUser</param>
-    /// <param name="request">AgentDelegationInputDto</param>
+    /// <param name="provider">The via partyuuid (facilitator) </param>
+    /// <param name="client">The client's partyuuid</param>
     /// <param name="userId">the user id of the logged in user</param>
     /// <param name="cancellationToken">CancellationToken</param>
     /// <returns>Result of True or False</returns> 
-    Task<Result<List<DelegationResponse>>> DelegateToAgentSystemUser(SystemUserInternalDTO systemUser, AgentDelegationInputDto request, int userId, CancellationToken cancellationToken);
-
+    Task<Result<List<DelegationResponse>>> DelegateToAgentSystemUser(SystemUserInternalDTO systemUser, Guid provider, Guid client, int userId, CancellationToken cancellationToken);
+    
     /// <summary>
     /// Returns a list of the Delegations (of clients) to an Agent SystemUser,
     /// retrieved in turn from the AccessManagement db.
@@ -139,18 +142,20 @@ public interface ISystemUserService
     /// <param name="party">int party</param>
     /// <param name="facilitator">the guid id of the logged in user, representing the Facilitator</param>
     /// <param name="systemUserId">The Guid for the Agent SystemUser</param>
+    /// <param name="client">The Guid for the client</param>
     /// <returns>List of Client Delegations</returns>
-    Task<Result<List<DelegationResponse>>> GetListOfDelegationsForAgentSystemUser(int party, Guid facilitator, Guid systemUserId);
+    Task<Result<List<DelegationResponse>>> GetListOfDelegationsForAgentSystemUser(int party, Guid facilitator, Guid systemUserId, Guid? client = null);
 
     /// <summary>
-    /// Delete the client delegation to the Agent SystemUser
+    /// Revokes a client/customer from an Agent SystemUser.
+    /// <param name="party">The party Id of the reportee.</param>
+    /// <param name="systemuser">The partyUuid of the Agent SystemUser to delegete TO.</param> 
+    /// <param name="provider">The partyUuid of the organisation providing the VIA relationship.</param>
+    /// <param name="client">The partyUuid of the client the delegation is FROM.</param>
+    /// <param name="cancellationToken"></param>
     /// </summary>
-    /// <param name="partyId">the party id of the facilitator</param>
-    /// <param name="delegationId">the id of the delegation between customer and agent system user</param>
-    /// <param name="facilitatorId">the guid of facilitator</param>
-    /// <param name="cancellationToken">The cancellation token</param>
     /// <returns></returns>
-    Task<Result<bool>> DeleteClientDelegationToAgentSystemUser(string partyId, Guid delegationId, Guid facilitatorId, CancellationToken cancellationToken = default);
+    Task<Result<bool>> DeleteClientDelegationToAgentSystemUser(string party, Guid systemuser, Guid client, Guid provider, CancellationToken cancellationToken);
 
     /// <summary>
     /// Delete the agent system user (soft delete)
@@ -170,7 +175,7 @@ public interface ISystemUserService
     /// <param name="featureManager">FeatureManager</param>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>List of Clients</returns>
-    Task<Result<List<Customer>>> GetClientsForFacilitator(Guid facilitator, List<string> packages, IFeatureManager featureManager, CancellationToken cancellationToken = default);
+    Task<Result<List<ExternalClientDto>>> GetClientsForFacilitator(Guid facilitator, List<string>? packages, IFeatureManager featureManager, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Delegate access packages to a system user.
@@ -230,5 +235,32 @@ public interface ISystemUserService
     /// <param name="cancellationToken">the cancellation token</param>
     /// <returns>true if the delegations are successful</returns>
     Task<Result<StandardSystemUserDelegations>> GetListOfDelegationsForStandardSystemUser(int partyId, Guid systemUserId, CancellationToken cancellationToken);
-  
+
+    /// <summary>
+    /// Creates a delegation of OWN company to an Agent SystemUser.
+    /// The service is idempotent.
+    /// </summary>
+    /// <param name="systemUser">SystemUser</param>
+    /// <param name="userId">the user id of the logged in user</param>
+    /// <param name="cancellationToken">CancellationToken</param>
+    /// <returns>Result of True or False</returns> 
+    Task<Result<bool>> DelegateSelfToAgentSystemUser(SystemUserInternalDTO systemUser, int userId, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Removes the delegation of OWN company to an Agent SystemUser.
+    /// </summary>
+    /// <param name="systemUser">the systemuser</param>
+    /// <param name="userId">the user id of the logged in user</param>
+    /// <param name="cancellationToken">CancellationToken</param>
+    /// <returns>Result of True or False</returns>
+    Task<Result<bool>> RevokeSelfFromAgentSystemUser(SystemUserInternalDTO systemUser, int userId, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Tells whether the delegation of OWN company to an Agent SystemUser exists.
+    /// </summary>
+    /// <param name="systemUser">the systemuser</param>
+    /// <param name="userId">the user id of the logged in user</param>
+    /// <param name="cancellationToken">CancellationToken</param>
+    /// <returns>Result of True or False</returns>
+    Task<Result<bool>> IsSelfDelegatedToAgentSystemUser(SystemUserInternalDTO systemUser, int userId, CancellationToken cancellationToken);
 }

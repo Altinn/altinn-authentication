@@ -10,7 +10,6 @@ using Altinn.Platform.Authentication.Tests.Fakes;
 using Altinn.Platform.Authentication.Tests.Models;
 using Altinn.Platform.Authentication.Tests.RepositoryDataAccess;
 using Altinn.Platform.Authentication.Tests.Utils;
-using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Time.Testing;
@@ -41,9 +40,6 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
             services.AddSingleton<TimeProvider>(_fakeTime);
 
             string configPath = GetConfigPath();
-
-            WebHostBuilder builder = new();
-            builder.ConfigureAppConfiguration((context, conf) => { conf.AddJsonFile(configPath); });
 
             var configuration = new ConfigurationBuilder()
                 .AddJsonFile(configPath)
@@ -87,7 +83,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
             var url =
                 "/authentication/api/v1/authorize" +
                 "?redirect_uri=https%3A%2F%2Faf.altinn.no%2Fapi%2Fcb" +
-                "&scope=altinn%3Aportal%2Fenduser" +                // missing openid
+                "&scope=altinn%3Aportal%2Fenduser" + // missing openid
                 $"&client_id={testScenario.DownstreamClientId}" +
                 "&response_type=code" +
                 "&state=s123" +
@@ -358,14 +354,14 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
 
         private static string GetConfigPath()
         {
-            string unitTestFolder = Path.GetDirectoryName(new Uri(typeof(AuthenticationControllerTests).Assembly.Location).LocalPath);
+            string unitTestFolder = Path.GetDirectoryName(new Uri(typeof(AuthenticationControllerTests).Assembly.Location).LocalPath)!; // assembly location always has a directory
             return Path.Combine(unitTestFolder, $"../../../appsettings.test.json");
         }
 
         private static OidcClientCreate NewClientCreate(OidcTestScenario testScenario) =>
             new()
             {
-                ClientId = testScenario.DownstreamClientId,
+                ClientId = testScenario.DownstreamClientId!, // always set by OidcScenarioHelper.GetScenario
                 ClientName = "Test Client",
                 ClientType = ClientType.Confidential,
                 TokenEndpointAuthMethod = TokenEndpointAuthMethod.ClientSecretBasic,

@@ -29,21 +29,22 @@ namespace Altinn.Platform.Authentication.Tests.Helpers
             return response;
         }
 
-        private static async Task<List<SystemChangeLog>> GetSystemChangeLog(HttpClient client, string systemId)
+        private static async Task<List<SystemChangeLog>?> GetSystemChangeLog(HttpClient client, string systemId)
         {
             HttpRequestMessage request = new(HttpMethod.Get, $"/authentication/api/v1/systemregister/vendor/{systemId}/changelog");
             HttpResponseMessage getResponse = await client.SendAsync(request, HttpCompletionOption.ResponseContentRead);
 
-            List<SystemChangeLog> actualSystemChangeLog = JsonSerializer.Deserialize<List<SystemChangeLog>>(await getResponse.Content.ReadAsStringAsync(), _options);
+            List<SystemChangeLog>? actualSystemChangeLog = JsonSerializer.Deserialize<List<SystemChangeLog>>(await getResponse.Content.ReadAsStringAsync(), _options);
             return actualSystemChangeLog;
         }
 
         public static async Task GetAndAssertSystemChangeLog(HttpClient client, string systemId, string fileName)
         {
             string systemChangeLog = File.OpenText($"Data/SystemChangeLog/{fileName}.json").ReadToEnd();
-            List<SystemChangeLog> expectedSystemChangeLog = JsonSerializer.Deserialize<List<SystemChangeLog>>(systemChangeLog, _options);
+            List<SystemChangeLog>? expectedSystemChangeLog = JsonSerializer.Deserialize<List<SystemChangeLog>>(systemChangeLog, _options);
+            Assert.NotNull(expectedSystemChangeLog);
 
-            List<SystemChangeLog> actualSystemChangeLog = await GetSystemChangeLog(client, systemId);
+            List<SystemChangeLog>? actualSystemChangeLog = await GetSystemChangeLog(client, systemId);
             Assert.NotNull(actualSystemChangeLog);
             Assert.Equal(expectedSystemChangeLog.Count, actualSystemChangeLog.Count);
 

@@ -22,7 +22,7 @@ public class SystemUserRepository : ISystemUserRepository
 {
     private readonly NpgsqlDataSource _dataSource;
     private readonly ILogger _logger;
-    
+
     /// <summary>
     /// SystemUserRepository Constructor
     /// </summary>
@@ -52,12 +52,12 @@ public class SystemUserRepository : ISystemUserRepository
             command.Parameters.AddWithValue("system_user_profile_id", id);
 
             await command.ExecuteEnumerableAsync()
-                .Select(NpgSqlExtensions.ConvertFromReaderToBoolean)   
+                .Select(NpgSqlExtensions.ConvertFromReaderToBoolean)
                 .FirstOrDefaultAsync();
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Authentication // SystemUserRepository // SetDeleteSystemUserById // Exception");            
+            _logger.LogError(ex, "Authentication // SystemUserRepository // SetDeleteSystemUserById // Exception");
         }
     }
 
@@ -74,6 +74,7 @@ public class SystemUserRepository : ISystemUserRepository
                 sui.reportee_org_no,
 		        sui.reportee_party_id,
 		        sui.created,
+                sui.last_changed,
                 sui.external_ref,
                 sui.systemuser_type,
                 sui.accesspackages,
@@ -116,6 +117,7 @@ public class SystemUserRepository : ISystemUserRepository
                 sui.reportee_org_no,
 		        sui.reportee_party_id,
 		        sui.created,
+                sui.last_changed,
                 sui.external_ref,
                 sui.systemuser_type,
                 sui.accesspackages,
@@ -158,6 +160,7 @@ public class SystemUserRepository : ISystemUserRepository
                 sui.reportee_org_no,
 		        sui.reportee_party_id,
 		        sui.created,
+                sui.last_changed,
                 sui.external_ref,
                 sui.systemuser_type,
                 sui.accesspackages,
@@ -198,6 +201,7 @@ public class SystemUserRepository : ISystemUserRepository
                 sui.reportee_org_no,
                 sui.reportee_party_id,
                 sui.created,
+                sui.last_changed,
                 sui.external_ref,
                 sui.systemuser_type,
                 sui.accesspackages,
@@ -233,10 +237,10 @@ public class SystemUserRepository : ISystemUserRepository
     /// <inheritdoc />
     public async Task<Guid?> InsertSystemUser(SystemUserInternalDTO toBeInserted, int userId)
     {
-        if (string.IsNullOrEmpty(toBeInserted.Id) || !Guid.TryParse(toBeInserted.Id, out _))    
+        if (string.IsNullOrEmpty(toBeInserted.Id) || !Guid.TryParse(toBeInserted.Id, out _))
         {
             toBeInserted.Id = Guid.NewGuid().ToString();
-        }        
+        }
 
         const string QUERY = /*strpsql*/@"            
                 INSERT INTO business_application.system_user_profile(
@@ -279,7 +283,7 @@ public class SystemUserRepository : ISystemUserRepository
             command.Parameters.AddWithValue("created_by", createdBy);
             command.Parameters.AddWithValue("external_ref", ext_ref);
             command.Parameters.Add(new("accesspackages", NpgsqlDbType.Jsonb) { Value = (toBeInserted.AccessPackages == null) ? DBNull.Value : toBeInserted.AccessPackages });
-            
+
             command.Parameters.Add<SystemUserType>("systemuser_type").TypedValue = toBeInserted.UserType;
 
             return await command.ExecuteEnumerableAsync()
@@ -323,12 +327,12 @@ public class SystemUserRepository : ISystemUserRepository
 
     /// <inheritdoc />
     public async Task<SystemUserInternalDTO?> CheckIfPartyHasIntegration(
-        string clientId, 
-        string systemProviderOrgNo, 
+        string clientId,
+        string systemProviderOrgNo,
         string systemUserOwnerOrgNo,
         string externalRef,
         CancellationToken cancellationToken)
-    {      
+    {
         const string QUERY = /*strpsql*/@"
             SELECT 
                 system_user_profile_id,
@@ -338,6 +342,7 @@ public class SystemUserRepository : ISystemUserRepository
                 sui.system_internal_id,
                 reportee_party_id,
                 sui.created,
+                sui.last_changed,
                 systemvendor_orgnumber,
                 external_ref,
                 sui.systemuser_type,
@@ -372,7 +377,7 @@ public class SystemUserRepository : ISystemUserRepository
             _logger.LogError(ex, "Authentication // SystemUserRepository // CheckIfPartyHasIntegration // Exception");
             throw;
         }
-    }    
+    }
 
     private ValueTask<int> ConvertFromReaderToInt(NpgsqlDataReader reader, CancellationToken cancellationToken = default)
     {
@@ -401,6 +406,7 @@ public class SystemUserRepository : ISystemUserRepository
             PartyId = reader.GetFieldValue<string>("reportee_party_id"),
             IntegrationTitle = reader.GetFieldValue<string>("integration_title"),
             Created = reader.GetFieldValue<DateTime>("created"),
+            LastChanged = reader.GetFieldValue<DateTime>("last_changed"),
             SupplierOrgNo = reader.GetFieldValue<string>("systemvendor_orgnumber"),
             ExternalRef = external_ref ?? orgno,
             UserType = systemUserType,
@@ -422,6 +428,7 @@ public class SystemUserRepository : ISystemUserRepository
                 sui.reportee_org_no,
 		        sui.reportee_party_id,
 		        sui.created,
+                sui.last_changed,
                 sui.external_ref,
                 sui.systemuser_type,
                 sui.accesspackages,
@@ -505,7 +512,7 @@ public class SystemUserRepository : ISystemUserRepository
         {
             _logger.LogError(ex, "Authentication // SystemUserRepository // GetSystemUserSequenceNo // Exception");
             throw;
-        }        
+        }
     }
 
     /// <inheritdoc />

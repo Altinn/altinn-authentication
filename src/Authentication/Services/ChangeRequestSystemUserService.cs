@@ -214,7 +214,8 @@ public class ChangeRequestSystemUserService(
             UnwantedRights = res.UnwantedRights,
             Status = res.Status,
             RedirectUrl = res.RedirectUrl,
-            SystemUserId = res.SystemUserId
+            SystemUserId = res.SystemUserId,
+            Created = res.Created
         };
     }
 
@@ -245,7 +246,8 @@ public class ChangeRequestSystemUserService(
             UnwantedAccessPackages = res.UnwantedAccessPackages,
             Status = res.Status,
             RedirectUrl = res.RedirectUrl,
-            SystemUserId = res.SystemUserId            
+            SystemUserId = res.SystemUserId,
+            Created = res.Created
         };
     }
 
@@ -269,7 +271,7 @@ public class ChangeRequestSystemUserService(
     /// <inheritdoc/>
     public async Task<Result<ChangeRequestResponse>> GetChangeRequestByPartyAndRequestId(int partyId, Guid requestId)
     {
-        Party party = await partiesClient.GetPartyAsync(partyId);
+        Party? party = await partiesClient.GetPartyAsync(partyId);
         if (party is null)
         {
             return Problem.Reportee_Orgno_NotFound;
@@ -298,7 +300,8 @@ public class ChangeRequestSystemUserService(
             UnwantedAccessPackages = find.UnwantedAccessPackages,
             Status = find.Status,
             RedirectUrl = find.RedirectUrl,
-            SystemUserId = find.SystemUserId
+            SystemUserId = find.SystemUserId,
+            Created = find.Created
         };
 
         return request;
@@ -332,7 +335,7 @@ public class ChangeRequestSystemUserService(
             return Problem.SystemUserNotFound;
         }
 
-        Party party = await partiesClient.GetPartyAsync(partyId, cancellationToken);
+        Party? party = await partiesClient.GetPartyAsync(partyId, cancellationToken);
 
         if (party is null || string.IsNullOrEmpty(party.OrgNumber))
         {
@@ -364,17 +367,21 @@ public class ChangeRequestSystemUserService(
         // Check Single Rights to be added 
         if (systemUserChangeRequest.RequiredRights?.Count > 0)
         {
-            delegationCheckFinalResult = await delegationHelper.UserDelegationCheckForReportee(partyId, regSystem.Id, systemUserChangeRequest.RequiredRights, false, cancellationToken);
+            delegationCheckFinalResult = await delegationHelper.UserDelegationCheckForReportee(partyUuid, regSystem.Id, systemUserChangeRequest.RequiredRights, false, cancellationToken);
             if (!delegationCheckFinalResult.CanDelegate || delegationCheckFinalResult.RightResponses is null)
             {
                 return Problem.Rights_NotFound_Or_NotDelegable;
             }
         }
 
-        // Check AccessPackages to be added
-        if (systemUserChangeRequest.RequiredAccessPackages?.Count > 0)
+        // Check AccessPackages to be added.
+        // Guard on the computed diff (verifiedRequiredAccessPackages), not the original request list:
+        // when every required package is already delegated the diff is empty, and we must skip the
+        // delegation check entirely. Calling it with an empty set degenerates into a check for ALL
+        // packages in the system (no package filter), which fails and breaks idempotent approval.
+        if (verifiedRequiredAccessPackages.Value?.Count > 0)
         {
-            Result<AccessPackageDelegationCheckResult> checkAccessPackages = await delegationHelper.ValidateDelegationRightsForAccessPackages(partyUuid, regSystem.Id, verifiedRequiredAccessPackages.Value, fromBff: false, cancellationToken);        
+            Result<AccessPackageDelegationCheckResult> checkAccessPackages = await delegationHelper.ValidateDelegationRightsForAccessPackages(partyUuid, regSystem.Id, verifiedRequiredAccessPackages.Value, fromBff: false, cancellationToken);
             if (checkAccessPackages.IsProblem)   
             {
                 return checkAccessPackages.Problem;
@@ -398,7 +405,7 @@ public class ChangeRequestSystemUserService(
         // Delegate new Single Rights to the SystemUser
         if (delegationCheckFinalResult.CanDelegate && delegationCheckFinalResult.RightResponses?.Count > 0)
         {
-            Result<bool> delegationSucceeded = await accessManagementClient.DelegateRightToSystemUser(partyId.ToString(), toBeChanged, delegationCheckFinalResult.RightResponses);
+            Result<bool> delegationSucceeded = await accessManagementClient.DelegateRightToSystemUser(partyUuid, toBeChanged, delegationCheckFinalResult.RightResponses);
             if (delegationSucceeded.IsProblem)
             {
                 return delegationSucceeded.Problem;
@@ -408,7 +415,7 @@ public class ChangeRequestSystemUserService(
         // Attempt to Revoke Single Rights from the SystemUser
         if (systemUserChangeRequest.UnwantedRights?.Count > 0)
         {
-            var revokeRightResult = await accessManagementClient.RevokeDelegatedRightToSystemUser(partyId.ToString(), toBeChanged, systemUserChangeRequest.UnwantedRights);
+            var revokeRightResult = await accessManagementClient.RevokeDelegatedRightToSystemUser(partyUuid, toBeChanged, systemUserChangeRequest.UnwantedRights);
             if (revokeRightResult.IsProblem)
             {
                 return revokeRightResult.Problem;
@@ -519,6 +526,11 @@ public class ChangeRequestSystemUserService(
             return Problem.SystemIdNotFound;
         }
 
+        if (createNew && systemInfo.IsDeleted)
+        {
+            return Problem.SystemIsDeleted;
+        }
+
         Result<bool> valVendor = ValidateVendorOrgNo(vendorOrgNo, systemInfo);
         if (valVendor.IsProblem)
         {
@@ -572,7 +584,7 @@ public class ChangeRequestSystemUserService(
 
         ChangeRequestStatus changeRequestStatus = ChangeRequestStatus.NoChangeNeeded;
 
-        Party party = await partiesClient.GetPartyByOrgNo(systemUser.ReporteeOrgNo);
+        Party? party = await partiesClient.GetPartyByOrgNo(systemUser.ReporteeOrgNo);
 
         if (party is null || party.PartyUuid is null)
         {
@@ -896,9 +908,9 @@ public class ChangeRequestSystemUserService(
 
         IEnumerable<Claim> claims = context.User.Claims;
 
-        Party party = await partiesClient.GetPartyByOrgNo(req.PartyOrgNo);
+        Party? party = await partiesClient.GetPartyByOrgNo(req.PartyOrgNo);
 
-        if (!party.PartyUuid.HasValue)
+        if (party?.PartyUuid is null)
         {
             return Problem.Reportee_Orgno_NotFound;
         }

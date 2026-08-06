@@ -52,7 +52,7 @@ namespace Altinn.Platform.Authentication.Tests.Services
 
             // Act 
             string org = await orgService.LookupOrg("974760223");
-            _memoryCache.TryGetValue("organisationDictionary", out Dictionary<string, Organisation> actualCachedDictionary);
+            _memoryCache.TryGetValue("organisationDictionary", out Dictionary<string, Organisation>? actualCachedDictionary);
 
             // Assert
             Assert.Equal("dibk", org);
@@ -82,7 +82,7 @@ namespace Altinn.Platform.Authentication.Tests.Services
             _memoryCache.Set(cacheKey, organisationDictionary);
             _generalSettingsMock.Setup(o => o.Value).Returns(new GeneralSettings { OrganisationRepositoryLocation = "https://mock.com/altinn-orgs.json", OidcRefreshTokenPepper = "YWRzZmFzZmRhc2ZzYWVmZWY=" });
 
-            OrganisationsService orgService = new OrganisationsService(null, _memoryCache, _loggerMock.Object, _generalSettingsMock.Object);
+            OrganisationsService orgService = new OrganisationsService(null!, _memoryCache, _loggerMock.Object, _generalSettingsMock.Object); // deliberately null: the org is served from cache, so no HTTP client is needed
 
             // Act
             string orgName = await orgService.LookupOrg("976029100");
@@ -120,7 +120,7 @@ namespace Altinn.Platform.Authentication.Tests.Services
             handlerMock.Protected()
                 .Setup<Task<HttpResponseMessage>>(
                     "SendAsync",
-                    ItExpr.Is<HttpRequestMessage>(p => p.RequestUri.ToString().Contains("altinn-orgs")),
+                    ItExpr.Is<HttpRequestMessage>(p => p.RequestUri!.ToString().Contains("altinn-orgs")),
                     ItExpr.IsAny<CancellationToken>())
                 .ReturnsAsync(orgsResponseMessage)
                 .Verifiable();

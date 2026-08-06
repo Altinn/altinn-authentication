@@ -30,8 +30,6 @@ public class PlatformAuthenticationClient
     public AccessManagementClient AccessManagementClient { get; set; }
     public Common Common { get; set; }
 
-    private static string? _cachedToken;
-    private static DateTime _tokenExpiry;
 
     /// <summary>
     /// Base class for running requests
@@ -233,6 +231,7 @@ public class PlatformAuthenticationClient
     /// <returns>The Altinn test token as a string</returns>
     public async Task<string?> GetPersonalAltinnToken(Testuser user, string scopes = "")
     {
+        ArgumentNullException.ThrowIfNull(user);
         var url =
             $"https://altinn-testtools-token-generator.azurewebsites.net/api/GetPersonalToken" +
             $"?env={EnvironmentHelper.Testenvironment}" +
@@ -335,7 +334,7 @@ public class PlatformAuthenticationClient
         return token;
     }
 
-    public async Task<HttpResponseMessage> DeleteRequest(string? endpoint, Testuser? testperson)
+    public async Task<HttpResponseMessage> DeleteRequest(string? endpoint, Testuser testperson)
     {
         // Get the Altinn token
         var altinnToken = await GetPersonalAltinnToken(testperson);

@@ -37,6 +37,21 @@ namespace Altinn.Platform.Authentication.Core.Constants
         public const string CLAIM_MASKINPORTEN_CONSUMER_PREFIX = "consumer_prefix";
 
         /// <summary>
+        /// Policy tag for reading system user overview
+        /// </summary>
+        public const string POLICY_SYSTEMUSER_OVERVIEW_READ = "SystemUserOverviewRead";
+
+        /// <summary>
+        /// Policy tag for reading client administration
+        /// </summary>
+        public const string POLICY_CLIENT_ADMINISTRATION_READ = "ClientAdministrationRead";
+
+        /// <summary>
+        /// Policy tag for writing client administration
+        /// </summary>
+        public const string POLICY_CLIENT_ADMINISTRATION_WRITE = "ClientAdministrationWrite";
+
+        /// <summary>
         /// Policy tag for reading access management information
         /// </summary>
         public const string POLICY_ACCESS_MANAGEMENT_READ = "AccessManagementRead";

@@ -46,6 +46,7 @@ public static class PersistanceDependencyInjection
         AddAuthorizationCodeRepository(services);
         AddRefreshTokenRepository(services);
         AddUnregisteredClientRequestRepository(services);
+        AddSelfIdentifiedUserCredentialRepository(services);
         return builder;
     }
 
@@ -132,6 +133,11 @@ public static class PersistanceDependencyInjection
     private static void AddOidcSessionRepository(this IServiceCollection services)
     {
         services.TryAddTransient<IOidcSessionRepository, OidcSessionRepository>();
+    }
+
+    private static void AddSelfIdentifiedUserCredentialRepository(this IServiceCollection services)
+    {
+        services.TryAddTransient<ISelfIdentifiedUserCredentialRepository, SelfIdentifiedUserCredentialRepository>();
     }
 
     /// <summary>

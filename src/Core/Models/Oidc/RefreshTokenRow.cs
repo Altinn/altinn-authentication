@@ -58,9 +58,11 @@ namespace Altinn.Platform.Authentication.Core.Models.Oidc
 
         /// <summary>
         /// The hash of the refresh token value.
+        /// New tokens: HMAC-SHA256 with server pepper (iterations == 0).
+        /// Legacy tokens: PBKDF2-SHA256 (iterations > 0).
         /// </summary>
-        [JsonIgnore] 
-        public byte[] Hash { get; init; } = Array.Empty<byte>();      // PBKDF2-SHA256
+        [JsonIgnore]
+        public byte[] Hash { get; init; } = Array.Empty<byte>();
 
         /// <summary>
         /// The salt used in the PBKDF2 hashing of the refresh token.

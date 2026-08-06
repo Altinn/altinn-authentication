@@ -265,7 +265,7 @@ namespace Altinn.Platform.Authentication.Persistance.RepositoryImplementations.O
             values is string[] arr ? arr
             : values.Select(s => s?.Trim())
                     .Where(s => !string.IsNullOrWhiteSpace(s))
-                    .Select(s => s!)                // safe after filter
+                    .Select(s => s!) // safe after filter
                     .ToArray();
 
         private static string[]? ToStringArrayOrNull(IReadOnlyCollection<string>? values) =>

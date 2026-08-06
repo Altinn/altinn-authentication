@@ -144,7 +144,6 @@ namespace Altinn.Platform.Authentication.Tests
         public void ValidateRedirectUrl_ValidUrlWithoutQuery_ReturnsTrue()
         {
             // Arrange
-
             List<Uri> allowedRedirectUrls = new List<Uri>
                     {
                         new Uri("https://example.com/callback")
@@ -273,7 +272,6 @@ namespace Altinn.Platform.Authentication.Tests
         public void ValidateRedirectUrl_ValidUrlWithFragment_ReturnsTrue()
         {
             // Arrange
-
             List<Uri> allowedRedirectUrls = new List<Uri>
                 {
                     new Uri("https://example.com/callback")
@@ -325,7 +323,7 @@ namespace Altinn.Platform.Authentication.Tests
         public void ValidateRedirectUrl_NullAllowedRedirectUrls_ReturnsProblem()
         {
             // Arrange
-            List<Uri> allowedRedirectUrls = null;
+            List<Uri> allowedRedirectUrls = null!; // deliberately null: testing guard clause
             string redirectURL = "https://example.com/callback";
 
             // Act
@@ -363,6 +361,44 @@ namespace Altinn.Platform.Authentication.Tests
         {
             var result = AuthenticationHelper.HasSpaceInId(input);
             Assert.Equal(expected, result);
+        }
+
+        [Theory]
+        [InlineData(null)]
+        [InlineData("")]
+        [InlineData("   ")]
+        public void TryParseAcrValues_NoValueRequested_IsValidAndEmpty(string? input)
+        {
+            bool ok = AuthenticationHelper.TryParseAcrValues(input, out string[] values);
+
+            Assert.True(ok);
+            Assert.Empty(values);
+        }
+
+        [Theory]
+        [InlineData("idporten-loa-high", new[] { "idporten-loa-high" })]
+        [InlineData("idporten-loa-substantial", new[] { "idporten-loa-substantial" })]
+        [InlineData("selfregistered-email idporten-loa-substantial", new[] { "selfregistered-email", "idporten-loa-substantial" })]
+        [InlineData("  idporten-loa-high   ", new[] { "idporten-loa-high" })]
+        public void TryParseAcrValues_AllowedValues_ParsesAndValidates(string input, string[] expected)
+        {
+            bool ok = AuthenticationHelper.TryParseAcrValues(input, out string[] values);
+
+            Assert.True(ok);
+            Assert.Equal(expected, values);
+        }
+
+        [Theory]
+        [InlineData("idporten-loa-extreme")]
+        [InlineData("level4")]
+        [InlineData("idporten-loa-high something-bogus")]
+        [InlineData("'; drop table sessions;--")]
+        public void TryParseAcrValues_DisallowedValue_ReturnsFalseAndEmpty(string input)
+        {
+            bool ok = AuthenticationHelper.TryParseAcrValues(input, out string[] values);
+
+            Assert.False(ok);
+            Assert.Empty(values);
         }
     }
 }

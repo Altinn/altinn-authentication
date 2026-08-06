@@ -1,3 +1,3 @@
 ﻿namespace Altinn.Platform.Authentication.Core.Models.Rights;
 
-public record RightResponses(List<DelegationResponseData> ResponseDataSet);
+public record RightResponses(string resourceId, RightKeyListDto RightKeyListDto);

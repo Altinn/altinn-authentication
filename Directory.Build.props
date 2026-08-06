@@ -1,0 +1,15 @@
+<Project>
+
+  <!--
+    Repo-wide MSBuild defaults, imported by every project under the repository root.
+
+    NU1510 ("PackageReference will not be pruned; consider removing it") is silenced
+    solution-wide per team guidance: the flagged references are kept intentionally, and
+    the warning otherwise breaks any project that opts into <TreatWarningsAsErrors>
+    (see #488). Suppress it centrally so each project doesn't have to.
+  -->
+  <PropertyGroup>
+    <NoWarn>$(NoWarn);NU1510</NoWarn>
+  </PropertyGroup>
+
+</Project>

@@ -33,6 +33,8 @@ namespace Altinn.Platform.Authentication.Tests.Utils
             Assert.Equal(expected.ClientId, actual.ClientId);
             Assert.Equal(expected.IsVisible, actual.IsVisible);
             Assert.Equal(expected.IsDeleted, actual.IsDeleted);
+            Assert.NotNull(expected.Rights);
+            Assert.NotNull(actual.Rights);
             Assert.Equal(expected.Rights.Count, actual.Rights.Count);
             Assert.Equal(expected.AllowedRedirectUrls, actual.AllowedRedirectUrls);
         }

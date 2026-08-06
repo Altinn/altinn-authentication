@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.IdentityModel.Tokens.Jwt;
 using System.Linq;
+using System.Security.Authentication;
 using System.Security.Claims;
 using System.Text.RegularExpressions;
 using Altinn.Authentication.Core.Problems;
@@ -29,12 +30,25 @@ namespace Altinn.Platform.Authentication.Helpers
         private const string IdPortenAcrHigh = "idporten-loa-high";
 
         /// <summary>
+        /// The acr_values accepted on the public authentication entry point. Mirrors the allow-list
+        /// enforced for registered clients in <c>AuthorizeRequestValidator</c>.
+        /// </summary>
+        private static readonly HashSet<string> AllowedAcrValues = new(
+            new[] { "selfregistered-email", "idporten-loa-substantial", "idporten-loa-high", "level0", "level1", "level2" },
+            StringComparer.Ordinal);
+
+        /// <summary>
         /// Get user information from the token
         /// </summary>
         /// <param name="jwtSecurityToken">jwt token</param>
         /// <param name="provider">authentication provider</param>
         /// <param name="accessToken">the access token</param>
         /// <returns>user information</returns>
+        /// <exception cref="AuthenticationException">
+        /// Thrown when the provider has <see cref="OidcProvider.RequireSyntheticPid"/>
+        /// set and the token does not carry a well-formed synthetic (Tenor)
+        /// fødselsnummer (including when no pid is present).
+        /// </exception>
         public static UserAuthenticationModel GetUserFromToken(JwtSecurityToken jwtSecurityToken, OidcProvider provider, JwtSecurityToken? accessToken = null)
         {
             UserAuthenticationModel userAuthenticationModel = new UserAuthenticationModel()
@@ -184,7 +198,23 @@ namespace Altinn.Platform.Authentication.Helpers
                     }
                 }
             }
-             
+
+            // Authoritative synthetic-only gate. A provider configured as test-only
+            // (e.g. mockporten) may authenticate ONLY synthetic (Tenor) test
+            // persons: a token whose pid is not a well-formed synthetic
+            // fødselsnummer — including a token with no pid at all — is rejected,
+            // so neither an ordinary national identity number nor a non-pid identity
+            // can be authenticated through that provider, regardless of what the
+            // upstream IdP asserts. This throws (rather than returning a
+            // not-authenticated model) so the request is guaranteed to abort and
+            // cannot be mishandled downstream. See issue #1409 / #1983.
+            if (provider.RequireSyntheticPid
+                && !SyntheticPersonIdentifier.IsSyntheticTenor(userAuthenticationModel.SSN))
+            {
+                throw new AuthenticationException(
+                    "this provider only allows synthetic (Tenor) test persons; a valid synthetic pid is required");
+            }
+
             return userAuthenticationModel;
         }
 
@@ -740,6 +770,34 @@ namespace Altinn.Platform.Authentication.Helpers
            }
 
            return false;
+        }
+
+        /// <summary>
+        /// Parses and validates a space-separated <c>acr_values</c> string from the public authentication
+        /// entry point against the allowed set.
+        /// </summary>
+        /// <param name="raw">The raw, space-separated acr_values query value. Null/empty is valid (no level requested).</param>
+        /// <param name="values">The parsed acr values, or an empty array when none were requested or validation failed.</param>
+        /// <returns><c>true</c> when the input is absent or contains only allowed values; otherwise <c>false</c>.</returns>
+        public static bool TryParseAcrValues(string? raw, out string[] values)
+        {
+            values = Array.Empty<string>();
+            if (string.IsNullOrWhiteSpace(raw))
+            {
+                return true;
+            }
+
+            string[] parsed = raw.Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+            foreach (string v in parsed)
+            {
+                if (!AllowedAcrValues.Contains(v))
+                {
+                    return false;
+                }
+            }
+
+            values = parsed;
+            return true;
         }
     }
 }

@@ -1,0 +1,61 @@
+@model Mockporten.Models.OidcAuthorizationModel
+
+@{
+    ViewData["Title"] = "Test-IDP login";
+}
+
+<div class="row justify-content-center">
+    <div class="col-md-6 col-lg-5">
+        <div class="card testidp-card shadow-sm">
+            <div class="card-header bg-danger text-white">
+                <h4 class="mb-0">🔒 Test-IDP login</h4>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-warning" role="alert">
+                    <strong>Test environment only.</strong> This identity provider exists
+                    solely for automated test runs. It only accepts <strong>synthetic
+                    (Tenor) fødselsnummer</strong> — a real personal identity number
+                    will always be rejected.
+                </div>
+
+                <form asp-action="Index" method="post" autocomplete="off">
+                    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
+                    <div class="form-group mb-3">
+                        <label asp-for="Password" class="control-label fw-bold">Shared access password</label>
+                        <input asp-for="Password" type="password" class="form-control" autocomplete="off" />
+                        <div class="form-text">Grants the right to use the Test-IDP. This is not a per-user credential.</div>
+                    </div>
+
+                    <div class="form-group mb-3">
+                        <label asp-for="Pid" class="control-label fw-bold">Synthetic Tenor fødselsnummer</label>
+                        <input asp-for="Pid" class="form-control" inputmode="numeric" pattern="\d{11}" maxlength="11" placeholder="11 digits, synthetic" autocomplete="off" />
+                        <span asp-validation-for="Pid" class="text-danger"></span>
+                        <div class="form-text">Must be a synthetic test number (month 81–92). Ordinary numbers are refused.</div>
+                    </div>
+
+                    @* OIDC parameters round-trip from the GET request as hidden fields.
+                       They are never authentication input - only the shared password is. *@
+                    <input type="hidden" asp-for="Response_type" />
+                    <input type="hidden" asp-for="Client_id" />
+                    <input type="hidden" asp-for="Redirect_uri" />
+                    <input type="hidden" asp-for="Scope" />
+                    <input type="hidden" asp-for="State" />
+                    <input type="hidden" asp-for="Nonce" />
+                    <input type="hidden" asp-for="Acr_values" />
+                    <input type="hidden" asp-for="Response_mode" />
+                    <input type="hidden" asp-for="Ui_locales" />
+                    <input type="hidden" asp-for="Prompt" />
+                    <input type="hidden" asp-for="Code_challenge" />
+                    <input type="hidden" asp-for="Code_challenge_method" />
+                    <input type="hidden" asp-for="Login_hint" />
+                    <input type="hidden" asp-for="Claims" />
+                    <input type="hidden" asp-for="Request_uri" />
+
+                    <button type="submit" class="btn btn-danger w-100">Log in as test user</button>
+                </form>
+            </div>
+        </div>
+        <p class="text-center text-muted mt-3 mb-0"><small>Synthetic test data only — never enter real personal data.</small></p>
+    </div>
+</div>

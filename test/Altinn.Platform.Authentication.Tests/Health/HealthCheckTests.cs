@@ -17,8 +17,6 @@ namespace Altinn.Platform.Authentication.UnitTest
     public class HealthCheckTests(DbFixture dbFixture, WebApplicationFixture webApplicationFixture)
         : WebApplicationTests(dbFixture, webApplicationFixture)
     {
-        private readonly WebApplicationFactory<HealthCheck> _factory;
-
         /// <summary>
         /// Verify that component responds on health check
         /// </summary>

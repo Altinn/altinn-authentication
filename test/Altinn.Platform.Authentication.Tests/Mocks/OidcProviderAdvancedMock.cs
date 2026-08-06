@@ -34,7 +34,7 @@ namespace Altinn.Platform.Authentication.Tests.Mocks
                 ClientId: clientId,
                 RedirectUri: redirectUri,
                 CodeVerifier: codeVerifier,
-                Handler: (_, _, _, _, _) => Task.FromResult(response),
+                Handler: (_, _, _, _, _) => Task.FromResult<OidcCodeResponse?>(response),
                 Name: "success"));
         }
 
@@ -61,7 +61,7 @@ namespace Altinn.Platform.Authentication.Tests.Mocks
         /// <summary>
         /// The method under test: returns a configured response or throws if no matching rule exists.
         /// </summary>
-        public async Task<OidcCodeResponse?> GetTokens(
+        public async Task<OidcCodeResponse> GetTokens(
             string authorizationCode,
             OidcProvider provider,
             string redirect_uri,
@@ -81,7 +81,7 @@ namespace Altinn.Platform.Authentication.Tests.Mocks
                     $"FakeOidcProvider: no rule matched (code='{authorizationCode}', clientId='{provider?.ClientId}', redirect_uri='{redirect_uri}', verifier='{codeVerifier ?? "<null>"}').");
             }
 
-            return await match.Handler(authorizationCode, provider, redirect_uri, codeVerifier, cancellationToken);
+            return (await match.Handler(authorizationCode, provider, redirect_uri, codeVerifier, cancellationToken))!; // failure rules deliberately return null to exercise caller null-handling
         }
 
         private sealed record Rule(

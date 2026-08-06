@@ -34,7 +34,7 @@ using Altinn.Platform.Authentication.Tests.Mocks;
 using Altinn.Platform.Authentication.Tests.RepositoryDataAccess;
 using Altinn.Platform.Authentication.Tests.Utils;
 using AltinnCore.Authentication.JwtCookie;
-using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
@@ -42,9 +42,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using Microsoft.Extensions.Time.Testing;
 using Microsoft.Identity.Client;
-using Microsoft.VisualStudio.TestPlatform.ObjectModel.DataCollection;
 using Moq;
-using Newtonsoft.Json.Linq;
 using Xunit;
 using static Altinn.Authorization.ABAC.Constants.XacmlConstants;
 
@@ -59,7 +57,6 @@ public class RequestControllerTests(
     private static readonly JsonSerializerOptions _options = new(JsonSerializerDefaults.Web);
     
     private readonly Mock<IUserProfileService> _userProfileService = new();
-    private readonly Mock<ISblCookieDecryptionService> _sblCookieDecryptionService = new();
 
     private readonly FakeTimeProvider timeProvider = new();
     private readonly Mock<IGuidService> guidService = new();
@@ -70,25 +67,14 @@ public class RequestControllerTests(
     protected override void ConfigureServices(IServiceCollection services)
     {
         base.ConfigureServices(services);
-        bool enableOidc = false;
-        bool forceOidc = false;
         string defaultOidc = "altinn";
 
         string configPath = GetConfigPath();
-
-        WebHostBuilder builder = new();
-
-        builder.ConfigureAppConfiguration((context, conf) =>
-        {
-            conf.AddJsonFile(configPath);
-        });
 
         var configuration = new ConfigurationBuilder()
           .AddJsonFile(configPath)
           .Build();
 
-        configuration.GetSection("GeneralSettings:EnableOidc").Value = enableOidc.ToString();
-        configuration.GetSection("GeneralSettings:ForceOidc").Value = forceOidc.ToString();
         configuration.GetSection("GeneralSettings:DefaultOidcProvider").Value = defaultOidc;
 
         IConfigurationSection generalSettingSection = configuration.GetSection("GeneralSettings");
@@ -102,7 +88,6 @@ public class RequestControllerTests(
         services.AddSingleton<IJwtSigningCertificateProvider, JwtSigningCertificateProviderStub>();
         services.AddSingleton<IPostConfigureOptions<JwtCookieOptions>, JwtCookiePostConfigureOptionsStub>();
         services.AddSingleton<IPublicSigningKeyProvider, SigningKeyResolverStub>();
-        services.AddSingleton<IEnterpriseUserAuthenticationService, EnterpriseUserAuthenticationServiceMock>();
         services.AddSingleton<IOidcProvider, OidcProviderServiceMock>();
         services.AddSingleton(_eventQueue.Object);
         services.AddSingleton<FakeTimeProvider>(timeProvider);
@@ -112,7 +97,6 @@ public class RequestControllerTests(
         // services.AddSingleton(timeProviderMock.Object);
         services.AddSingleton(guidService.Object);
         services.AddSingleton<IUserProfileService>(_userProfileService.Object);
-        services.AddSingleton<ISblCookieDecryptionService>(_sblCookieDecryptionService.Object);
         services.AddSingleton<IPDP, PepWithPDPAuthorizationMock>();
         services.AddSingleton<IPartiesClient, PartiesClientMock>();
         services.AddSingleton<ISystemUserService, SystemUserService>();    
@@ -170,6 +154,7 @@ public class RequestControllerTests(
         Assert.NotNull(res);
         Assert.Equal(req.ExternalRef, res.ExternalRef);
         Assert.NotNull(res.ConfirmUrl);
+        Assert.NotEqual(default(DateTime), res.Created);
     }
 
     [Fact]
@@ -308,10 +293,9 @@ public class RequestControllerTests(
         HttpResponseMessage message = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead);
 
         Assert.Equal(HttpStatusCode.BadRequest, message.StatusCode);
-        ProblemDetails problemDetails = await message.Content.ReadFromJsonAsync<ProblemDetails>();
+        ProblemDetails? problemDetails = await message.Content.ReadFromJsonAsync<ProblemDetails>();
         Assert.NotNull(problemDetails);
-        Assert.Equal(Problem.AccessPackage_NotDelegable_Standard.Detail, problemDetails.Detail);
-        Assert.True(problemDetails.Extensions.Count == 2);
+        Assert.Equal(Problem.AccessPackage_NotDelegable_Standard.Title, problemDetails.Title);
         Assert.True(problemDetails.Extensions.ContainsKey("NotDelegablePackages"));
     }
 
@@ -401,6 +385,93 @@ public class RequestControllerTests(
         Assert.NotNull(res);
         Assert.Contains("&DONTCHOOSEREPORTEE=true", res.ConfirmUrl);
         Assert.Equal(req.ExternalRef, res.ExternalRef);
+        Assert.NotEqual(default(DateTime), res.Created);
+    }
+
+    [Fact]
+    public async Task Request_Create_Fails_When_System_Is_Deleted()
+    {
+        string dataFileName = "Data/SystemRegister/Json/SystemRegister.json";
+        HttpResponseMessage createSystemResponse = await CreateSystemRegister(dataFileName);
+        Assert.Equal(HttpStatusCode.OK, createSystemResponse.StatusCode);
+
+        HttpResponseMessage deleteSystemResponse = await DeleteSystemRegister("991825827_the_matrix");
+        Assert.Equal(HttpStatusCode.OK, deleteSystemResponse.StatusCode);
+
+        HttpClient client = CreateClient();
+        string token = AddSystemUserRequestWriteTestTokenToClient(client);
+        string endpoint = $"/authentication/api/v1/systemuser/request/vendor";
+
+        Right right = new()
+        {
+            Resource =
+            [
+                new AttributePair()
+                {
+                    Id = "urn:altinn:resource",
+                    Value = "ske-krav-og-betalinger"
+                }
+            ]
+        };
+
+        CreateRequestSystemUser req = new()
+        {
+            ExternalRef = "external",
+            SystemId = "991825827_the_matrix",
+            PartyOrgNo = "910493353",
+            Rights = [right],
+            AccessPackages = []
+        };
+
+        HttpRequestMessage request = new(HttpMethod.Post, endpoint)
+        {
+            Content = JsonContent.Create(req)
+        };
+        HttpResponseMessage message = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead);
+
+        Assert.Equal(HttpStatusCode.BadRequest, message.StatusCode);
+        ProblemDetails? problemDetails = await message.Content.ReadFromJsonAsync<ProblemDetails>();
+        Assert.NotNull(problemDetails);
+        Assert.Equal(Problem.SystemIsDeleted.Title, problemDetails.Title);
+    }
+
+    [Fact]
+    public async Task AgentRequest_Create_Fails_When_System_Is_Deleted()
+    {
+        string dataFileName = "Data/SystemRegister/Json/SystemRegisterWithAccessPackage.json";
+        HttpResponseMessage createSystemResponse = await CreateSystemRegister(dataFileName);
+        Assert.Equal(HttpStatusCode.OK, createSystemResponse.StatusCode);
+
+        HttpResponseMessage deleteSystemResponse = await DeleteSystemRegister("991825827_the_matrix");
+        Assert.Equal(HttpStatusCode.OK, deleteSystemResponse.StatusCode);
+
+        HttpClient client = CreateClient();
+        string token = AddSystemUserRequestWriteTestTokenToClient(client);
+        string endpoint = $"/authentication/api/v1/systemuser/request/vendor/agent";
+
+        AccessPackage accessPackage = new()
+        {
+            Urn = "urn:altinn:accesspackage:skatt-naering"
+        };
+
+        CreateAgentRequestSystemUser req = new()
+        {
+            ExternalRef = "external",
+            SystemId = "991825827_the_matrix",
+            PartyOrgNo = "910493353",
+            AccessPackages = [accessPackage]
+        };
+
+        HttpRequestMessage request = new(HttpMethod.Post, endpoint)
+        {
+            Content = JsonContent.Create(req)
+        };
+        HttpResponseMessage message = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead);
+
+        Assert.Equal(HttpStatusCode.BadRequest, message.StatusCode);
+        ProblemDetails? problemDetails = await message.Content.ReadFromJsonAsync<ProblemDetails>();
+        Assert.NotNull(problemDetails);
+        Assert.Equal(Problem.SystemIsDeleted.Title, problemDetails.Title);
     }
 
     [Fact]
@@ -446,6 +517,7 @@ public class RequestControllerTests(
         };
         HttpResponseMessage message2 = await client.SendAsync(request2, HttpCompletionOption.ResponseHeadersRead);
         AgentRequestSystemResponse? createdResponse = await message2.Content.ReadFromJsonAsync<AgentRequestSystemResponse>();
+        Assert.NotNull(createdResponse);
         Assert.Contains("&DONTCHOOSEREPORTEE=true", createdResponse.ConfirmUrl);
         Assert.Equal(HttpStatusCode.OK, message2.StatusCode);
     }
@@ -584,10 +656,9 @@ public class RequestControllerTests(
         HttpResponseMessage message = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead);
 
         Assert.Equal(HttpStatusCode.BadRequest, message.StatusCode);
-        ProblemDetails problemDetails = await message.Content.ReadFromJsonAsync<ProblemDetails>();
+        ProblemDetails? problemDetails = await message.Content.ReadFromJsonAsync<ProblemDetails>();
         Assert.NotNull(problemDetails);
-        Assert.Equal(Problem.AccessPackage_NotDelegable_Agent.Detail, problemDetails.Detail);
-        Assert.True(problemDetails.Extensions.Count == 2);
+        Assert.Equal(Problem.AccessPackage_NotDelegable_Agent.Title, problemDetails.Title);
         Assert.True(problemDetails.Extensions.ContainsKey("NotDelegablePackages"));
     }
 
@@ -721,6 +792,7 @@ public class RequestControllerTests(
         Assert.True(res2 is not null);
         Assert.Contains("&DONTCHOOSEREPORTEE=true", res2.ConfirmUrl);
         Assert.Equal(testId, res2.Id);
+        Assert.NotEqual(default(DateTime), res2.Created);
     }
 
     [Fact]
@@ -757,19 +829,19 @@ public class RequestControllerTests(
         Assert.NotNull(res);
         Assert.Equal(req.ExternalRef, res.ExternalRef);
 
-        //Get by Guid
+        // Get by Guid
         HttpClient client2 = CreateClient();
         AddSystemUserRequesReadTestTokenToClient(client2);
         Guid testId = res.Id;
         string endpoint2 = $"/authentication/api/v1/systemuser/request/vendor/agent/{testId}";
 
         HttpResponseMessage message2 = await client2.GetAsync(endpoint2);
-        string debug = "pause_here";
         Assert.Equal(HttpStatusCode.OK, message2.StatusCode);
         AgentRequestSystemResponse? res2 = await message2.Content.ReadFromJsonAsync<AgentRequestSystemResponse>();
+        Assert.NotNull(res2);
         Assert.Contains("&DONTCHOOSEREPORTEE=true", res2.ConfirmUrl);
-        Assert.True(res2 is not null);
         Assert.Equal(testId, res2.Id);
+        Assert.NotEqual(default(DateTime), res2.Created);
     }
 
     [Fact]
@@ -821,11 +893,10 @@ public class RequestControllerTests(
         string endpoint2 = $"/authentication/api/v1/systemuser/request/vendor/agent/{testId}";
 
         HttpResponseMessage message2 = await client2.GetAsync(endpoint2);
-        string debug = "pause_here";
         Assert.Equal(HttpStatusCode.OK, message2.StatusCode);
         AgentRequestSystemResponse? res2 = await message2.Content.ReadFromJsonAsync<AgentRequestSystemResponse>();
+        Assert.NotNull(res2);
         Assert.Contains("&DONTCHOOSEREPORTEE=true", res2.ConfirmUrl);
-        Assert.True(res2 is not null);
         Assert.Equal(testId, res2.Id);
         Assert.True(res2.TimedOut);
         timeProvider.AdjustTime(prev.UtcDateTime);
@@ -947,10 +1018,9 @@ public class RequestControllerTests(
         string endpoint2 = $"/authentication/api/v1/systemuser/request/vendor/agent/{testId}";
 
         HttpResponseMessage message2 = await client2.GetAsync(endpoint2);
-        string debug = "pause_here";
         Assert.Equal(HttpStatusCode.NotFound, message2.StatusCode);
         ProblemDetails? problem = await message2.Content.ReadFromJsonAsync<ProblemDetails>();
-        Assert.Equal("The Id does not refer to a Request in our system.", problem!.Detail);
+        Assert.Equal("The Id does not refer to a Request in our system.", problem!.Title);
     }
 
     [Fact]
@@ -1007,6 +1077,7 @@ public class RequestControllerTests(
         Assert.True(res2 is not null);
         Assert.Contains("&DONTCHOOSEREPORTEE=true", res2.ConfirmUrl);
         Assert.Equal(req.SystemId + req.PartyOrgNo + req.ExternalRef, res2.SystemId + res2.PartyOrgNo + res2.ExternalRef);
+        Assert.NotEqual(default(DateTime), res2.Created);
     }
 
     [Fact]
@@ -1110,10 +1181,11 @@ public class RequestControllerTests(
         HttpResponseMessage partyResponse = await client2.SendAsync(partyReqMessage, HttpCompletionOption.ResponseHeadersRead);
         Assert.Equal(HttpStatusCode.OK, partyResponse.StatusCode);
 
-        RequestSystemResponse? requestGet = JsonSerializer.Deserialize<RequestSystemResponse>(await partyResponse.Content.ReadAsStringAsync());
+        RequestSystemResponse? requestGet = await partyResponse.Content.ReadFromJsonAsync<RequestSystemResponse>();
         Assert.NotNull(requestGet);
 
         Assert.Equal(res.Id, requestGet.Id);
+        Assert.NotEqual(default(DateTime), requestGet.Created);
     }
 
     [Fact]
@@ -1260,7 +1332,6 @@ public class RequestControllerTests(
         HttpClient client2 = CreateClient();
         client2.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1338, null, 3, addPortalScope: true, now: TestTime));
 
-        int partyId = 500000;
         Guid resId = Guid.NewGuid();
 
         string partyEndpoint = $"/authentication/api/v1/systemuser/request/{resId}";
@@ -1319,8 +1390,6 @@ public class RequestControllerTests(
         // Party Get Request
         HttpClient client2 = CreateClient();
         client2.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1338, null, 3, addPortalScope: false, now: TestTime));
-
-        int partyId = 500000;
 
         string partyEndpoint = $"/authentication/api/v1/systemuser/request/{res.Id}";
 
@@ -1731,8 +1800,6 @@ public class RequestControllerTests(
         HttpClient client2 = CreateClient();
         client2.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1338, null, 3, addPortalScope: false, now: TestTime));
 
-        int partyId = 500000;
-
         string partyEndpoint = $"/authentication/api/v1/systemuser/request/agent/{res.Id}";
 
         HttpRequestMessage partyReqMessage = new(HttpMethod.Get, partyEndpoint);
@@ -1789,9 +1856,10 @@ public class RequestControllerTests(
         HttpResponseMessage partyResponse = await client2.SendAsync(partyReqMessage, HttpCompletionOption.ResponseHeadersRead);
         Assert.Equal(HttpStatusCode.OK, partyResponse.StatusCode);
 
-        AgentRequestSystemResponse? requestGet = JsonSerializer.Deserialize<AgentRequestSystemResponse>(await partyResponse.Content.ReadAsStringAsync());
+        AgentRequestSystemResponse? requestGet = await partyResponse.Content.ReadFromJsonAsync<AgentRequestSystemResponse>();
         Assert.NotNull(requestGet);
         Assert.Equal(res.Id, requestGet.Id);
+        Assert.NotEqual(default(DateTime), requestGet.Created);
     }
 
     [Fact]
@@ -2770,7 +2838,7 @@ public class RequestControllerTests(
         HttpResponseMessage approveResponseMessage = await client2.SendAsync(approveRequestMessage, HttpCompletionOption.ResponseHeadersRead);
         Assert.Equal(HttpStatusCode.Forbidden, approveResponseMessage.StatusCode);
         ProblemDetails? problem = await approveResponseMessage.Content.ReadFromJsonAsync<ProblemDetails>();
-        Assert.Equal("Party does not match request's orgno", problem!.Detail);
+        Assert.Equal("Party does not match request's orgno", problem!.Title);
     }
 
     [Fact]
@@ -2836,7 +2904,7 @@ public class RequestControllerTests(
         HttpResponseMessage approveResponseMessage = await client2.SendAsync(approveRequestMessage, HttpCompletionOption.ResponseHeadersRead);
         Assert.Equal(HttpStatusCode.BadRequest, approveResponseMessage.StatusCode);
         ProblemDetails? problem = await approveResponseMessage.Content.ReadFromJsonAsync<ProblemDetails>();
-        Assert.Equal("The Delegation failed.", problem!.Detail);
+        Assert.Equal("The Delegation failed.", problem!.Title);
     }
 
     [Fact]
@@ -3056,7 +3124,7 @@ public class RequestControllerTests(
         HttpResponseMessage approveResponseMessage = await client2.SendAsync(approveRequestMessage, HttpCompletionOption.ResponseHeadersRead);
         Assert.Equal(HttpStatusCode.NotFound, approveResponseMessage.StatusCode);
         ProblemDetails? problem = await approveResponseMessage.Content.ReadFromJsonAsync<ProblemDetails>();
-        Assert.Equal("The Id does not refer to an AgentRequest in our system.", problem!.Detail);
+        Assert.Equal("The Id does not refer to an AgentRequest in our system.", problem!.Title);
     }
 
     [Fact]
@@ -3553,7 +3621,7 @@ public class RequestControllerTests(
         HttpResponseMessage approveResponseMessage = await client2.SendAsync(approveRequestMessage, HttpCompletionOption.ResponseHeadersRead);
         Assert.Equal(HttpStatusCode.NotFound, approveResponseMessage.StatusCode);
         ProblemDetails? problem = await approveResponseMessage.Content.ReadFromJsonAsync<ProblemDetails>();
-        Assert.Equal("The Id does not refer to a Request in our system.", problem!.Detail);
+        Assert.Equal("The Id does not refer to a Request in our system.", problem!.Title);
     }
 
     [Fact]
@@ -3810,6 +3878,193 @@ public class RequestControllerTests(
         Assert.Equal(HttpStatusCode.OK, approveResponseMessage.StatusCode);
     }
 
+    [Fact]
+    public async Task AgentSystemUser_DelegateNew_QueryParam_Post_ReturnsOK()
+    {
+        // Arrange: create system register with access package
+        string dataFileName = "Data/SystemRegister/Json/SystemRegisterWithAccessPackage.json";
+        HttpResponseMessage registerResponse = await CreateSystemRegister(dataFileName);
+        Assert.Equal(HttpStatusCode.OK, registerResponse.StatusCode);
+
+        // Create agent request via vendor endpoint
+        HttpClient vendorClient = CreateClient();
+        AddSystemUserRequestWriteTestTokenToClient(vendorClient);
+
+        AccessPackage accessPackage = new()
+        {
+            Urn = "urn:altinn:accesspackage:skatt-naering"
+        };
+
+        CreateAgentRequestSystemUser createReq = new()
+        {
+            ExternalRef = "delegate-new-queryp",
+            SystemId = "991825827_the_matrix",
+            PartyOrgNo = "910493353",
+            AccessPackages = [accessPackage]
+        };
+
+        HttpRequestMessage createReqMsg = new(HttpMethod.Post, "/authentication/api/v1/systemuser/request/vendor/agent")
+        {
+            Content = JsonContent.Create(createReq)
+        };
+        HttpResponseMessage createReqResponse = await vendorClient.SendAsync(createReqMsg, HttpCompletionOption.ResponseHeadersRead);
+        Assert.Equal(HttpStatusCode.Created, createReqResponse.StatusCode);
+
+        AgentRequestSystemResponse? agentRequest = await createReqResponse.Content.ReadFromJsonAsync<AgentRequestSystemResponse>();
+        Assert.NotNull(agentRequest);
+
+        // Approve the agent request
+        HttpClient partyClient = CreateClient();
+        partyClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3, true, now: TestTime));
+
+        int partyId = 500000;
+        string approveEndpoint = $"/authentication/api/v1/systemuser/request/agent/{partyId}/{agentRequest.Id}/approve";
+        HttpResponseMessage approveResponse = await partyClient.SendAsync(
+            new HttpRequestMessage(HttpMethod.Post, approveEndpoint),
+            HttpCompletionOption.ResponseHeadersRead);
+        Assert.Equal(HttpStatusCode.OK, approveResponse.StatusCode);
+
+        // Retrieve the created agent system user via vendor endpoint to get its Id
+        HttpClient vendorClient2 = CreateClient();
+        string[] prefixes = ["altinn", "digdir"];
+        string vendorToken = PrincipalUtil.GetOrgToken("digdir", "991825827", "altinn:authentication/systemregister.write", prefixes, TestTime);
+        vendorClient2.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", vendorToken);
+
+        HttpResponseMessage getSystemUsersResponse = await vendorClient2.GetAsync($"/authentication/api/v1/systemuser/vendor/bysystem/991825827_the_matrix");
+        Assert.Equal(HttpStatusCode.OK, getSystemUsersResponse.StatusCode);
+        Paginated<SystemUserExternalDTO>? page = await getSystemUsersResponse.Content.ReadFromJsonAsync<Paginated<SystemUserExternalDTO>>(_options);
+        Assert.NotNull(page);
+        SystemUserExternalDTO? systemUser = page.Items.FirstOrDefault(s => s.ExternalRef == createReq.ExternalRef);
+        Assert.NotNull(systemUser);
+
+        // Act: call the new POST agent/{party}/{systemUserId} endpoint with query params
+        Guid providerGuid = Guid.NewGuid();
+        Guid clientGuid = Guid.Parse("431a181a-135c-4a27-9184-2f4b5fb109e3");
+        string delegateEndpoint = $"/authentication/api/v1/systemuser/agent/{partyId}/{systemUser.Id}?provider={providerGuid}&client={clientGuid}";
+
+        HttpResponseMessage delegateResponse = await partyClient.SendAsync(
+            new HttpRequestMessage(HttpMethod.Post, delegateEndpoint),
+            HttpCompletionOption.ResponseHeadersRead);
+
+        // Assert
+        Assert.Equal(HttpStatusCode.OK, delegateResponse.StatusCode);
+        List<DelegationResponse>? delegationResult = await delegateResponse.Content.ReadFromJsonAsync<List<DelegationResponse>>();
+        Assert.NotNull(delegationResult);
+        Assert.NotEmpty(delegationResult);
+        Assert.Equal(clientGuid, delegationResult[0].CustomerId);
+        Assert.Equal(Guid.Parse(systemUser.Id), delegationResult[0].AgentSystemUserId);
+    }
+
+    [Fact]
+    public async Task AgentSystemUser_DelegateNew_QueryParam_Post_UnknownSystemUserId_ReturnsBadRequest()
+    {
+        // Arrange
+        HttpClient partyClient = CreateClient();
+        partyClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3, true, now: TestTime));
+
+        int partyId = 500000;
+        Guid unknownSystemUserId = Guid.NewGuid();
+        Guid providerGuid = Guid.NewGuid();
+        Guid clientGuid = Guid.NewGuid();
+        string delegateEndpoint = $"/authentication/api/v1/systemuser/agent/{partyId}/{unknownSystemUserId}?provider={providerGuid}&client={clientGuid}";
+
+        // Act
+        HttpResponseMessage delegateResponse = await partyClient.SendAsync(
+            new HttpRequestMessage(HttpMethod.Post, delegateEndpoint),
+            HttpCompletionOption.ResponseHeadersRead);
+
+        // Assert
+        Assert.Equal(HttpStatusCode.BadRequest, delegateResponse.StatusCode);
+        HttpValidationProblemDetails? problem = await delegateResponse.Content.ReadFromJsonAsync<HttpValidationProblemDetails>();
+        Assert.NotNull(problem);
+        Assert.Contains("return", problem.Errors.Keys);
+    }
+
+    [Fact]
+    public async Task AgentSystemUser_DelegateNew_QueryParam_Post_NoToken_ReturnsUnauthorized()
+    {
+        // Arrange: no auth token set on client
+        HttpClient unauthClient = CreateClient();
+
+        int partyId = 500000;
+        Guid systemUserId = Guid.NewGuid();
+        Guid providerGuid = Guid.NewGuid();
+        Guid clientGuid = Guid.NewGuid();
+        string delegateEndpoint = $"/authentication/api/v1/systemuser/agent/{partyId}/{systemUserId}?provider={providerGuid}&client={clientGuid}";
+
+        // Act
+        HttpResponseMessage delegateResponse = await unauthClient.SendAsync(
+            new HttpRequestMessage(HttpMethod.Post, delegateEndpoint),
+            HttpCompletionOption.ResponseHeadersRead);
+
+        // Assert
+        Assert.Equal(HttpStatusCode.Unauthorized, delegateResponse.StatusCode);
+    }
+
+    [Fact]
+    public async Task AgentSystemUser_DelegateNew_QueryParam_Post_WrongParty_ReturnsForbidden()
+    {
+        // Arrange: create system register and an approved agent system user owned by partyId 500000
+        string dataFileName = "Data/SystemRegister/Json/SystemRegisterWithAccessPackage.json";
+        HttpResponseMessage registerResponse = await CreateSystemRegister(dataFileName);
+        Assert.Equal(HttpStatusCode.OK, registerResponse.StatusCode);
+
+        HttpClient vendorClient = CreateClient();
+        AddSystemUserRequestWriteTestTokenToClient(vendorClient);
+
+        CreateAgentRequestSystemUser createReq = new()
+        {
+            ExternalRef = "delegate-wrong-party",
+            SystemId = "991825827_the_matrix",
+            PartyOrgNo = "910493353",
+            AccessPackages = [new AccessPackage { Urn = "urn:altinn:accesspackage:skatt-naering" }]
+        };
+
+        HttpResponseMessage createReqResponse = await vendorClient.SendAsync(
+            new HttpRequestMessage(HttpMethod.Post, "/authentication/api/v1/systemuser/request/vendor/agent")
+            {
+                Content = JsonContent.Create(createReq)
+            },
+            HttpCompletionOption.ResponseHeadersRead);
+        Assert.Equal(HttpStatusCode.Created, createReqResponse.StatusCode);
+
+        AgentRequestSystemResponse? agentRequest = await createReqResponse.Content.ReadFromJsonAsync<AgentRequestSystemResponse>();
+        Assert.NotNull(agentRequest);
+
+        // Approve with the correct party (500000)
+        HttpClient partyClient = CreateClient();
+        partyClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3, true, now: TestTime));
+
+        int correctPartyId = 500000;
+        HttpResponseMessage approveResponse = await partyClient.SendAsync(
+            new HttpRequestMessage(HttpMethod.Post, $"/authentication/api/v1/systemuser/request/agent/{correctPartyId}/{agentRequest.Id}/approve"),
+            HttpCompletionOption.ResponseHeadersRead);
+        Assert.Equal(HttpStatusCode.OK, approveResponse.StatusCode);
+
+        // Get the system user Id
+        HttpClient vendorClient2 = CreateClient();
+        string[] prefixes = ["altinn", "digdir"];
+        vendorClient2.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetOrgToken("digdir", "991825827", "altinn:authentication/systemregister.write", prefixes, TestTime));
+
+        Paginated<SystemUserExternalDTO>? page = await (await vendorClient2.GetAsync(
+            "/authentication/api/v1/systemuser/vendor/bysystem/991825827_the_matrix"))
+            .Content.ReadFromJsonAsync<Paginated<SystemUserExternalDTO>>(_options);
+        Assert.NotNull(page);
+        SystemUserExternalDTO? systemUser = page.Items.FirstOrDefault(s => s.ExternalRef == createReq.ExternalRef);
+        Assert.NotNull(systemUser);
+
+        // Act: call with a different party than the system user's owner
+        int wrongPartyId = 999999;
+        string delegateEndpoint = $"/authentication/api/v1/systemuser/agent/{wrongPartyId}/{systemUser.Id}?provider={Guid.NewGuid()}&client={Guid.NewGuid()}";
+
+        HttpResponseMessage delegateResponse = await partyClient.SendAsync(
+            new HttpRequestMessage(HttpMethod.Post, delegateEndpoint),
+            HttpCompletionOption.ResponseHeadersRead);
+
+        // Assert: controller returns Forbid() because systemUser.PartyId != party
+        Assert.Equal(HttpStatusCode.Forbidden, delegateResponse.StatusCode);
+    }
+
     private static async Task CreateSeveralRequest(HttpClient client, int paginationSize, string systemId)
     {
         var tasks = Enumerable.Range(0, paginationSize + 1)
@@ -3889,11 +4144,10 @@ public class RequestControllerTests(
         Assert.Equal(req.ExternalRef, res.ExternalRef);
     }
 
-    //private void SetupDateTimeMock()
-    //{
+    // private void SetupDateTimeMock()
+    // {
     //    timeProviderMock.Setup(x => x.GetUtcNow()).Returns(TestTime);
-    //}
-
+    // }
     private void SetupGuidMock()
     {
         guidService.Setup(q => q.NewGuid()).Returns("eaec330c-1e2d-4acb-8975-5f3eba12b2fb");
@@ -3958,6 +4212,19 @@ public class RequestControllerTests(
 
         HttpRequestMessage request = new(HttpMethod.Post, $"/authentication/api/v1/systemregister/vendor/");
         request.Content = content;
+        HttpResponseMessage response = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead);
+        return response;
+    }
+
+    private async Task<HttpResponseMessage> DeleteSystemRegister(string systemId, DateTimeOffset? now = default)
+    {
+        now ??= TestTime;
+        HttpClient client = CreateClient();
+        string[] prefixes = { "altinn", "digdir" };
+        string token = PrincipalUtil.GetOrgToken("digdir", "991825827", "altinn:authentication/systemregister.admin", prefixes, now);
+        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+
+        HttpRequestMessage request = new(HttpMethod.Delete, $"/authentication/api/v1/systemregister/vendor/{systemId}/");
         HttpResponseMessage response = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead);
         return response;
     }

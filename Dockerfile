@@ -1,4 +1,4 @@
-FROM mcr.microsoft.com/dotnet/sdk:10.0-alpine@sha256:7d98d5883675c6bca25b1db91f393b24b85125b5b00b405e55404fd6b8d2aead AS build
+FROM mcr.microsoft.com/dotnet/sdk:10.0-alpine@sha256:4f9e72be70a2346fe3ac95bf97374dd51e988eb66fc798dbbe56281607f4d0c0 AS build
 WORKDIR /app
 
 # Copy everything and build
@@ -6,7 +6,7 @@ COPY . .
 RUN dotnet build ./src/Authentication/Altinn.Platform.Authentication.csproj -c Release -o app_output \
     && dotnet publish ./src/Authentication/Altinn.Platform.Authentication.csproj -c Release -r linux-x64 -o app_output --no-self-contained
 
-FROM mcr.microsoft.com/dotnet/aspnet:10.0-alpine@sha256:049f2d7d7acfcbf09e1d15eb4faccec6453b0a98f0cb54d53bcbdc3ed91e96c8 AS final
+FROM mcr.microsoft.com/dotnet/aspnet:10.0-alpine@sha256:57bd717ac18ff6c8a39cc0ee4a76c1f15adc46df50434c73eff0c3f1df4c88f0 AS final
 EXPOSE 5040 
 WORKDIR /app
 COPY --from=build /app/app_output .

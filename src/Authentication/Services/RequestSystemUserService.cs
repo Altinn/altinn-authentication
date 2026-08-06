@@ -63,6 +63,11 @@ public class RequestSystemUserService(
             return Problem.SystemIdNotFound;
         }
 
+        if (systemInfo.IsDeleted)
+        {
+            return Problem.SystemIsDeleted;
+        }
+
         Result<bool> valRef = await ValidateExternalRequestId(externalRequestId);
         if (valRef.IsProblem)
         {
@@ -177,6 +182,11 @@ public class RequestSystemUserService(
         if (systemInfo is null)
         {
             return Problem.SystemIdNotFound;
+        }
+
+        if (systemInfo.IsDeleted)
+        {
+            return Problem.SystemIsDeleted;
         }
 
         Result<bool> valRef = await ValidateExternalRequestId(externalRequestId);
@@ -359,7 +369,8 @@ public class RequestSystemUserService(
             AccessPackages = res.AccessPackages,
             Status = res.Status,
             RedirectUrl = res.RedirectUrl,
-            TimedOut = res.TimedOut
+            TimedOut = res.TimedOut,
+            Created = res.Created
         };
     }
 
@@ -389,7 +400,8 @@ public class RequestSystemUserService(
             AccessPackages = res.AccessPackages,
             Status = res.Status,
             RedirectUrl = res.RedirectUrl,
-            TimedOut = res.TimedOut
+            TimedOut = res.TimedOut,
+            Created = res.Created,
         };
     }
 
@@ -423,7 +435,8 @@ public class RequestSystemUserService(
             AccessPackages = res.AccessPackages,
             Status = res.Status,
             RedirectUrl = res.RedirectUrl,
-            TimedOut = res.TimedOut
+            TimedOut = res.TimedOut,
+            Created = res.Created
         };
     }
 
@@ -447,7 +460,7 @@ public class RequestSystemUserService(
     /// <inheritdoc/>
     public async Task<Result<RequestSystemResponse>> GetRequestByPartyAndRequestId(int partyId, Guid requestId)
     {
-        Party party = await partiesClient.GetPartyAsync(partyId);
+        Party? party = await partiesClient.GetPartyAsync(partyId);
         if (party is null)
         {
             return Problem.Reportee_Orgno_NotFound;
@@ -474,7 +487,8 @@ public class RequestSystemUserService(
             AccessPackages = find.AccessPackages,
             PartyOrgNo = find.PartyOrgNo,
             Status = find.Status,
-            RedirectUrl = find.RedirectUrl
+            RedirectUrl = find.RedirectUrl,
+            Created = find.Created
         };
 
         return request;
@@ -483,7 +497,7 @@ public class RequestSystemUserService(
     /// <inheritdoc/>
     public async Task<Result<AgentRequestSystemResponse>> GetAgentRequestByPartyAndRequestId(int partyId, Guid requestId)
     {
-        Party party = await partiesClient.GetPartyAsync(partyId);
+        Party? party = await partiesClient.GetPartyAsync(partyId);
         if (party is null)
         {
             return Problem.Reportee_Orgno_NotFound;
@@ -509,7 +523,8 @@ public class RequestSystemUserService(
             AccessPackages = find.AccessPackages,
             PartyOrgNo = find.PartyOrgNo,
             Status = find.Status,
-            RedirectUrl = find.RedirectUrl
+            RedirectUrl = find.RedirectUrl,
+            Created = find.Created
         };
 
         return request;
@@ -909,9 +924,9 @@ public class RequestSystemUserService(
 
         IEnumerable<Claim> claims = context.User.Claims;
 
-        Party party = await partiesClient.GetPartyByOrgNo(orgNo);
+        Party? party = await partiesClient.GetPartyByOrgNo(orgNo);
 
-        if (!party.PartyUuid.HasValue)
+        if (party?.PartyUuid is null)
         {
             return Problem.Reportee_Orgno_NotFound;
         }
@@ -983,7 +998,7 @@ public class RequestSystemUserService(
 
     private async Task<Result<bool>> ValidatePartyRequest(int partyId, Guid requestId, SystemUserType userType, CancellationToken cancellationToken)
     {
-        Party party = await partiesClient.GetPartyAsync(partyId, cancellationToken);
+        Party? party = await partiesClient.GetPartyAsync(partyId, cancellationToken);
         if (party is null)
         {
             return Problem.Reportee_Orgno_NotFound;

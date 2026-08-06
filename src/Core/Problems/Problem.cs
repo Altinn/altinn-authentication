@@ -407,4 +407,99 @@ public static class Problem
     /// </summary>
     public static ProblemDescriptor Request_UserIsNotAccessManager { get; }
         = _factory.Create(66, HttpStatusCode.Forbidden, "The request requires logged in user to have accessmanager write.");
+
+    /// <summary>
+    /// Gets a <see cref="ProblemDescriptor"/>.
+    /// </summary>
+    public static ProblemDescriptor SystemUser_FailedToAddAsAgent { get; }
+        = _factory.Create(67, HttpStatusCode.BadRequest, "Unable to add system user as agent for the organisation");
+
+    /// <summary>
+    /// Gets a <see cref="ProblemDescriptor"/>.
+    /// </summary>
+    public static ProblemDescriptor DelegationRightMissingPackageAccess { get; }
+        = _factory.Create(68, HttpStatusCode.Forbidden, "DelegationCheck failed with error: Has not access by a delegation of package in Altinn.");
+
+    /// <summary>
+    /// Gets a <see cref="ProblemDescriptor"/>.
+    /// </summary>
+    public static ProblemDescriptor DelegationRightAccessListValidationFail { get; }
+        = _factory.Create(69, HttpStatusCode.Forbidden, "DelegationCheck failed with error: The receiver does not have the right based on Access List delegation.");
+
+    /// <summary>
+    /// Gets a <see cref="ProblemDescriptor"/>.
+    /// </summary>
+    public static ProblemDescriptor DelegationRightResourceNotDelegable { get; }
+        = _factory.Create(70, HttpStatusCode.Forbidden, "DelegationCheck failed with error: The resource cannot be delegated to another user or entity.");
+
+    /// <summary>
+    /// Gets a <see cref="ProblemDescriptor"/>.
+    /// </summary>
+    public static ProblemDescriptor DelegationRightResourceIsMaskinPortenSchema { get; }
+        = _factory.Create(71, HttpStatusCode.Forbidden, "DelegationCheck failed with error: The resource is not delegable because it is a Maskinporten schema resource.");
+
+    /// <summary>
+    /// Self-identified link flow (issue #2035): the supplied username/password did not match an
+    /// active self-identified user.
+    /// </summary>
+    public static ProblemDescriptor SelfIdentifiedLink_InvalidCredentials { get; }
+        = _factory.Create(72, HttpStatusCode.Unauthorized, "Invalid credentials.");
+
+    /// <summary>
+    /// Self-identified link flow (issue #2035): the self-identified account is temporarily locked
+    /// after too many failed login attempts.
+    /// </summary>
+    public static ProblemDescriptor SelfIdentifiedLink_AccountLocked { get; }
+        = _factory.Create(73, HttpStatusCode.TooManyRequests, "Account is temporarily locked.");
+
+    /// <summary>
+    /// Self-identified link flow (issue #2035): the resolved user is not a self-identified user.
+    /// </summary>
+    public static ProblemDescriptor SelfIdentifiedLink_WrongUserType { get; }
+        = _factory.Create(74, HttpStatusCode.Forbidden, "User is not a self identified user.");
+
+    /// <summary>
+    /// Self-identified link flow (issue #2035): the authenticated caller has no party UUID claim, so
+    /// there is no usable connection target.
+    /// </summary>
+    public static ProblemDescriptor SelfIdentifiedLink_MissingPartyUuid { get; }
+        = _factory.Create(75, HttpStatusCode.BadRequest, "Authenticated user has no party UUID.");
+
+    /// <summary>
+    /// Self-identified link flow (issue #2035): the link token is invalid, expired or tampered.
+    /// </summary>
+    public static ProblemDescriptor SelfIdentifiedLink_InvalidToken { get; }
+        = _factory.Create(76, HttpStatusCode.Unauthorized, "Invalid or expired link token.");
+
+    /// <summary>
+    /// Self-identified link flow (issue #2035): the link token does not belong to the authenticated
+    /// caller (requester != consumer).
+    /// </summary>
+    public static ProblemDescriptor SelfIdentifiedLink_TokenNotForCaller { get; }
+        = _factory.Create(77, HttpStatusCode.Forbidden, "Link token does not belong to the authenticated user.");
+
+    /// <summary>
+    /// Self-identified link flow (issue #2035): access-management did not accept the request to create
+    /// the self-identified user connection.
+    /// </summary>
+    public static ProblemDescriptor SelfIdentifiedLink_ConnectionFailed { get; }
+        = _factory.Create(78, HttpStatusCode.BadGateway, "Failed to create the self-identified user connection.");
+
+    /// <summary>
+    /// Agent system user flow: the specified client was not found.
+    /// </summary>
+    public static ProblemDescriptor AgentSystemUser_ClientNotFound { get; }
+        = _factory.Create(79, HttpStatusCode.BadRequest, "Client not found.");
+
+    /// <summary>
+    /// Agent system user flow: the specified client does not have the required access packages.
+    /// </summary>
+    public static ProblemDescriptor AgentSystemUser_ClientMissingAccessPackages { get; }
+        = _factory.Create(80, HttpStatusCode.BadRequest, "Client does not have the accesspackages the agent system user requires");
+
+    /// <summary>
+    /// Gets a <see cref="ProblemDescriptor"/>.
+    /// </summary>
+    public static ProblemDescriptor SystemIsDeleted { get; }
+        = _factory.Create(81, HttpStatusCode.BadRequest, "The Registered System is deleted and cannot be used to create new requests.");
 }

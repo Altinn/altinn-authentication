@@ -55,6 +55,12 @@ namespace Altinn.AccessManagement.Tests.Mocks
             return await Authorize(xacmlJsonRequest.Request);
         }
 
+        /// <inheritdoc />
+        public Task<XacmlJsonResponse> GetDecisionForRequest(XacmlJsonRequestRoot xacmlJsonRequest, CancellationToken cancellationToken)
+        {
+            return GetDecisionForRequest(xacmlJsonRequest);
+        }
+
         private async Task<XacmlJsonResponse> Authorize(XacmlJsonRequest decisionRequest)
         {
             if (decisionRequest.MultiRequests == null || decisionRequest.MultiRequests.RequestReference == null
@@ -144,6 +150,12 @@ namespace Altinn.AccessManagement.Tests.Mocks
             return DecisionHelper.ValidatePdpDecision(response.Response, user);
         }
 
+        /// <inheritdoc/>
+        public Task<bool> GetDecisionForUnvalidateRequest(XacmlJsonRequestRoot xacmlJsonRequest, ClaimsPrincipal user, CancellationToken cancellationToken)
+        {
+            return GetDecisionForUnvalidateRequest(xacmlJsonRequest, user);
+        }
+
         private async Task<XacmlContextRequest> Enrich(XacmlContextRequest request)
         {
             await EnrichResourceAttributes(request);
@@ -195,7 +207,7 @@ namespace Altinn.AccessManagement.Tests.Mocks
 
             if (!resourceAttributeComplete)
             {
-                Instance instanceData = GetTestInstance(resourceAttributes.InstanceValue);
+                Instance instanceData = GetTestInstance(resourceAttributes.InstanceValue!); // incomplete resource requests in test data always include the instance id
 
                 if (string.IsNullOrEmpty(resourceAttributes.OrgValue))
                 {
@@ -326,7 +338,7 @@ namespace Altinn.AccessManagement.Tests.Mocks
             return false;
         }
 
-        private async Task EnrichSubjectAttributes(XacmlContextRequest request, string resourceParty)
+        private async Task EnrichSubjectAttributes(XacmlContextRequest request, string? resourceParty)
         {
             // If there is no resource party then it is impossible to enrich roles
             if (string.IsNullOrEmpty(resourceParty))
@@ -415,7 +427,7 @@ namespace Altinn.AccessManagement.Tests.Mocks
             if (File.Exists(rolesPath))
             {
                 string content = File.ReadAllText(rolesPath);
-                roles = (List<Role>)JsonConvert.DeserializeObject(content, typeof(List<Role>));
+                roles = JsonConvert.DeserializeObject<List<Role>>(content) ?? new List<Role>();
             }
 
             return Task.FromResult(roles);
@@ -423,7 +435,7 @@ namespace Altinn.AccessManagement.Tests.Mocks
 
         private static string GetRolesPath(int userId, int resourcePartyId)
         {
-            string unitTestFolder = Path.GetDirectoryName(new Uri(typeof(PepWithPDPAuthorizationMock).Assembly.Location).LocalPath);
+            string unitTestFolder = Path.GetDirectoryName(new Uri(typeof(PepWithPDPAuthorizationMock).Assembly.Location).LocalPath)!; // assembly location always has a directory
             var fullRolePath = Path.Combine(unitTestFolder, "..", "..", "..", "Data", "Roles", "user_" + userId, "party_" + resourcePartyId, "roles.json");
             return fullRolePath;
         }
@@ -476,13 +488,13 @@ namespace Altinn.AccessManagement.Tests.Mocks
 
         private static string GetResourceAccessPolicyPath(string ressursid)
         {
-            string unitTestFolder = Path.GetDirectoryName(new Uri(typeof(PepWithPDPAuthorizationMock).Assembly.Location).LocalPath);
+            string unitTestFolder = Path.GetDirectoryName(new Uri(typeof(PepWithPDPAuthorizationMock).Assembly.Location).LocalPath)!; // assembly location always has a directory
             return Path.Combine(unitTestFolder, "..", "..", "..", "Data", "Xacml", "3.0", "ResourceRegistry", $"{ressursid}");
         }
 
         private static string GetInstancePath()
         {
-            string unitTestFolder = Path.GetDirectoryName(new Uri(typeof(PepWithPDPAuthorizationMock).Assembly.Location).LocalPath);
+            string unitTestFolder = Path.GetDirectoryName(new Uri(typeof(PepWithPDPAuthorizationMock).Assembly.Location).LocalPath)!; // assembly location always has a directory
             return Path.Combine(unitTestFolder, "..", "..", "..", "Data", "Instances");
         }
 
@@ -492,7 +504,7 @@ namespace Altinn.AccessManagement.Tests.Mocks
             string instancePart = instanceId.Split('/')[1];
 
             string content = File.ReadAllText(Path.Combine(GetInstancePath(), $"{partyPart}/{instancePart}.json"));
-            Instance instance = (Instance)JsonConvert.DeserializeObject(content, typeof(Instance));
+            Instance instance = JsonConvert.DeserializeObject<Instance>(content)!; // test data instance files always deserialize
             return instance;
         }
 

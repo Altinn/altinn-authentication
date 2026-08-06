@@ -3,8 +3,10 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Security.Claims;
+using System.Threading.Tasks;
 using Altinn.Platform.Authentication.Core.Constants;
 using Altinn.Platform.Authentication.Core.Models.Oidc;
+using Altinn.Platform.Authentication.Core.RepositoryInterfaces;
 using Altinn.Platform.Authentication.Enum;
 using Altinn.Platform.Authentication.Tests.Models;
 using Altinn.Urn;
@@ -27,6 +29,7 @@ namespace Altinn.Platform.Authentication.Tests.Helpers
             Assert.True(IsBase64Url(tokenResponseDto.refresh_token!), "refresh_token must be base64url");
             Assert.True(tokenResponseDto.refresh_token_expires_in == 1800);
 
+            Assert.NotNull(tokenResponseDto.scope);
             Assert.Contains("openid", tokenResponseDto.scope.Split(' '));
             Assert.Contains("altinn:portal/enduser", tokenResponseDto.scope.Split(' '));
             AssertAccessToken(tokenResponseDto.access_token, testScenario, now);
@@ -41,6 +44,7 @@ namespace Altinn.Platform.Authentication.Tests.Helpers
             Assert.Equal("Bearer", tokenResponseDto.token_type);
             Assert.True(tokenResponseDto.expires_in > 0);
             Assert.NotNull(tokenResponseDto.id_token); // since openid scope was requested
+            Assert.NotNull(tokenResponseDto.scope);
             Assert.Contains("openid", tokenResponseDto.scope.Split(' '));
             Assert.Contains("altinn:portal/enduser", tokenResponseDto.scope.Split(' '));
             AssertAccessToken(tokenResponseDto.access_token, testScenario, now);
@@ -153,6 +157,30 @@ namespace Altinn.Platform.Authentication.Tests.Helpers
             }
 
             return sid;
+        }
+
+        /// <summary>
+        /// Asserts that the client's stored secret hash is still in the legacy PBKDF2 format
+        /// (i.e. no token request has triggered the opportunistic HMAC rehash yet).
+        /// </summary>
+        public static async Task AssertClientSecretIsLegacyPbkdf2(IOidcServerClientRepository repository, string clientId)
+        {
+            OidcClient? client = await repository.GetClientAsync(clientId);
+            Assert.NotNull(client);
+            Assert.NotNull(client!.ClientSecretHash);
+            Assert.StartsWith("pbkdf2$", client.ClientSecretHash);
+        }
+
+        /// <summary>
+        /// Asserts that the client's stored secret hash has been rewritten to the HMAC-SHA256 format
+        /// by the opportunistic rehash path in TokenService after a successful client secret verify.
+        /// </summary>
+        public static async Task AssertClientSecretMigratedToHmac(IOidcServerClientRepository repository, string clientId)
+        {
+            OidcClient? client = await repository.GetClientAsync(clientId);
+            Assert.NotNull(client);
+            Assert.NotNull(client!.ClientSecretHash);
+            Assert.StartsWith("hmac$sha256$", client.ClientSecretHash);
         }
 
         private static bool IsBase64Url(string s) =>

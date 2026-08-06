@@ -13,7 +13,7 @@ namespace Altinn.Platform.Authentication.Core.Services.Interfaces
         /// calling this method.</remarks>
         /// <param name="request">The authorization request containing the necessary details to perform the authorization.  This parameter
         /// cannot be <see langword="null"/>.</param>
-        public Task<AuthorizeResult> Authorize(AuthorizeRequest request, ClaimsPrincipal principal, string? sessionHandle, string? encryptedTicket, CancellationToken cancellationToken);
+        public Task<AuthorizeResult> Authorize(AuthorizeRequest request, ClaimsPrincipal principal, string? sessionHandle, CancellationToken cancellationToken);
 
         /// <summary>
         /// This is used for unregistered_client flows where no client_id is sent in the authorize request and the result will only be a JWT token inside a cookie.
@@ -35,11 +35,6 @@ namespace Altinn.Platform.Authentication.Core.Services.Interfaces
         /// Based on session from cookie, verify session is valid and return result with a new valid Jwt token/AltinnRuntime cookie.
         /// </summary>
         public Task<AuthenticateFromSessionResult> HandleAuthenticateFromSessionResult(AuthenticateFromSessionInput sessionInput, CancellationToken cancellationToken);
-
-        /// <summary>
-        /// Based on Altinn 2 ticket, verify session is valid and return result with a new valid Jwt token/AltinnRuntime cookie.
-        /// </summary>
-        public Task<AuthenticateFromAltinn2TicketResult> HandleAuthenticateFromTicket(AuthenticateFromAltinn2TicketInput ticketInput, CancellationToken cancellationToken);
 
         /// <summary>
         /// Handles refresh of an OIDC session based on the provided principal.Used when the Altinn Studio runtimecookie

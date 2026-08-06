@@ -108,8 +108,6 @@ namespace Altinn.Platform.Authentication.Tests.Utils
         public static OidcCodeResponse GetUidpTokenResponse(OidcTestScenario scenario, UpstreamLoginTransaction createdUpstreamLogingTransaction, DateTimeOffset authTime)
         {
             string sub = Guid.NewGuid().ToString();
-            string locale = "nb";
-            string digDirOrgNo = "991825827";
 
             OidcCodeResponse response = new()
             {
@@ -130,7 +128,7 @@ namespace Altinn.Platform.Authentication.Tests.Utils
             List<Claim> claims = [];
             string issuer = "uidp.udir.no";
             claims.Add(new Claim("iss", issuer, ClaimValueTypes.String, issuer));
-            claims.Add(new Claim("sub", scenario.ExternalIdentity, ClaimValueTypes.String, issuer));
+            claims.Add(new Claim("sub", scenario.ExternalIdentity!, ClaimValueTypes.String, issuer)); // scenario test data always sets ExternalIdentity
             claims.Add(new Claim("scope", string.Join(' ', createdUpstreamLogingTransaction.Scopes), ClaimValueTypes.String, issuer));
             claims.Add(new Claim("nonce", createdUpstreamLogingTransaction.Nonce, ClaimValueTypes.String, issuer));
 
@@ -157,7 +155,7 @@ namespace Altinn.Platform.Authentication.Tests.Utils
             List<Claim> claims = [];
             string issuer = "uidp.udir.no";
             claims.Add(new Claim("iss", issuer, ClaimValueTypes.String, issuer));
-            claims.Add(new Claim("sub", scenario.ExternalIdentity, ClaimValueTypes.String, issuer));
+            claims.Add(new Claim("sub", scenario.ExternalIdentity!, ClaimValueTypes.String, issuer)); // scenario test data always sets ExternalIdentity
             claims.Add(new Claim("scope", string.Join(' ', createdUpstreamLogingTransaction.Scopes), ClaimValueTypes.String, issuer));
 
             if (scenario.ProviderClaims != null)

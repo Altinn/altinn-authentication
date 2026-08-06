@@ -20,6 +20,11 @@ nupkg/
 *.userosscache
 *.sln.docstates
 
+# Visual Studio publish profiles / service dependencies (deploy artifacts - do not commit)
+*.pubxml
+**/Properties/ServiceDependencies/
+**/Properties/serviceDependencies*.json
+
 # Build results
 [Dd]ebug/
 [Dd]ebugPublic/
@@ -40,3 +45,6 @@ msbuild.wrn
 TestResults
 /test/Altinn.Platform.Authentication.SystemIntegrationTests/Resources/Environment/environment.json
 /test/Altinn.Platform.Authentication.SystemIntegrationTests/Resources/Jwks/jwks.json
+/.claude/settings.local.json
+*.lscache
+/.claude/worktrees/

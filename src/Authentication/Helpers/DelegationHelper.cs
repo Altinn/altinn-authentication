@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.Json;
+using System.Text.Json.Nodes;
 using System.Threading;
 using System.Threading.Tasks;
 using Altinn.Authentication.Core.Problems;
@@ -11,6 +13,7 @@ using Altinn.Platform.Authentication.Core.Models.Rights;
 using Altinn.Platform.Authentication.Core.Telemetry;
 using Altinn.Platform.Authentication.Integration.AccessManagement;
 using Altinn.Platform.Authentication.Services.Interfaces;
+using Microsoft.Extensions.Logging;
 
 namespace Altinn.Platform.Authentication.Helpers;
 #nullable enable
@@ -20,18 +23,33 @@ namespace Altinn.Platform.Authentication.Helpers;
 /// </summary>
 public class DelegationHelper(
     ISystemRegisterService systemRegisterService,
-    IAccessManagementClient accessManagementClient)
+    IAccessManagementClient accessManagementClient,
+    ILogger<DelegationHelper> logger)
 {
+    /// <summary>
+    /// Options used to serialize the structured delegation reasons carried in the problem extension.
+    /// camelCase to match the JSON the frontend consumes.
+    /// </summary>
+    private static readonly JsonSerializerOptions ReasonSerializerOptions = new() { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
+
+    /// <summary>
+    /// One not-delegable item in the structured delegation reasons: the id of the resource or access
+    /// package (so the frontend can resolve and show the localized name) and the blocking reason codes
+    /// (which the frontend maps to localized text). Packages carry no codes today (Access Management
+    /// returns none for them).
+    /// </summary>
+    private sealed record DelegationReasonEntry(string Type, string Id, IReadOnlyList<string> Codes);
+
     /// <summary>
     /// Checks Delegation for a user
     /// </summary>
-    /// <param name="partyId">reportee</param>
+    /// <param name="partyUuid">reportee</param>
     /// <param name="systemId">the system</param>
     /// <param name="requestedRights">The set of requested Rights, (currently empty collection from the BFF/UI), Request or ChangeRequest </param>
     /// <param name="fromBff">the BFF/UI does not currently support a subset of the Rights, all will be delegated</param>
     /// <param name="cancellationToken">cancel token</param>
     /// <returns>DelegationCheckResult record</returns>
-    public async Task<DelegationCheckResult> UserDelegationCheckForReportee(int partyId, string systemId, List<Right> requestedRights, bool fromBff, CancellationToken cancellationToken = default)
+    public async Task<DelegationCheckResult> UserDelegationCheckForReportee(Guid partyUuid, string systemId, List<Right> requestedRights, bool fromBff, CancellationToken cancellationToken = default)
     {
         using var activity = AuthenticationTelemetry.StartActivity(
                 name: nameof(UserDelegationCheckForReportee),
@@ -66,35 +84,74 @@ public class DelegationHelper(
 
         List<RightResponses> rightResponsesList = [];
         List<DetailExternal> allErrorDetails = [];
+        bool anyResourceNotDelegable = false;
 
         foreach (Right right in verifiedRights)
         {
-            var resource = new List<AttributePair>();
-            resource = ConvertAppResourceToOldResourceFormat(right.Resource);
+            string resourceId = right.Resource.FirstOrDefault(attr => attr.Id == AttributeIdentifier.ResourceRegistryAttribute)?.Value ?? string.Empty;
 
-            DelegationCheckRequest request = new()
+            ResourceCheckDto? resourceCheckDto = await accessManagementClient.CheckDelegationAccess(partyUuid, resourceId, cancellationToken);
+            
+            if (resourceCheckDto is null)
             {
-                Resource = resource
-            };
-
-            List<DelegationResponseData>? rightResponses = await accessManagementClient.CheckDelegationAccess(partyId.ToString(), request);
-
-            if (rightResponses is null)
-            {
+                // HTTP failure during the delegation check is already logged with the response body,
+                // status code, party and resource in AccessManagementClient.CheckDelegationAccess.
                 return new DelegationCheckResult(false, null, null);
             }
 
-            (bool canDelegate, List<DetailExternal> errors) = ResolveIfHasAccess(rightResponses);
+            (bool canDelegate, List<DetailExternal> errors, List<string> rightKeys) = ResolveIfHasAccessNew(resourceCheckDto);
 
             if (!canDelegate)
             {
-                return new DelegationCheckResult(false, rightResponsesList, errors);
+                anyResourceNotDelegable = true;
+
+                // The delegation check completed (HTTP 200) but the resource right is not delegable.
+                // Access Management returns the actual reason in each right's ReasonCodes (e.g.
+                // MissingPackageAccess, MissingRoleAccess, MissingDelegationAccess) - not in Permissions -
+                // so read ReasonCodes directly to make the failure debuggable in App Insights (issue #2027).
+                string reasonDetails = string.Join(
+                    " | ",
+                    resourceCheckDto.Rights
+                        .Where(r => !r.Result)
+                        .Select(r =>
+                        {
+                            string reasonCodes = r.ReasonCodes is not null && r.ReasonCodes.Any()
+                                ? string.Join(", ", r.ReasonCodes)
+                                : "no reason provided";
+                            return $"{r.Right?.Key}: {reasonCodes}";
+                        }));
+
+                logger.LogError(
+                    "Authentication // DelegationHelper // UserDelegationCheckForReportee // Resource right not delegable // Party: {PartyUuid}, System: {SystemId}, Resource: {Resource}, Reasons: {Reasons}",
+                    partyUuid,
+                    systemId,
+                    resourceId,
+                    reasonDetails);
+
+                // Tag each error with the resource identifier it belongs to and keep checking the
+                // remaining resources, so the caller can list every resource that could not be delegated
+                // - not just the first one that failed. We carry the identifier (not the name) so the
+                // frontend can resolve and show the localized name.
+                if (!string.IsNullOrEmpty(resourceId))
+                {
+                    foreach (DetailExternal error in errors)
+                    {
+                        error.Parameters ??= [];
+                        error.Parameters[AttributeIdentifier.ResourceRegistryAttribute] =
+                            [new AttributePair { Id = AttributeIdentifier.ResourceRegistryAttribute, Value = resourceId }];
+                    }
+                }
+
+                allErrorDetails.AddRange(errors);
+                continue;
             }
 
-            rightResponsesList.Add(new RightResponses(rightResponses));
+            RightKeyListDto rightKeyList = new RightKeyListDto { DirectRightKeys = rightKeys };
+
+            rightResponsesList.Add(new RightResponses(resourceId, rightKeyList));
         }
 
-        if (allErrorDetails.Count > 0)
+        if (anyResourceNotDelegable)
         {
             return new DelegationCheckResult(false, rightResponsesList, allErrorDetails);
         }
@@ -181,33 +238,186 @@ public class DelegationHelper(
     /// <returns></returns>
     public static ProblemInstance MapDetailExternalErrorListToProblemInstance(List<DetailExternal>? errors)
     {
-        if (errors is null || errors.Count == 0 || errors[0].Code == DetailCodeExternal.Unknown)
+        if (errors is null || errors.Count == 0)
         {
             return Problem.UnableToDoDelegationCheck;
         }
 
-        if (errors[0].Code == DetailCodeExternal.MissingRoleAccess)
+        // On a failed delegation check Access Management returns a mix of positive codes (ways the
+        // reportee DOES have access, e.g. PackageAccess/RoleAccess) and the blocking code(s) that
+        // actually prevent delegation (e.g. ResourceIsMaskinPortenSchema). Only the blocking codes
+        // explain the failure, so drive the message off those and ignore the positive ones. If AM sent
+        // only non-blocking codes we keep the original list so we never end up with an empty reason.
+        List<DetailExternal> blockingErrors = errors.Where(e => IsBlockingReason(e.Code)).ToList();
+        if (blockingErrors.Count == 0)
         {
-            return Problem.DelegationRightMissingRoleAccess;
+            blockingErrors = errors;
         }
 
-        if (errors[0].Code == DetailCodeExternal.MissingDelegationAccess)
+        // A ProblemInstance carries a single headline ErrorCode; use the first blocking reason as the
+        // representative. The complete, per-resource breakdown of every blocking reason (all resources,
+        // all codes) is carried in the delegationReasons extension below.
+        ProblemDescriptor descriptor = SelectRightsProblemDescriptor(errors);
+
+        // Group every blocking reason by the resource id it belongs to and carry the structured list
+        // (resource id + its distinct codes) as a JSON string, so all resources/codes end up in this one
+        // problem instance and the frontend can resolve the localized resource name and localize the codes.
+        string reasons = BuildStructuredDelegationReasons(blockingErrors);
+
+        if (string.IsNullOrWhiteSpace(reasons))
         {
-            return Problem.DelegationRightMissingDelegationAccess;
+            return descriptor;
         }
 
-        if (errors[0].Code == DetailCodeExternal.MissingSrrRightAccess)
-        {
-            return Problem.DelegationRightMissingSrrRightAccess;
-        }
+        ProblemExtensionData extensionData = ProblemExtensionData.Create(
+        [
+            new KeyValuePair<string, string>("delegationReasons", reasons)
+        ]);
 
-        if (errors[0].Code == DetailCodeExternal.InsufficientAuthenticationLevel)
-        {
-            return Problem.DelegationRightInsufficientAuthenticationLevel;
-        }
-
-        return Problem.UnableToDoDelegationCheck;
+        return descriptor.Create(extensionData);
     }
+
+    /// <summary>
+    /// Selects the single headline problem descriptor for a set of not-delegable rights, from the first
+    /// blocking reason code (positive codes are ignored; see <see cref="IsBlockingReason"/>).
+    /// </summary>
+    public static ProblemDescriptor SelectRightsProblemDescriptor(List<DetailExternal>? errors)
+    {
+        if (errors is null || errors.Count == 0)
+        {
+            return Problem.UnableToDoDelegationCheck;
+        }
+
+        List<DetailExternal> blockingErrors = errors.Where(e => IsBlockingReason(e.Code)).ToList();
+        if (blockingErrors.Count == 0)
+        {
+            blockingErrors = errors;
+        }
+
+        return blockingErrors[0].Code switch
+        {
+            DetailCodeExternal.MissingPackageAccess => Problem.DelegationRightMissingPackageAccess,
+            DetailCodeExternal.MissingRoleAccess => Problem.DelegationRightMissingRoleAccess,
+            DetailCodeExternal.MissingDelegationAccess => Problem.DelegationRightMissingDelegationAccess,
+            DetailCodeExternal.MissingSrrRightAccess => Problem.DelegationRightMissingSrrRightAccess,
+            DetailCodeExternal.InsufficientAuthenticationLevel => Problem.DelegationRightInsufficientAuthenticationLevel,
+            DetailCodeExternal.AccessListValidationFail => Problem.DelegationRightAccessListValidationFail,
+            DetailCodeExternal.ResourceNotDelegable => Problem.DelegationRightResourceNotDelegable,
+            DetailCodeExternal.ResourceIsMaskinPortenSchema => Problem.DelegationRightResourceIsMaskinPortenSchema,
+            _ => Problem.UnableToDoDelegationCheck
+        };
+    }
+
+    /// <summary>
+    /// Combines several problems into a single <see cref="ProblemInstance"/> under the given headline
+    /// descriptor, so failures from both rights and access packages can be reported together. Extension
+    /// members are unioned; when the same key appears on more than one problem and both values are JSON
+    /// arrays (e.g. "delegationReasons"), the arrays are concatenated so nothing is lost.
+    /// </summary>
+    public static ProblemInstance CombineProblems(ProblemDescriptor headline, params ProblemInstance[] problems)
+    {
+        Dictionary<string, string> merged = new(StringComparer.Ordinal);
+
+        foreach (ProblemInstance problem in problems)
+        {
+            foreach (KeyValuePair<string, string> extension in problem.Extensions)
+            {
+                if (merged.TryGetValue(extension.Key, out string? existing))
+                {
+                    merged[extension.Key] = TryConcatJsonArrays(existing, extension.Value, out string? combined) ? combined : existing;
+                }
+                else
+                {
+                    merged[extension.Key] = extension.Value;
+                }
+            }
+        }
+
+        if (merged.Count == 0)
+        {
+            return headline.Create();
+        }
+
+        return headline.Create(ProblemExtensionData.Create([.. merged.Select(kv => new KeyValuePair<string, string>(kv.Key, kv.Value))]));
+    }
+
+    /// <summary>
+    /// Concatenates two JSON-array strings into one. Returns false when either value is not a JSON array.
+    /// </summary>
+    private static bool TryConcatJsonArrays(string first, string second, out string? combined)
+    {
+        combined = null;
+        if (JsonNode.Parse(first) is not JsonArray firstArray || JsonNode.Parse(second) is not JsonArray secondArray)
+        {
+            return false;
+        }
+
+        JsonArray result = [];
+        foreach (JsonNode? node in firstArray)
+        {
+            result.Add(node is null ? null : JsonNode.Parse(node.ToJsonString()));
+        }
+
+        foreach (JsonNode? node in secondArray)
+        {
+            result.Add(node is null ? null : JsonNode.Parse(node.ToJsonString()));
+        }
+
+        combined = result.ToJsonString();
+        return true;
+    }
+
+    /// <summary>
+    /// Builds the structured delegation reasons for a resource-based delegation check: one entry per
+    /// resource id, each with its distinct blocking codes, serialized as a JSON string so it can travel in
+    /// the problem extension. The id (not a name) and the codes are carried so the frontend can resolve the
+    /// localized resource name and localize each code.
+    /// </summary>
+    private static string BuildStructuredDelegationReasons(List<DetailExternal> blockingErrors)
+    {
+        List<DelegationReasonEntry> entries = blockingErrors
+            .GroupBy(GetResourceId)
+            .Select(group => new DelegationReasonEntry(
+                "resource",
+                group.Key,
+                group.Select(e => e.Code.ToString()).Distinct().ToList()))
+            .ToList();
+
+        return JsonSerializer.Serialize(entries, ReasonSerializerOptions);
+    }
+
+    /// <summary>
+    /// Gets the resource identifier tagged onto the error, or an empty string when the reason is not tied
+    /// to a specific resource.
+    /// </summary>
+    private static string GetResourceId(DetailExternal error)
+    {
+        return error.Parameters is not null
+            && error.Parameters.TryGetValue(AttributeIdentifier.ResourceRegistryAttribute, out List<AttributePair>? resourceAttrs)
+                ? resourceAttrs.FirstOrDefault()?.Value ?? string.Empty
+                : string.Empty;
+    }
+
+    /// <summary>
+    /// Returns true for reason codes that actually block delegation. Access Management can return
+    /// positive codes (RoleAccess, PackageAccess, ...) alongside a failure, describing how the reportee
+    /// does have access; those must not be treated as the reason a right/resource is not delegable.
+    /// <see cref="DetailCodeExternal.Unknown"/> is treated as blocking so a genuinely unknown reason
+    /// still surfaces instead of being filtered away.
+    /// </summary>
+    private static bool IsBlockingReason(DetailCodeExternal code) => code switch
+    {
+        DetailCodeExternal.MissingRoleAccess
+        or DetailCodeExternal.MissingDelegationAccess
+        or DetailCodeExternal.MissingSrrRightAccess
+        or DetailCodeExternal.InsufficientAuthenticationLevel
+        or DetailCodeExternal.AccessListValidationFail
+        or DetailCodeExternal.MissingPackageAccess
+        or DetailCodeExternal.ResourceNotDelegable
+        or DetailCodeExternal.ResourceIsMaskinPortenSchema
+        or DetailCodeExternal.Unknown => true,
+        _ => false
+    };
 
     /// <summary>
     /// Validates delegation rights for a list of access packages for a party
@@ -249,6 +459,16 @@ public class DelegationHelper(
                         .Select(pkg => pkg.Urn!)
                         .ToArray();
 
+        // Nothing to check - return early only when the validated package list is genuinely empty
+        // (e.g. an idempotent approve where every required package is already delegated). This must
+        // not key off urns.Length, since that would also short-circuit packages missing a URN and
+        // wrongly return them as delegable. Calling the delegation-check API with an empty package
+        // filter makes it evaluate EVERY access package in the system, which would never all be delegable.
+        if (validAccessPackages.Count == 0)
+        {
+            return new AccessPackageDelegationCheckResult(true, validAccessPackages);
+        }
+
         var resultList = await accessManagementClient
             .CheckDelegationAccessForAccessPackage(partyId, urns, cancellationToken)
             .ToListAsync(cancellationToken);
@@ -258,6 +478,8 @@ public class DelegationHelper(
         {
             if (result.IsProblem)
             {
+                // HTTP failure during the delegation check is already logged with the response body,
+                // status code, party and packages in AccessManagementClient.CheckDelegationAccessForAccessPackage.
                 var problemExtensionData = ProblemExtensionData.Create(new[]
                 {
                     new KeyValuePair<string, string>("Problem Detail : ", result.Problem.Detail)
@@ -282,7 +504,44 @@ public class DelegationHelper(
         }
         else
         {
-            return new Result<AccessPackageDelegationCheckResult>(Problem.AccessPackage_Delegation_MissingRequiredAccess);
+            // The delegation check completed (HTTP 200) but one or more access packages are not delegable.
+            // Log which packages failed and the reasons returned by Access Management to make this debuggable
+            // in App Insights (issue #2027).
+            List<AccessPackageDto.Check> notDelegable = delegationCheckResults.Where(r => !r.Result).ToList();
+
+            string notDelegableDetails = string.Join(
+                " | ",
+                notDelegable.Select(r =>
+                {
+                    string urn = r.Package?.Urn ?? "unknown";
+                    string reasons = r.Reasons is not null && r.Reasons.Any()
+                        ? string.Join("; ", r.Reasons.Select(reason => reason.Description))
+                        : "no reason provided";
+                    return $"{urn}: {reasons}";
+                }));
+
+            logger.LogError(
+                "Authentication // DelegationHelper // ValidateDelegationRightsForAccessPackages // Access package(s) not delegable // Party: {PartyId}, System: {SystemId}, NotDelegable: {NotDelegable}",
+                partyId,
+                systemId,
+                notDelegableDetails);
+
+            // Carry which package(s) failed as structured reasons (package id + codes) so the frontend can
+            // resolve the localized package name. Access Management returns no reason code for packages
+            // today, so codes is empty; the log above keeps the raw AM text for support.
+            List<DelegationReasonEntry> reasonEntries = notDelegable
+                .Where(r => !string.IsNullOrEmpty(r.Package?.Urn))
+                .Select(r => new DelegationReasonEntry("package", r.Package!.Urn, []))
+                .ToList();
+
+            ProblemInstance problem = reasonEntries.Count == 0
+                ? Problem.AccessPackage_Delegation_MissingRequiredAccess
+                : Problem.AccessPackage_Delegation_MissingRequiredAccess.Create(ProblemExtensionData.Create(
+                [
+                    new KeyValuePair<string, string>("delegationReasons", JsonSerializer.Serialize(reasonEntries, ReasonSerializerOptions))
+                ]));
+
+            return new Result<AccessPackageDelegationCheckResult>(problem);
         }
     }
 
@@ -321,6 +580,47 @@ public class DelegationHelper(
         }
 
         return (canDelegate, errors);
+    }
+
+    private static (bool CanDelegate, List<DetailExternal> Errors, List<string> RightKeys) ResolveIfHasAccessNew(ResourceCheckDto resourceCheckDto)
+    {
+        List<DetailExternal> errors = [];
+        bool canDelegate = false;
+        List<string> rightKeys = [];
+
+        foreach (var rightCheckDto in resourceCheckDto.Rights)
+        {
+            // We only need one right to be delegable for the Delegate step afterwards.
+            // Those rights that are not delegable will be added to the error details,
+            // but will not block the delegation check if at least one right is delegable.
+            if (rightCheckDto.Result)
+            {
+                canDelegate = true;
+                rightKeys.Add(rightCheckDto.Right.Key);
+            }
+
+            if (!rightCheckDto.Result)
+            {
+                if (rightCheckDto.Permissions is not null && rightCheckDto.Permissions.Any())
+                {
+                    errors.AddRange(rightCheckDto.Permissions.Select(p => new DetailExternal
+                    {
+                        Code = p.PermisionKey,
+                        Description = p.Description,
+                        Parameters = []
+                    }));
+                }
+                else if (rightCheckDto.ReasonCodes is not null && rightCheckDto.ReasonCodes.Any())
+                {                   
+                    errors.AddRange(rightCheckDto.ReasonCodes.Select(code => new DetailExternal
+                    {
+                        Code = code
+                    }));
+                }
+            }
+        }
+
+        return (canDelegate, errors, rightKeys);
     }
 
     /// <summary>
