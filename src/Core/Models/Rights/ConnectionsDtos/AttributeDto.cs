@@ -30,13 +30,13 @@ public class AttributeDto
     /// Gets or sets the attribute id for the match
     /// </summary>
     [JsonPropertyName("type")]
-    public string Type { get; set; }
+    public string? Type { get; set; }
 
     /// <summary>
     /// Gets or sets the attribute value for the match
     /// </summary>
     [JsonPropertyName("value")]
-    public string Value { get; set; }
+    public string? Value { get; set; }
 
     /// <summary>
     /// returns the type and value as a urn in the format '{type}:{value}'

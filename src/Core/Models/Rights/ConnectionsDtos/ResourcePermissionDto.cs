@@ -10,11 +10,11 @@ public class ResourcePermissionDto
     /// <summary>
     /// Resource the permissions are for
     /// </summary>
-    public ResourceDto Resource { get; set; }
+    public ResourceDto? Resource { get; set; }
 
     /// <summary>
     /// Parties with permissions
     /// </summary>
-    public IEnumerable<PermissionDto> Permissions { get; set; }
+    public IEnumerable<PermissionDto>? Permissions { get; set; }
 }
 

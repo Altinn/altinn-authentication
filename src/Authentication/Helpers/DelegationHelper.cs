@@ -596,7 +596,10 @@ public class DelegationHelper(
             if (rightCheckDto.Result)
             {
                 canDelegate = true;
-                rightKeys.Add(rightCheckDto.Right.Key);
+                if (rightCheckDto.Right.Key is not null)
+                {
+                    rightKeys.Add(rightCheckDto.Right.Key);
+                }
             }
 
             if (!rightCheckDto.Result)

@@ -11,7 +11,7 @@ public class AgentDelegationDto
     /// Gets or sets the party
     /// </summary>
     [JsonPropertyName("agent")]
-    public CompactEntityDto Agent { get; set; }
+    public CompactEntityDto Agent { get; set; } = null!; // Access Management always carries the agent on an agent-delegation record
 
     /// <summary>
     /// Gets or sets a collection of all access information for the client 

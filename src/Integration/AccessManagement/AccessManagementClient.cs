@@ -713,9 +713,9 @@ public class AccessManagementClient : IAccessManagementClient
             List<AttributeMatchExternal> toList = [];
             List<AttributeMatchExternal> resourceList = [];
 
-            if (r.Resource == null || r.Permissions == null)
+            if (r.Resource?.RefId == null || r.Permissions == null)
             {
-                throw new InvalidOperationException("Received invalid data from Access Management API: Resource or Permissions is null.");
+                throw new InvalidOperationException("Received invalid data from Access Management API: Resource, Resource.RefId or Permissions is null.");
             }
 
             // there is only one resource per resource, the old DTO needs a list though

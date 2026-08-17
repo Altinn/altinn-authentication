@@ -26,25 +26,25 @@ public class ResourceDto
     /// <summary>
     /// Name
     /// </summary>
-    public string Name { get; set; }
+    public string? Name { get; set; }
 
     /// <summary>
     /// Description
     /// </summary>
-    public string Description { get; set; }
+    public string? Description { get; set; }
 
     /// <summary>
     /// Reference identifier
     /// </summary>
-    public string RefId { get; set; }
+    public string? RefId { get; set; }
 
     /// <summary>
     /// Provider
     /// </summary>
-    public ProviderDto Provider { get; set; }
+    public ProviderDto? Provider { get; set; }
 
     /// <summary>
     /// Type
     /// </summary>
-    public TypeDto Type { get; set; }
+    public TypeDto? Type { get; set; }
 }
