@@ -19,7 +19,7 @@ public class CompactPackageDto
     /// Urn
     /// </summary>
     [JsonPropertyName("urn")]
-    public string Urn { get; set; }
+    public string? Urn { get; set; }
 
     /// <summary>
     /// AreaId
