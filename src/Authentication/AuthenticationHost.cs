@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Reflection;
 using System.Text.Json.Serialization;
 using Altinn.Authentication.Core.Clients.Interfaces;
@@ -39,7 +40,6 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc.Controllers;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
@@ -238,23 +238,39 @@ internal static class AuthenticationHost
         {
             c.SwaggerDoc("v1", new OpenApiInfo { Title = "Altinn Platform Authentication", Version = "v1" });
 
-            c.CustomOperationIds(apiDesc =>
+            c.CustomOperationIds(SecurityRequirementsDocumentFilter.GetOperationId);
+
+            // What a caller actually sends. Every non-anonymous endpoint requires this.
+            c.AddSecurityDefinition(SecurityRequirementsDocumentFilter.BearerSchemeId, new OpenApiSecurityScheme
             {
-                if (apiDesc.ActionDescriptor is not ControllerActionDescriptor cad)
-                {
-                    return null;
-                }
-
-                // Trailing "Async" is a C# convention, not part of the API surface - it should not
-                // leak into the operationId, which becomes the method name in generated clients.
-                string action = cad.ActionName;
-                if (action.Length > 5 && action.EndsWith("Async", StringComparison.Ordinal))
-                {
-                    action = action[..^5];
-                }
-
-                return $"{cad.ControllerName}_{action}";
+                Type = SecuritySchemeType.Http,
+                Scheme = "bearer",
+                BearerFormat = "JWT",
+                Description =
+                    "An Altinn token, sent as `Authorization: Bearer <token>`. Machine clients obtain one by "
+                    + "exchanging a Maskinporten token at `/authentication/api/v1/exchange/maskinporten`; "
+                    + "end users get one from Altinn portal sign-in.",
             });
+
+            // Carries the scope each endpoint requires. The token is still the bearer token above -
+            // this scheme exists so the required scopes are machine readable per operation.
+            c.AddSecurityDefinition(SecurityRequirementsDocumentFilter.ScopeSchemeId, new OpenApiSecurityScheme
+            {
+                Type = SecuritySchemeType.OAuth2,
+                Description =
+                    "Scopes that must be present in the bearer token. Machine clients are granted these in "
+                    + "Maskinporten; `altinn:portal/enduser` is issued by Altinn portal sign-in instead.",
+                Flows = new OpenApiOAuthFlows
+                {
+                    ClientCredentials = new OpenApiOAuthFlow
+                    {
+                        TokenUrl = new Uri("https://maskinporten.no/token"),
+                        Scopes = SecurityRequirementsDocumentFilter.KnownScopes.ToDictionary(s => s.Key, s => s.Value),
+                    },
+                },
+            });
+
+            c.DocumentFilter<SecurityRequirementsDocumentFilter>();
 
             try
             {
