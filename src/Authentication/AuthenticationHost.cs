@@ -35,11 +35,11 @@ using Altinn.Platform.Authentication.Persistance.RepositoryImplementations;
 using Altinn.Platform.Authentication.Services;
 using Altinn.Platform.Authentication.Services.Interfaces;
 using AltinnCore.Authentication.JwtCookie;
-using Azure.Monitor.OpenTelemetry.AspNetCore;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc.Controllers;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
@@ -48,7 +48,6 @@ using Microsoft.Extensions.Logging;
 using Microsoft.FeatureManagement;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi;
-using OpenTelemetry.Metrics;
 using OpenTelemetry.Trace;
 
 namespace Altinn.Platform.Authentication;
@@ -238,6 +237,24 @@ internal static class AuthenticationHost
         services.AddSwaggerGen(c =>
         {
             c.SwaggerDoc("v1", new OpenApiInfo { Title = "Altinn Platform Authentication", Version = "v1" });
+
+            c.CustomOperationIds(apiDesc =>
+            {
+                if (apiDesc.ActionDescriptor is not ControllerActionDescriptor cad)
+                {
+                    return null;
+                }
+
+                // Trailing "Async" is a C# convention, not part of the API surface - it should not
+                // leak into the operationId, which becomes the method name in generated clients.
+                string action = cad.ActionName;
+                if (action.Length > 5 && action.EndsWith("Async", StringComparison.Ordinal))
+                {
+                    action = action[..^5];
+                }
+
+                return $"{cad.ControllerName}_{action}";
+            });
 
             try
             {
