@@ -6,7 +6,13 @@ using System.Net;
 using System.Net.Http;
 using System.Text.Json;
 using System.Threading.Tasks;
+using Altinn.Authorization.ServiceDefaults.Authorization.Scopes;
+using Altinn.Common.PEP.Authorization;
+using Altinn.Platform.Authentication.Filters;
 using Altinn.Platform.Authentication.Tests.RepositoryDataAccess;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc.ApiExplorer;
+using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 
 namespace Altinn.Platform.Authentication.Tests;
@@ -74,6 +80,181 @@ public class OpenApiSpecTests(DbFixture dbFixture, WebApplicationFixture webAppl
         string message = "The generated OpenAPI document is not safe for client generation:" + separator + string.Join(separator, problems);
 
         Assert.True(problems.Count == 0, message);
+    }
+
+    /// <summary>
+    /// The scopes the document advertises for an endpoint must be the scopes its authorization
+    /// policies actually enforce.
+    /// </summary>
+    /// <remarks>
+    /// The mapping from policy to scope is maintained by hand in
+    /// <see cref="SecurityRequirementsDocumentFilter"/>, mirroring the policies registered in
+    /// AuthenticationHost. This compares the published document against the registered policies -
+    /// the real source of truth - so the two cannot drift apart silently. An unmapped policy
+    /// degrades quietly to "token required" at runtime, which would otherwise leave an endpoint
+    /// under-documented with nothing to notice it.
+    /// </remarks>
+    [Theory]
+    [InlineData("v1")]
+    [InlineData("internal")]
+    public async Task DocumentedScopes_MatchThePoliciesEndpointsEnforce(string documentName)
+    {
+        HttpClient client = CreateClient();
+
+        using JsonDocument document =
+            JsonDocument.Parse(await client.GetStringAsync($"/authentication/swagger/{documentName}/swagger.json"));
+
+        IAuthorizationPolicyProvider policyProvider = Services.GetRequiredService<IAuthorizationPolicyProvider>();
+
+        Dictionary<string, ApiDescription> byOperationId = [];
+        foreach (ApiDescription apiDescription in Services
+            .GetRequiredService<IApiDescriptionGroupCollectionProvider>()
+            .ApiDescriptionGroups.Items.SelectMany(g => g.Items))
+        {
+            if (SecurityRequirementsDocumentFilter.GetOperationId(apiDescription) is { } id)
+            {
+                byOperationId[id] = apiDescription;
+            }
+        }
+
+        HashSet<string> declaredScopes = ReadDeclaredScopes(document);
+        Assert.NotEmpty(declaredScopes);
+
+        List<string> problems = [];
+
+        foreach (JsonProperty path in document.RootElement.GetProperty("paths").EnumerateObject())
+        {
+            foreach (JsonProperty method in path.Value.EnumerateObject())
+            {
+                if (!OperationKeys.Contains(method.Name, StringComparer.OrdinalIgnoreCase))
+                {
+                    continue;
+                }
+
+                string operationId = method.Value.GetProperty("operationId").GetString()!;
+                string where = $"{method.Name.ToUpperInvariant()} {path.Name} ({operationId})";
+
+                if (!byOperationId.TryGetValue(operationId, out ApiDescription? apiDescription))
+                {
+                    problems.Add($"{where} has no matching endpoint");
+                    continue;
+                }
+
+                HashSet<string> documented = ReadDocumentedScopes(method.Value);
+                HashSet<string> enforced = await EnforcedScopesAsync(apiDescription, policyProvider);
+
+                foreach (string missing in enforced.Except(documented).Order())
+                {
+                    problems.Add($"{where} enforces scope '{missing}' but the document does not declare it");
+                }
+
+                foreach (string extra in documented.Except(enforced).Order())
+                {
+                    problems.Add($"{where} documents scope '{extra}' but no policy on it requires that scope");
+                }
+
+                foreach (string undeclared in documented.Except(declaredScopes).Order())
+                {
+                    problems.Add($"{where} references scope '{undeclared}', which is not listed in the security scheme");
+                }
+            }
+        }
+
+        string separator = Environment.NewLine + "  ";
+        string message = "The documented scopes do not match the policies the endpoints enforce:" + separator + string.Join(separator, problems);
+
+        Assert.True(problems.Count == 0, message);
+    }
+
+    private static HashSet<string> ReadDeclaredScopes(JsonDocument document)
+    {
+        HashSet<string> scopes = new(StringComparer.Ordinal);
+
+        if (document.RootElement.TryGetProperty("components", out JsonElement components)
+            && components.TryGetProperty("securitySchemes", out JsonElement schemes)
+            && schemes.TryGetProperty(SecurityRequirementsDocumentFilter.ScopeSchemeId, out JsonElement scheme)
+            && scheme.TryGetProperty("flows", out JsonElement flows)
+            && flows.TryGetProperty("clientCredentials", out JsonElement flow)
+            && flow.TryGetProperty("scopes", out JsonElement declared))
+        {
+            foreach (JsonProperty scope in declared.EnumerateObject())
+            {
+                scopes.Add(scope.Name);
+            }
+        }
+
+        return scopes;
+    }
+
+    private static HashSet<string> ReadDocumentedScopes(JsonElement operation)
+    {
+        HashSet<string> scopes = new(StringComparer.Ordinal);
+
+        if (!operation.TryGetProperty("security", out JsonElement security))
+        {
+            return scopes;
+        }
+
+        foreach (JsonElement requirement in security.EnumerateArray())
+        {
+            if (!requirement.TryGetProperty(SecurityRequirementsDocumentFilter.ScopeSchemeId, out JsonElement listed))
+            {
+                continue;
+            }
+
+            foreach (JsonElement scope in listed.EnumerateArray())
+            {
+                scopes.Add(scope.GetString()!);
+            }
+        }
+
+        return scopes;
+    }
+
+    private static async Task<HashSet<string>> EnforcedScopesAsync(
+        ApiDescription apiDescription,
+        IAuthorizationPolicyProvider policyProvider)
+    {
+        HashSet<string> scopes = new(StringComparer.Ordinal);
+        IList<object> metadata = apiDescription.ActionDescriptor.EndpointMetadata;
+
+        // The filter documents no security at all for anonymous endpoints, so no scopes either.
+        if (metadata.OfType<IAllowAnonymous>().Any())
+        {
+            return scopes;
+        }
+
+        foreach (string policyName in metadata
+            .OfType<IAuthorizeData>()
+            .Select(a => a.Policy)
+            .Where(p => !string.IsNullOrEmpty(p))
+            .Distinct()!)
+        {
+            AuthorizationPolicy? policy = await policyProvider.GetPolicyAsync(policyName);
+            if (policy is null)
+            {
+                continue;
+            }
+
+            // Scopes reach a policy two ways: RequireScopeAnyOf, and the hand-written
+            // requirement that accepts either a scope or a platform access token.
+            foreach (IAuthorizationRequirement requirement in policy.Requirements)
+            {
+                IEnumerable<string> required = requirement switch
+                {
+                    IScopeAnyOfAuthorizationRequirement anyOf => anyOf.AnyOfScopes,
+                    IScopeAccessRequirement scoped => scoped.Scope,
+                    _ => [],
+                };
+
+                foreach (string scope in required)
+                {
+                    scopes.Add(scope);
+                }
+            }
+        }
+
+        return scopes;
     }
 
     private static List<(string Operation, string? OperationId)> ReadOperations(JsonDocument document)

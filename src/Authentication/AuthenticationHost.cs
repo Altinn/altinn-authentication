@@ -289,6 +289,8 @@ internal static class AuthenticationHost
 
             // Sets the servers for the document being generated, and moves the shared API base
             // path out of the paths and into those server URLs.
+            c.OperationFilter<ErrorResponsesOperationFilter>();
+
             c.DocumentFilter<ApiBasePathDocumentFilter>();
             c.DocumentFilter<SecurityRequirementsDocumentFilter>();
 
