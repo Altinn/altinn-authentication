@@ -86,7 +86,7 @@ public class AccessManagementClientMock: IAccessManagementClient
 
         string packagesData = File.ReadAllText("Data/Packages/packages.json");
         List<Package>? packages = JsonSerializer.Deserialize<List<Package>>(packagesData, options);
-        package = packages?.FirstOrDefault(p => p.Urn.Contains(urnValue, StringComparison.OrdinalIgnoreCase));
+        package = packages?.FirstOrDefault(p => p.Urn is not null && p.Urn.Contains(urnValue, StringComparison.OrdinalIgnoreCase));
         return Task.FromResult(package);
     }
 
@@ -100,7 +100,7 @@ public class AccessManagementClientMock: IAccessManagementClient
 
         string packagesData = File.ReadAllText("Data/Packages/packages.json");
         List<Package>? packages = JsonSerializer.Deserialize<List<Package>>(packagesData, options);
-        package = packages?.FirstOrDefault(p => p.Urn.Contains(packageId, StringComparison.OrdinalIgnoreCase));
+        package = packages?.FirstOrDefault(p => p.Urn is not null && p.Urn.Contains(packageId, StringComparison.OrdinalIgnoreCase));
         return Task.FromResult(package);
     }
 
