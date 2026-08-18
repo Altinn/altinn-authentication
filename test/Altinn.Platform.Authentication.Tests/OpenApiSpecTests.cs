@@ -20,17 +20,17 @@ namespace Altinn.Platform.Authentication.Tests;
 public class OpenApiSpecTests(DbFixture dbFixture, WebApplicationFixture webApplicationFixture)
     : WebApplicationTests(dbFixture, webApplicationFixture)
 {
-    private const string SwaggerDocumentUrl = "/authentication/swagger/v1/swagger.json";
-
     private static readonly string[] OperationKeys =
         ["get", "put", "post", "delete", "patch", "head", "options", "trace"];
 
-    [Fact]
-    public async Task OperationIds_ArePresent_Unique_AndSafeForClientGeneration()
+    [Theory]
+    [InlineData("v1")]
+    [InlineData("internal")]
+    public async Task OperationIds_ArePresent_Unique_AndSafeForClientGeneration(string documentName)
     {
         HttpClient client = CreateClient();
 
-        HttpResponseMessage response = await client.GetAsync(SwaggerDocumentUrl);
+        HttpResponseMessage response = await client.GetAsync($"/authentication/swagger/{documentName}/swagger.json");
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
         using JsonDocument document = JsonDocument.Parse(await response.Content.ReadAsStringAsync());

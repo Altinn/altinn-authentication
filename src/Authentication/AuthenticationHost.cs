@@ -236,7 +236,24 @@ internal static class AuthenticationHost
         // Add Swagger support (Swashbuckle)
         services.AddSwaggerGen(c =>
         {
-            c.SwaggerDoc("v1", new OpenApiInfo { Title = "Altinn Platform Authentication", Version = "v1" });
+            c.SwaggerDoc(ApiDocuments.External, new OpenApiInfo
+            {
+                Title = "Altinn Platform Authentication",
+                Version = "v1",
+                Description = "Endpoints for vendors and end users integrating with Altinn Authentication.",
+            });
+
+            c.SwaggerDoc(ApiDocuments.Internal, new OpenApiInfo
+            {
+                Title = "Altinn Platform Authentication (internal)",
+                Version = "v1",
+                Description =
+                    "The full endpoint surface, including browser sign-in, the OIDC front channel and "
+                    + "service-to-service endpoints. For developers working on this service - not a "
+                    + "supported integration surface.",
+            });
+
+            c.DocInclusionPredicate(ApiDocuments.Includes);
 
             c.CustomOperationIds(SecurityRequirementsDocumentFilter.GetOperationId);
 
@@ -270,6 +287,9 @@ internal static class AuthenticationHost
                 },
             });
 
+            // Sets the servers for the document being generated, and moves the shared API base
+            // path out of the paths and into those server URLs.
+            c.DocumentFilter<ApiBasePathDocumentFilter>();
             c.DocumentFilter<SecurityRequirementsDocumentFilter>();
 
             try
