@@ -29,6 +29,7 @@ namespace Altinn.Authentication.Controllers;
 /// </summary>
 [Route("authentication/api/v1/systemuser/request")]
 [ApiController]
+[Produces("application/json")]
 public class RequestSystemUserController : ControllerBase
 {
     private readonly IRequestSystemUser _requestSystemUser;

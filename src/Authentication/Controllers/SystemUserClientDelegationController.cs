@@ -30,6 +30,7 @@ namespace Altinn.Platform.Authentication.Controllers
     /// </summary>
     [Route("authentication/api/v1/enduser/systemuser")]
     [ApiController]
+    [Produces("application/json")]
     public class SystemUserClientDelegationController(
         SystemUserController inner,
         IPDP Pdp,

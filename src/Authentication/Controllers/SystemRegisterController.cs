@@ -26,6 +26,7 @@ namespace Altinn.Authentication.Controllers;
 /// </summary>
 [Route("authentication/api/v1/systemregister")]
 [ApiController]
+[Produces("application/json")]
 public class SystemRegisterController : ControllerBase
 {
     private readonly ISystemRegisterService _systemRegisterService;

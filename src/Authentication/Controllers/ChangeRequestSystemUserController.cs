@@ -32,6 +32,7 @@ namespace Altinn.Authentication.Controllers;
 /// </remarks>
 [Route("authentication/api/v1/systemuser/changerequest")]
 [ApiController]
+[Produces("application/json")]
 public class ChangeRequestSystemUserController(
     IChangeRequestSystemUser changeRequestService,
     ISystemUserService systemUserService,

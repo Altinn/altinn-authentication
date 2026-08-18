@@ -41,6 +41,11 @@ namespace Altinn.Platform.Authentication.Controllers
     /// </summary>
     [Route("authentication/api/v1")]
     [ApiController]
+
+    // Every response body on this controller is a bare token or message string, which ASP.NET Core
+    // serves as text/plain. Declaring it keeps the document honest - switching these to
+    // application/json would wrap the token in JSON quotes and break existing callers.
+    [Produces("text/plain")]
     public class AuthenticationController : ControllerBase
     {
         private const string OrganisationIdentity = "OrganisationLogin";

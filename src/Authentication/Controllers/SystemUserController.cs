@@ -36,6 +36,7 @@ namespace Altinn.Platform.Authentication.Controllers;
 [FeatureGate(FeatureFlags.SystemUser)]
 [Route("authentication/api/v1/systemuser")]
 [ApiController]
+[Produces("application/json")]
 public class SystemUserController : ControllerBase
 {
     private readonly ISystemUserService _systemUserService;
