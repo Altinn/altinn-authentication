@@ -79,7 +79,7 @@ public class ChangeRequestSystemUserController(
     /// <param name="cancellationToken">The cancellation token</param>
     /// <returns>Response model for a ChangeRequest</returns>
     [Authorize(Policy = AuthzConstants.POLICY_SCOPE_SYSTEMUSERREQUEST_WRITE)]    
-    [Produces("application/json")]
+    [Produces("text/plain", "application/json")]
     [HttpPost("vendor")]
     [ServiceFilter(typeof(TrimStringsActionFilter))]
     public async Task<ActionResult<ChangeRequestResponse>> CreateChangeRequest(

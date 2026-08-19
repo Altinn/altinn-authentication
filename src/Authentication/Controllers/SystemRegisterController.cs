@@ -161,7 +161,7 @@ public class SystemRegisterController : ControllerBase
     /// <returns></returns>
     [Authorize(Policy = AuthzConstants.POLICY_SCOPE_SYSTEMREGISTER_WRITE)]
     [HttpPut("vendor/{systemId}")]
-    [Produces("application/json")]
+    [Produces("text/plain", "application/json")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -344,7 +344,7 @@ public class SystemRegisterController : ControllerBase
     /// <param name="systemId">The human readable string id</param>
     /// <param name="cancellationToken">a cancellation token</param>
     /// <returns>true if changed</returns>
-    [Produces("application/json")]
+    [Produces("text/plain", "application/json")]
     [HttpPut("vendor/{systemId}/rights")]
     [Authorize(Policy = AuthzConstants.POLICY_SCOPE_SYSTEMREGISTER_WRITE)]
     public async Task<ActionResult<SystemRegisterUpdateResult>> UpdateRightsOnRegisteredSystem([FromBody] List<Right> rights, string systemId, CancellationToken cancellationToken = default)
@@ -384,7 +384,7 @@ public class SystemRegisterController : ControllerBase
     /// <param name="systemId">The human readable string id</param>
     /// <param name="cancellationToken">The cancellation token</param>
     /// <returns>true if changed</returns>
-    [Produces("application/json")]
+    [Produces("text/plain", "application/json")]
     [HttpPut("vendor/{systemId}/accesspackages")]
     [Authorize(Policy = AuthzConstants.POLICY_SCOPE_SYSTEMREGISTER_WRITE)]
     public async Task<ActionResult<SystemRegisterUpdateResult>> UpdateAccessPackagesOnRegisteredSystem([FromBody] List<AccessPackage> accessPackages, string systemId, CancellationToken cancellationToken = default)
@@ -454,7 +454,7 @@ public class SystemRegisterController : ControllerBase
     /// <param name="systemId">the system internal id</param>
     /// <param name="cancellationToken">the cancellation token</param>
     /// <returns></returns>
-    [Produces("application/json")]
+    [Produces("text/plain", "application/json")]
     [HttpGet("vendor/{systemId}/changelog")]
     [Authorize(Policy = AuthzConstants.POLICY_SCOPE_SYSTEMREGISTER_WRITE)]
     public async Task<ActionResult<List<SystemChangeLog>>> GetChangeLogAsync(string systemId, CancellationToken cancellationToken = default)
