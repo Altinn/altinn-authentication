@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Security.Claims;
@@ -30,7 +30,6 @@ namespace Altinn.Platform.Authentication.Controllers
     /// </summary>
     [Route("authentication/api/v1/enduser/systemuser")]
     [ApiController]
-    [Produces("application/json")]
     public class SystemUserClientDelegationController(
         SystemUserController inner,
         IPDP Pdp,
@@ -44,6 +43,7 @@ namespace Altinn.Platform.Authentication.Controllers
         /// Get Clients who can delegate to the system user
         /// </summary>
         [Authorize(Policy = AuthzConstants.POLICY_CLIENTDELEGATION_READ)]
+        [Produces("application/json")]
         [HttpGet("clients/available")]
         public async Task<ActionResult<ClientInfoPaginated<ClientInfo>>> GetAvailableClientsForDelegation([FromQuery] Guid agent)
         {
@@ -103,6 +103,7 @@ namespace Altinn.Platform.Authentication.Controllers
         /// <param name="agent">the agent system user id</param>
         /// <returns></returns>
         [Authorize(Policy = AuthzConstants.POLICY_CLIENTDELEGATION_READ)]
+        [Produces("application/json")]
         [HttpGet("clients")]
         public async Task<ActionResult<ClientInfoPaginated<ClientInfo>>> GetClientsDelegatedToSystemUser([FromQuery] Guid agent)
         {
@@ -163,6 +164,7 @@ namespace Altinn.Platform.Authentication.Controllers
         /// <param name="cancellationToken">the cancellation token</param>
         /// <returns>delegation response</returns>
         [Authorize(Policy = AuthzConstants.POLICY_CLIENTDELEGATION_WRITE)]
+        [Produces("application/json")]
         [HttpPost("clients")]
         public async Task<ActionResult<ClientDelegationResponse>> DelegateClientToSystemUser([FromQuery] Guid agent, [FromQuery] Guid client, CancellationToken cancellationToken)
         {
@@ -225,6 +227,7 @@ namespace Altinn.Platform.Authentication.Controllers
         /// <param name="cancellationToken">the cancellation token</param>
         /// <returns>delegation response</returns>
         [Authorize(Policy = AuthzConstants.POLICY_CLIENTDELEGATION_WRITE)]
+        [Produces("application/json")]
         [HttpDelete("clients")]
         public async Task<ActionResult<List<DelegationResponse>>> RemoveClientFromSystemUser([FromQuery] Guid agent, [FromQuery] Guid client, CancellationToken cancellationToken)
         {
@@ -285,6 +288,7 @@ namespace Altinn.Platform.Authentication.Controllers
         /// caller's authentication context.</remarks>
         /// <returns>A list of <see cref="SystemUserInternalDTO"/> objects representing the agent system users for the party. Returns an
         /// empty list if no agent system users are found.</returns>
+        [Produces("application/json")]
         [HttpGet("agents")]
         [Authorize(Policy = AuthzConstants.POLICY_CLIENTDELEGATION_READ)]
         public async Task<ActionResult<List<SystemUserInternalDTO>>> GetAllAgentSystemUsersForParty([FromQuery] string party)

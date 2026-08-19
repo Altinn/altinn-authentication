@@ -41,11 +41,6 @@ namespace Altinn.Platform.Authentication.Controllers
     /// </summary>
     [Route("authentication/api/v1")]
     [ApiController]
-
-    // Every response body on this controller is a bare token or message string, which ASP.NET Core
-    // serves as text/plain. Declaring it keeps the document honest - switching these to
-    // application/json would wrap the token in JSON quotes and break existing callers.
-    [Produces("text/plain")]
     public class AuthenticationController : ControllerBase
     {
         private const string OrganisationIdentity = "OrganisationLogin";
@@ -128,6 +123,7 @@ namespace Altinn.Platform.Authentication.Controllers
         /// <param name="cancellationToken">The cancellation token</param>
         /// <returns>A 302 redirect: to <paramref name="goTo"/> when an existing session already satisfies the request, otherwise to the upstream ID-provider login.</returns>
         [AllowAnonymous]
+        [Produces("text/plain")]
         [ProducesResponseType(StatusCodes.Status302Found)]
         [ProducesResponseType(typeof(string), StatusCodes.Status400BadRequest)]
         [ProducesResponseType(typeof(void), StatusCodes.Status503ServiceUnavailable)]
@@ -250,6 +246,7 @@ namespace Altinn.Platform.Authentication.Controllers
         /// <returns>Ok response with the refreshed token appended.</returns>
         [Authorize]
         [HttpGet("refresh")]
+        [Produces("text/plain")]
         [ProducesResponseType(typeof(string), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(string), StatusCodes.Status401Unauthorized)]
         public async Task<ActionResult> RefreshJwtCookie(bool enrichPid = false, CancellationToken cancellationToken = default)
@@ -312,6 +309,7 @@ namespace Altinn.Platform.Authentication.Controllers
         /// <param name="test">Only relevant for the Maskinporten path: when <c>true</c> and the consumer org is <c>digdir</c>, the token is treated as a test token (see <see cref="OrgIsDigDirAndTestIsTrue"/>). Ignored for the other providers.</param>
         /// <returns>The result of the action. Contains the new token if the old token was valid and could be exchanged.</returns>
         [AllowAnonymous]
+        [Produces("text/plain")]
         [ProducesResponseType(typeof(string), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(string), StatusCodes.Status401Unauthorized)]
         [ProducesResponseType(typeof(string), StatusCodes.Status400BadRequest)]

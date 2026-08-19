@@ -7,6 +7,7 @@ using System.Text.Json.Serialization;
 using Altinn.Authentication.Core.Clients.Interfaces;
 using Altinn.Authentication.Integration.Clients;
 using Altinn.Authorization.ServiceDefaults;
+using Altinn.Authorization.ServiceDefaults.Swashbuckle.Servers;
 using Altinn.Common.AccessToken;
 using Altinn.Common.AccessToken.Configuration;
 using Altinn.Common.AccessToken.Services;
@@ -257,6 +258,10 @@ internal static class AuthenticationHost
             // LocalhostServerDocumentFilter adds the local server instead.
             o.IncludeLocalhostServer = false;
         });
+
+        // Vendors only ever call the two environments they have access to. The acceptance-test
+        // servers stay on the internal document, which inherits the defaults configured above.
+        services.Configure<AltinnServerOptions>(ApiDocuments.External, o => o.IncludeAcceptanceTestServers = false);
 
         services.AddSwaggerGen(c =>
         {

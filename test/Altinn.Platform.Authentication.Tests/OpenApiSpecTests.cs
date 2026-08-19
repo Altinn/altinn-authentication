@@ -83,6 +83,65 @@ public class OpenApiSpecTests(DbFixture dbFixture, WebApplicationFixture webAppl
     }
 
     /// <summary>
+    /// No response may offer <c>text/json</c>.
+    /// </summary>
+    /// <remarks>
+    /// ASP.NET Core advertises every registered output formatter unless the action states what it
+    /// produces, which puts <c>text/plain</c> first and makes generators build clients that ask
+    /// for a string and then fail to deserialize it. <c>text/json</c> only ever appears in that
+    /// case, so it is a reliable signal that an action is missing its <c>[Produces]</c> - which is
+    /// easy to forget now that the attribute sits on each action rather than on the controller.
+    /// </remarks>
+    /// <param name="documentName">The document to check.</param>
+    [Theory]
+    [InlineData("v1")]
+    [InlineData("internal")]
+    public async Task Responses_DoNotOfferUnintendedMediaTypes(string documentName)
+    {
+        HttpClient client = CreateClient();
+
+        using JsonDocument document =
+            JsonDocument.Parse(await client.GetStringAsync($"/authentication/swagger/{documentName}/swagger.json"));
+
+        List<string> problems = [];
+
+        foreach (JsonProperty path in document.RootElement.GetProperty("paths").EnumerateObject())
+        {
+            foreach (JsonProperty method in path.Value.EnumerateObject())
+            {
+                if (!OperationKeys.Contains(method.Name, StringComparer.OrdinalIgnoreCase)
+                    || !method.Value.TryGetProperty("responses", out JsonElement responses))
+                {
+                    continue;
+                }
+
+                foreach (JsonProperty response in responses.EnumerateObject())
+                {
+                    if (!response.Value.TryGetProperty("content", out JsonElement content))
+                    {
+                        continue;
+                    }
+
+                    foreach (JsonProperty mediaType in content.EnumerateObject())
+                    {
+                        if (mediaType.Name.Equals("text/json", StringComparison.OrdinalIgnoreCase))
+                        {
+                            problems.Add(
+                                $"{method.Name.ToUpperInvariant()} {path.Name} offers '{mediaType.Name}' on {response.Name}"
+                                + " - the action is probably missing a [Produces] attribute");
+                        }
+                    }
+                }
+            }
+        }
+
+        string separator = Environment.NewLine + "  ";
+        string message = "Responses advertise media types the endpoints do not intend:" + separator + string.Join(separator, problems);
+
+        Assert.True(problems.Count == 0, message);
+    }
+
+    /// <summary>
     /// The scopes the document advertises for an endpoint must be the scopes its authorization
     /// policies actually enforce.
     /// </summary>
