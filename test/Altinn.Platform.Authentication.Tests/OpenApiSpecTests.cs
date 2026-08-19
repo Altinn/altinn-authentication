@@ -87,12 +87,10 @@ public class OpenApiSpecTests(DbFixture dbFixture, WebApplicationFixture webAppl
     /// policies actually enforce.
     /// </summary>
     /// <remarks>
-    /// The mapping from policy to scope is maintained by hand in
-    /// <see cref="SecurityRequirementsDocumentFilter"/>, mirroring the policies registered in
-    /// AuthenticationHost. This compares the published document against the registered policies -
-    /// the real source of truth - so the two cannot drift apart silently. An unmapped policy
-    /// degrades quietly to "token required" at runtime, which would otherwise leave an endpoint
-    /// under-documented with nothing to notice it.
+    /// The shared Altinn conventions derive these scopes from the authorization requirements, so
+    /// they should agree by construction. This checks that they still do: a policy built from a
+    /// requirement type the shared condition providers do not recognise contributes no scope and
+    /// leaves the endpoint silently under-documented.
     /// </remarks>
     [Theory]
     [InlineData("v1")]
@@ -111,14 +109,11 @@ public class OpenApiSpecTests(DbFixture dbFixture, WebApplicationFixture webAppl
             .GetRequiredService<IApiDescriptionGroupCollectionProvider>()
             .ApiDescriptionGroups.Items.SelectMany(g => g.Items))
         {
-            if (SecurityRequirementsDocumentFilter.GetOperationId(apiDescription) is { } id)
+            if (ApiDocuments.GetOperationId(apiDescription) is { } id)
             {
                 byOperationId[id] = apiDescription;
             }
         }
-
-        HashSet<string> declaredScopes = ReadDeclaredScopes(document);
-        Assert.NotEmpty(declaredScopes);
 
         List<string> problems = [];
 
@@ -152,11 +147,6 @@ public class OpenApiSpecTests(DbFixture dbFixture, WebApplicationFixture webAppl
                 {
                     problems.Add($"{where} documents scope '{extra}' but no policy on it requires that scope");
                 }
-
-                foreach (string undeclared in documented.Except(declaredScopes).Order())
-                {
-                    problems.Add($"{where} references scope '{undeclared}', which is not listed in the security scheme");
-                }
             }
         }
 
@@ -166,26 +156,11 @@ public class OpenApiSpecTests(DbFixture dbFixture, WebApplicationFixture webAppl
         Assert.True(problems.Count == 0, message);
     }
 
-    private static HashSet<string> ReadDeclaredScopes(JsonDocument document)
-    {
-        HashSet<string> scopes = new(StringComparer.Ordinal);
-
-        if (document.RootElement.TryGetProperty("components", out JsonElement components)
-            && components.TryGetProperty("securitySchemes", out JsonElement schemes)
-            && schemes.TryGetProperty(SecurityRequirementsDocumentFilter.ScopeSchemeId, out JsonElement scheme)
-            && scheme.TryGetProperty("flows", out JsonElement flows)
-            && flows.TryGetProperty("clientCredentials", out JsonElement flow)
-            && flow.TryGetProperty("scopes", out JsonElement declared))
-        {
-            foreach (JsonProperty scope in declared.EnumerateObject())
-            {
-                scopes.Add(scope.Name);
-            }
-        }
-
-        return scopes;
-    }
-
+    /// <summary>
+    /// Collects every scope named anywhere in an operation's security requirements, whichever
+    /// scheme carries it. Deliberately not tied to a scheme name: the shared conventions own the
+    /// naming, and this should keep working if they rename or add one.
+    /// </summary>
     private static HashSet<string> ReadDocumentedScopes(JsonElement operation)
     {
         HashSet<string> scopes = new(StringComparer.Ordinal);
@@ -197,14 +172,12 @@ public class OpenApiSpecTests(DbFixture dbFixture, WebApplicationFixture webAppl
 
         foreach (JsonElement requirement in security.EnumerateArray())
         {
-            if (!requirement.TryGetProperty(SecurityRequirementsDocumentFilter.ScopeSchemeId, out JsonElement listed))
+            foreach (JsonProperty scheme in requirement.EnumerateObject())
             {
-                continue;
-            }
-
-            foreach (JsonElement scope in listed.EnumerateArray())
-            {
-                scopes.Add(scope.GetString()!);
+                foreach (JsonElement scope in scheme.Value.EnumerateArray())
+                {
+                    scopes.Add(scope.GetString()!);
+                }
             }
         }
 

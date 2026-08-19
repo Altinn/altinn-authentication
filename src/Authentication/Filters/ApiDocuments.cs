@@ -1,20 +1,18 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using Microsoft.AspNetCore.Mvc.ApiExplorer;
 using Microsoft.AspNetCore.Mvc.Controllers;
-using Microsoft.OpenApi;
 
 namespace Altinn.Platform.Authentication.Filters
 {
     /// <summary>
-    /// Defines the OpenAPI documents this API publishes, what each contains, and where each one
-    /// can be called.
+    /// Defines the OpenAPI documents this API publishes and what each one contains.
     /// </summary>
     /// <remarks>
     /// Two audiences need different things. Vendors integrating with Altinn should see only the
-    /// endpoints they can call, pointed at the environments they have access to. Developers on
-    /// this service need the whole surface, pointed at local and test environments.
+    /// endpoints they can call. Developers on this service need the whole surface. Servers and
+    /// security schemes are not decided here - those come from the shared Altinn conventions in
+    /// <c>Altinn.Authorization.ServiceDefaults.Swashbuckle</c>.
     /// </remarks>
     public static class ApiDocuments
     {
@@ -30,8 +28,8 @@ namespace Altinn.Platform.Authentication.Filters
         public const string Internal = "internal";
 
         /// <summary>
-        /// The base path every endpoint shares. It lives in the server URLs rather than in each
-        /// path, so <see cref="ApiBasePathDocumentFilter"/> strips it from the paths.
+        /// The path prefix every endpoint shares. It is carried by the server URLs rather than by
+        /// each path, matching how the other Altinn platform APIs present themselves.
         /// </summary>
         public const string BasePath = "/authentication/api/v1";
 
@@ -82,24 +80,32 @@ namespace Altinn.Platform.Authentication.Filters
         }
 
         /// <summary>
-        /// The servers to advertise for the named document, already including
-        /// <see cref="BasePath"/>.
+        /// Builds the operationId for an endpoint: the controller and action name, which generators
+        /// split into a client class and a method.
         /// </summary>
-        /// <param name="documentName">The document being generated.</param>
-        /// <returns>The servers, most likely first.</returns>
-        public static IList<OpenApiServer> ServersFor(string documentName)
+        /// <remarks>
+        /// Without an operationId, generators synthesise a name from the path, which collides for
+        /// route pairs that differ only by an extra segment. No Altinn package supplies this, so
+        /// the convention lives here.
+        /// </remarks>
+        /// <param name="apiDescription">The endpoint to name.</param>
+        /// <returns>The operationId, or null for endpoints that are not controller actions.</returns>
+        public static string? GetOperationId(ApiDescription apiDescription)
         {
-            (string Host, string Description)[] hosts = documentName == Internal
-                ? [
-                    ("https://localhost:44377", "Local development"),
-                    ("https://platform.at22.altinn.cloud", "AT22"),
-                  ]
-                : [
-                    ("https://platform.tt02.altinn.no", "Integration Test"),
-                    ("https://platform.altinn.no", "Production"),
-                  ];
+            if (apiDescription.ActionDescriptor is not ControllerActionDescriptor descriptor)
+            {
+                return null;
+            }
 
-            return [.. hosts.Select(h => new OpenApiServer { Url = h.Host + BasePath, Description = h.Description })];
+            // Trailing "Async" is a C# convention, not part of the API surface - it should not
+            // leak into the operationId, which becomes the method name in generated clients.
+            string action = descriptor.ActionName;
+            if (action.Length > 5 && action.EndsWith("Async", StringComparison.Ordinal))
+            {
+                action = action[..^5];
+            }
+
+            return $"{descriptor.ControllerName}_{action}";
         }
     }
 }

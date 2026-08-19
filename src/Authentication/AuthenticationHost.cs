@@ -35,6 +35,7 @@ using Altinn.Platform.Authentication.Persistance.Extensions;
 using Altinn.Platform.Authentication.Persistance.RepositoryImplementations;
 using Altinn.Platform.Authentication.Services;
 using Altinn.Platform.Authentication.Services.Interfaces;
+using Altinn.Swashbuckle.Security;
 using AltinnCore.Authentication.JwtCookie;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Builder;
@@ -233,7 +234,30 @@ internal static class AuthenticationHost
             options.HeaderName = "X-XSRF-TOKEN";
         });
 
-        // Add Swagger support (Swashbuckle)
+        // OpenAPI. Servers, security schemes and the per-operation scopes come from the shared
+        // Altinn conventions rather than being configured here - see Altinn.Swashbuckle and
+        // Altinn.Authorization.ServiceDefaults.Swashbuckle. Only what those do not cover
+        // (documents, operationIds, error responses) is configured below.
+        services.AddSwaggerAutoXmlDoc();
+        services.AddSwaggerFilterAttributeSupport();
+        services.AddSwaggeAltinnSecuritySupport();
+
+        // Covers the one requirement type the shared providers do not recognise.
+        services.AddSingleton<IOpenApiAuthorizationRequirementConditionProvider, PlatformScopeSecurityConditionProvider>();
+        services.AddSwaggerAltinnServers(o =>
+        {
+            // Put the shared API base path in the server URLs; ApiBasePathDocumentFilter strips
+            // it from the paths so the two concatenate to the real endpoint.
+            o.EnvironmentServerPathSuffix = ApiDocuments.BasePath;
+            o.IncludePerformanceTestServer = false;
+
+            // The shared filter reads IServerAddressesFeature.Addresses[0] for this one, which
+            // throws when no addresses are registered - as is the case under the in-memory test
+            // server. Leaving it on makes every test that reads the document fail, so
+            // LocalhostServerDocumentFilter adds the local server instead.
+            o.IncludeLocalhostServer = false;
+        });
+
         services.AddSwaggerGen(c =>
         {
             c.SwaggerDoc(ApiDocuments.External, new OpenApiInfo
@@ -255,54 +279,12 @@ internal static class AuthenticationHost
 
             c.DocInclusionPredicate(ApiDocuments.Includes);
 
-            c.CustomOperationIds(SecurityRequirementsDocumentFilter.GetOperationId);
+            c.CustomOperationIds(ApiDocuments.GetOperationId);
 
-            // What a caller actually sends. Every non-anonymous endpoint requires this.
-            c.AddSecurityDefinition(SecurityRequirementsDocumentFilter.BearerSchemeId, new OpenApiSecurityScheme
-            {
-                Type = SecuritySchemeType.Http,
-                Scheme = "bearer",
-                BearerFormat = "JWT",
-                Description =
-                    "An Altinn token, sent as `Authorization: Bearer <token>`. Machine clients obtain one by "
-                    + "exchanging a Maskinporten token at `/authentication/api/v1/exchange/maskinporten`; "
-                    + "end users get one from Altinn portal sign-in.",
-            });
-
-            // Carries the scope each endpoint requires. The token is still the bearer token above -
-            // this scheme exists so the required scopes are machine readable per operation.
-            c.AddSecurityDefinition(SecurityRequirementsDocumentFilter.ScopeSchemeId, new OpenApiSecurityScheme
-            {
-                Type = SecuritySchemeType.OAuth2,
-                Description =
-                    "Scopes that must be present in the bearer token. Machine clients are granted these in "
-                    + "Maskinporten; `altinn:portal/enduser` is issued by Altinn portal sign-in instead.",
-                Flows = new OpenApiOAuthFlows
-                {
-                    ClientCredentials = new OpenApiOAuthFlow
-                    {
-                        TokenUrl = new Uri("https://maskinporten.no/token"),
-                        Scopes = SecurityRequirementsDocumentFilter.KnownScopes.ToDictionary(s => s.Key, s => s.Value),
-                    },
-                },
-            });
-
-            // Sets the servers for the document being generated, and moves the shared API base
-            // path out of the paths and into those server URLs.
             c.OperationFilter<ErrorResponsesOperationFilter>();
 
             c.DocumentFilter<ApiBasePathDocumentFilter>();
-            c.DocumentFilter<SecurityRequirementsDocumentFilter>();
-
-            try
-            {
-                string filePath = GetXmlCommentsPathForControllers();
-                c.IncludeXmlComments(filePath);
-            }
-            catch
-            {
-                // catch swashbuckle exception if it doesn't find the generated xml documentation file
-            }
+            c.DocumentFilter<LocalhostServerDocumentFilter>();
         });
 
         services.AddAuthorizationBuilder()
@@ -340,15 +322,6 @@ internal static class AuthenticationHost
         builder.AddPersistanceLayer();
 
         return builder.Build();
-    }
-
-    private static string GetXmlCommentsPathForControllers()
-    {
-        // locate the xml file being generated by .NET
-        string xmlFile = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
-        string xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
-
-        return xmlPath;
     }
 
     // Note: eventually we can rename the configuration values and remove this mapping
