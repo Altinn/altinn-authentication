@@ -457,7 +457,7 @@ namespace Altinn.Platform.Authentication.Services
 
             if (rights is not null && rights.Count > 0)
             {
-                Result<bool> validatedRequestedRights = ValidateRights(rights, regSystem);
+                Result<bool> validatedRequestedRights = await ValidateRights(rights, regSystem, cancellationToken);
                 if (validatedRequestedRights.IsProblem)
                 {
                     validationProblems.Add(validatedRequestedRights.Problem);
@@ -673,7 +673,7 @@ namespace Altinn.Platform.Authentication.Services
         }
 
         /// <inheritdoc/>
-        public Result<bool> ValidateRights(List<Right> rights, RegisteredSystemResponse systemInfo)
+        public async Task<Result<bool>> ValidateRights(List<Right> rights, RegisteredSystemResponse systemInfo, CancellationToken cancellationToken = default)
         {
             if ((rights.Count > 0 && systemInfo.Rights is null) || (rights.Count > systemInfo.Rights!.Count))
             {
@@ -708,7 +708,37 @@ namespace Altinn.Platform.Authentication.Services
                 }
             }
 
-            return true;
+            // The rights match the registered system, but the resources themselves can have been deleted, changed
+            // type or turned non-delegable in the resource registry after the system was registered. Catch that here
+            // instead of at the customer's approval.
+            var invalidResourceIds = await systemRegisterService.GetInvalidResourceIdsDetailed(rights, cancellationToken);
+
+            List<KeyValuePair<string, string>> invalidResourceDetails = [];
+            AddResourceIdsIfAny(invalidResourceDetails, "InvalidFormatResources", invalidResourceIds.InvalidFormatResourceIds);
+            AddResourceIdsIfAny(invalidResourceDetails, "NotFoundResources", invalidResourceIds.NotFoundResourceIds);
+            AddResourceIdsIfAny(invalidResourceDetails, "UnsupportedResourceTypes", invalidResourceIds.UnsupportedResourceTypeIds);
+            AddResourceIdsIfAny(invalidResourceDetails, "NotDelegableResources", invalidResourceIds.NotDelegableResourceIds);
+
+            if (invalidResourceDetails.Count == 0)
+            {
+                return true;
+            }
+
+            ProblemExtensionData extensionData = ProblemExtensionData.Create(invalidResourceDetails.ToArray());
+
+            // Report the precise problem when the delegable flag is the only thing standing in the way; the other
+            // categories mean the resource is missing or unusable rather than merely non-delegable.
+            return invalidResourceIds.NotDelegableResourceIds.Count > 0 && invalidResourceDetails.Count == 1
+                ? Problem.Rights_ResourceNotDelegable.Create(extensionData)
+                : Problem.Rights_NotFound_Or_NotDelegable.Create(extensionData);
+        }
+
+        private static void AddResourceIdsIfAny(List<KeyValuePair<string, string>> details, string key, List<string> resourceIds)
+        {
+            if (resourceIds.Count > 0)
+            {
+                details.Add(new KeyValuePair<string, string>(key, string.Join(", ", resourceIds)));
+            }
         }
 
         /// <inheritdoc/>

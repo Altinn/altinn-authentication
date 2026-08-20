@@ -470,11 +470,12 @@ public class SystemRegisterController : ControllerBase
     {
         ValidationProblemBuilder errors = default;
 
-        var (invalidFormatResourceIds, notFoundResourceIds, notDelegableResourceIds) = await _systemRegisterService.GetInvalidResourceIdsDetailed(rights, cancellationToken);
+        var (invalidFormatResourceIds, notFoundResourceIds, unsupportedResourceTypeIds, notDelegableResourceIds) = await _systemRegisterService.GetInvalidResourceIdsDetailed(rights, cancellationToken);
 
         errors = AddErrorIfAny(errors, invalidFormatResourceIds, ValidationErrors.SystemRegister_ResourceId_InvalidFormat, "Invalid Resource Id Details : ");
         errors = AddErrorIfAny(errors, notFoundResourceIds, ValidationErrors.SystemRegister_ResourceId_DoesNotExist, "ResourceIds Not Found : ");
-        errors = AddErrorIfAny(errors, notDelegableResourceIds, ValidationErrors.SystemRegister_ResourceId_NotDelegable, "ResourceIds Not Delegable : ");
+        errors = AddErrorIfAny(errors, unsupportedResourceTypeIds, ValidationErrors.SystemRegister_ResourceId_NotDelegable, "ResourceIds Not Delegable : ");
+        errors = AddErrorIfAny(errors, notDelegableResourceIds, ValidationErrors.SystemRegister_ResourceId_ResourceNotDelegable, "Resources Not Delegable : ");
 
         if (AuthenticationHelper.HasDuplicateRights(rights))
         {
