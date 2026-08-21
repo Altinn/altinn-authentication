@@ -97,15 +97,7 @@ namespace Altinn.Platform.Authentication.Filters
                 return null;
             }
 
-            // Trailing "Async" is a C# convention, not part of the API surface - it should not
-            // leak into the operationId, which becomes the method name in generated clients.
-            string action = descriptor.ActionName;
-            if (action.Length > 5 && action.EndsWith("Async", StringComparison.Ordinal))
-            {
-                action = action[..^5];
-            }
-
-            return $"{descriptor.ControllerName}_{action}";
+            return $"{descriptor.ControllerName}_{descriptor.ActionName}";
         }
     }
 }
