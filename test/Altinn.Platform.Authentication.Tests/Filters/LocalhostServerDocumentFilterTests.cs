@@ -48,4 +48,54 @@ public class LocalhostServerDocumentFilterTests
     {
         Assert.Null(LocalhostServerDocumentFilter.TryCreateLocalServer(addresses));
     }
+
+    [Fact]
+    public void ApplyTo_InsertsTheLocalServerFirst_OnTheInternalDocument()
+    {
+        // First in the list is what the UI selects by default, so the local address wins over
+        // the deployed environments when you are running the service yourself.
+        OpenApiDocument document = new()
+        {
+            Servers = [new OpenApiServer { Url = "https://platform.tt02.altinn.no/authentication/api/v1" }],
+        };
+
+        LocalhostServerDocumentFilter.ApplyTo(document, ApiDocuments.Internal, ["https://localhost:44377"]);
+
+        Assert.Equal(2, document.Servers!.Count);
+        Assert.Equal("https://localhost:44377/authentication/api/v1", document.Servers[0].Url);
+        Assert.Equal("Local development", document.Servers[0].Description);
+    }
+
+    [Fact]
+    public void ApplyTo_CreatesTheServerList_WhenTheDocumentHasNone()
+    {
+        OpenApiDocument document = new() { Servers = null };
+
+        LocalhostServerDocumentFilter.ApplyTo(document, ApiDocuments.Internal, ["https://localhost:44377"]);
+
+        Assert.Equal("https://localhost:44377/authentication/api/v1", Assert.Single(document.Servers!).Url);
+    }
+
+    [Fact]
+    public void ApplyTo_DoesNothing_OnTheExternalDocument()
+    {
+        // A vendor has no use for an address only reachable on the developer's machine.
+        OpenApiDocument document = new() { Servers = [] };
+
+        LocalhostServerDocumentFilter.ApplyTo(document, ApiDocuments.External, ["https://localhost:44377"]);
+
+        Assert.Empty(document.Servers!);
+    }
+
+    [Fact]
+    public void ApplyTo_DoesNothing_WhenTheHostReportsNoAddresses()
+    {
+        // The case that makes the shared Altinn servers filter throw: no addresses registered,
+        // as under the in-memory test server.
+        OpenApiDocument document = new() { Servers = [] };
+
+        LocalhostServerDocumentFilter.ApplyTo(document, ApiDocuments.Internal, []);
+
+        Assert.Empty(document.Servers!);
+    }
 }

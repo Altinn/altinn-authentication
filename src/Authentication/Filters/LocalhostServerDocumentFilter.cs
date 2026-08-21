@@ -33,14 +33,28 @@ namespace Altinn.Platform.Authentication.Filters
 
         /// <inheritdoc/>
         public void Apply(OpenApiDocument document, DocumentFilterContext context)
+            => ApplyTo(document, context.DocumentName, _server.Features.Get<IServerAddressesFeature>()?.Addresses);
+
+        /// <summary>
+        /// Adds the local server to the document, given the name of the document being generated
+        /// and the addresses the host reports.
+        /// </summary>
+        /// <remarks>
+        /// Separate from <see cref="Apply"/> because DocumentFilterContext cannot be constructed -
+        /// its DocumentName has no setter - so this is the part a test can reach.
+        /// </remarks>
+        /// <param name="document">The document being generated.</param>
+        /// <param name="documentName">The name of that document.</param>
+        /// <param name="addresses">The addresses the host is listening on, if any.</param>
+        internal static void ApplyTo(OpenApiDocument document, string documentName, IEnumerable<string>? addresses)
         {
             // Vendors have no use for a local address, so this is internal-only.
-            if (context.DocumentName != ApiDocuments.Internal)
+            if (documentName != ApiDocuments.Internal)
             {
                 return;
             }
 
-            if (TryCreateLocalServer(_server.Features.Get<IServerAddressesFeature>()?.Addresses) is not { } server)
+            if (TryCreateLocalServer(addresses) is not { } server)
             {
                 return;
             }
@@ -54,7 +68,7 @@ namespace Altinn.Platform.Authentication.Filters
         /// </summary>
         /// <param name="addresses">The listening addresses, which may be empty or null.</param>
         /// <returns>The server entry, or null when there is no address to point at.</returns>
-        public static OpenApiServer? TryCreateLocalServer(IEnumerable<string>? addresses)
+        internal static OpenApiServer? TryCreateLocalServer(IEnumerable<string>? addresses)
         {
             string[] candidates = [.. addresses ?? []];
             if (candidates.Length == 0)
