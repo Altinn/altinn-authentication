@@ -38,8 +38,6 @@
     <PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="10.2.3" />
     <PackageReference Include="Swashbuckle.AspNetCore.Annotations" Version="10.2.3" />
-    <!-- ReDoc is not part of the Swashbuckle.AspNetCore metapackage. -->
-    <PackageReference Include="Swashbuckle.AspNetCore.ReDoc" Version="10.2.3" />
     <PackageReference Include="Npgsql" Version="10.0.3" />
     <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="8.22.0" />
     <!-- Transitive security pins: override vulnerable versions pulled in by dependencies.
