@@ -514,8 +514,7 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
 
         VendorInfo vendor = new()
         {
-            ID = "0192:" + reader.GetFieldValue<string>(SystemRegisterFieldConstants.SYSTEM_VENDOR_ORGNUMBER),
-            Authority = "iso6523-actorid-upis"
+            ID = "0192:" + reader.GetFieldValue<string>(SystemRegisterFieldConstants.SYSTEM_VENDOR_ORGNUMBER)
         };
 
         if (!reader.IsDBNull(SystemRegisterFieldConstants.SYSTEM_ALLOWED_REDIRECTURLS))
