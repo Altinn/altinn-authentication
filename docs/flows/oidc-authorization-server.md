@@ -46,7 +46,8 @@ sequenceDiagram
    - Looks up the persisted upstream transaction by `state`.
    - Exchanges the `code` for the upstream `id_token`, validates it (issuer + nonce) via `UpstreamTokenValidator`.
    - Resolves/provisions the Altinn user (from Register), creates an Altinn **session** and the cookie set, and redirects to the client / `goTo`.
-   - On failure it returns a `LocalError` (e.g. `500`) rather than establishing a partial session.
+   - If the upstream token exchange fails (refused, unreachable, or a body that is not a token response) or the returned tokens do not validate, sign-in stops **fail-closed**: no session is created, and the user is sent back to the downstream client with `error=temporarily_unavailable`. Where there is no validated `redirect_uri` to return to — the unregistered-client (`goto`) flow — it is a local `502` instead, because bouncing back to the `goto` URL without a session would start another login attempt. Both causes are counted on `altinn.authentication.oidc.upstream_token_exchange` / `…upstream_token_validation` (see [operations.md](../operations.md#custom-metrics)).
+   - Other failures return a `LocalError` (e.g. `500`) rather than establishing a partial session.
 
 3. **`acr_values` / step-up:** the entry point accepts an optional space-separated `acr_values` query parameter (allowed values validated by `AuthenticationHelper.TryParseAcrValues`). If the existing session does not meet the requested level, the user is re-authenticated upstream at the higher level.
 
