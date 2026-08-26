@@ -1,6 +1,7 @@
 ﻿#nullable enable
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Diagnostics.Metrics;
 using System.IdentityModel.Tokens.Jwt;
 using System.Linq;
@@ -41,7 +42,7 @@ namespace Altinn.Platform.Authentication.Services
 
             if (string.IsNullOrEmpty(token))
             {
-                _metrics.TokenValidation(providerKey, tokenType, Metrics.OutcomeMissingToken);
+                _metrics.TokenValidation(providerKey, tokenType, Metrics.ErrorTypeMissingToken);
                 throw new ArgumentException("Token must be provided.", nameof(token));
             }
 
@@ -58,7 +59,7 @@ namespace Altinn.Platform.Authentication.Services
             {
                 // Discovery/JWKS is unreachable. This takes sign-in down just as effectively as a
                 // rejected token call, but for an entirely different reason - keep it distinguishable.
-                _metrics.TokenValidation(providerKey, tokenType, Metrics.OutcomeSigningKeysUnavailable);
+                _metrics.TokenValidation(providerKey, tokenType, Metrics.ErrorTypeSigningKeysUnavailable);
                 _logger.LogError(ex, "Could not retrieve signing keys for {Provider} from {WellKnownEndpoint}", providerKey, provider.WellKnownConfigEndpoint);
                 throw;
             }
@@ -72,7 +73,7 @@ namespace Altinn.Platform.Authentication.Services
                     ValidateNonce(jwtToken, nonce);
                 }
 
-                _metrics.TokenValidation(providerKey, tokenType, Metrics.OutcomeSuccess);
+                _metrics.TokenValidation(providerKey, tokenType, errorType: null);
                 return jwtToken;
             }
             catch (Exception ex)
@@ -83,17 +84,17 @@ namespace Altinn.Platform.Authentication.Services
         }
 
         /// <summary>
-        /// Maps a validation exception to a bounded set of metric outcomes. Anything unrecognised becomes
-        /// <c>other</c> so the <c>outcome</c> dimension stays small enough to alert and split on.
+        /// Maps a validation exception to a bounded set of error types. Anything unrecognised becomes
+        /// <c>_OTHER</c> so the <c>error.type</c> dimension stays small enough to alert and split on.
         /// </summary>
         private static string ClassifyValidationFailure(Exception exception) => exception switch
         {
-            SecurityTokenSignatureKeyNotFoundException => Metrics.OutcomeSigningKeyNotFound,
-            SecurityTokenInvalidSignatureException => Metrics.OutcomeInvalidSignature,
-            SecurityTokenInvalidIssuerException => Metrics.OutcomeInvalidIssuer,
-            SecurityTokenExpiredException or SecurityTokenNotYetValidException => Metrics.OutcomeExpired,
-            SecurityTokenValidationException => Metrics.OutcomeInvalidToken,
-            _ => Metrics.OutcomeOther,
+            SecurityTokenSignatureKeyNotFoundException => Metrics.ErrorTypeSigningKeyNotFound,
+            SecurityTokenInvalidSignatureException => Metrics.ErrorTypeInvalidSignature,
+            SecurityTokenInvalidIssuerException => Metrics.ErrorTypeInvalidIssuer,
+            SecurityTokenExpiredException or SecurityTokenNotYetValidException => Metrics.ErrorTypeExpired,
+            SecurityTokenValidationException => Metrics.ErrorTypeInvalidToken,
+            _ => Metrics.ErrorTypeOther,
         };
 
         private static string TrimEndSlash(string s) => s.EndsWith('/') ? s[..^1] : s;
@@ -169,32 +170,29 @@ namespace Altinn.Platform.Authentication.Services
         private sealed class Metrics(Meter meter)
             : IMetrics<Metrics>
         {
-            /// <summary>The token was signed by a known key, issued by the expected issuer, and live.</summary>
-            public const string OutcomeSuccess = "success";
-
             /// <summary>Discovery / JWKS could not be reached, so nothing could be validated.</summary>
-            public const string OutcomeSigningKeysUnavailable = "signing_keys_unavailable";
+            public const string ErrorTypeSigningKeysUnavailable = "signing_keys_unavailable";
 
             /// <summary>The token was signed with a key not present in the provider's JWKS (key rollover).</summary>
-            public const string OutcomeSigningKeyNotFound = "signing_key_not_found";
+            public const string ErrorTypeSigningKeyNotFound = "signing_key_not_found";
 
             /// <summary>The signature did not verify against the provider's keys.</summary>
-            public const string OutcomeInvalidSignature = "invalid_signature";
+            public const string ErrorTypeInvalidSignature = "invalid_signature";
 
             /// <summary>The <c>iss</c> claim did not match the configured issuer.</summary>
-            public const string OutcomeInvalidIssuer = "invalid_issuer";
+            public const string ErrorTypeInvalidIssuer = "invalid_issuer";
 
             /// <summary>The token was expired or not yet valid.</summary>
-            public const string OutcomeExpired = "expired";
+            public const string ErrorTypeExpired = "expired";
 
             /// <summary>Any other validation failure, including a missing or mismatched nonce.</summary>
-            public const string OutcomeInvalidToken = "invalid_token";
+            public const string ErrorTypeInvalidToken = "invalid_token";
 
             /// <summary>The upstream token exchange handed us nothing to validate.</summary>
-            public const string OutcomeMissingToken = "missing_token";
+            public const string ErrorTypeMissingToken = "missing_token";
 
-            /// <summary>An unclassified failure.</summary>
-            public const string OutcomeOther = "other";
+            /// <summary>The OTel fallback for a failure with no low-cardinality name of its own.</summary>
+            public const string ErrorTypeOther = "_OTHER";
 
             /// <summary>The upstream ID token.</summary>
             public const string TokenTypeIdToken = "id_token";
@@ -205,20 +203,31 @@ namespace Altinn.Platform.Authentication.Services
             private readonly Counter<int> _tokenValidation
                 = meter.CreateCounter<int>(
                         name: "altinn.authentication.oidc.upstream_token_validation",
-                        description: "Outcome of validating tokens issued by the upstream OIDC provider");
+                        description: "Validations of tokens issued by the upstream OIDC provider");
 
             public static Metrics Create(Meter meter) => new(meter);
 
             /// <summary>
             /// Counts one upstream token validation. Successes are counted too, so an alert can be
-            /// written on the failure <em>rate</em> rather than an absolute failure count.
+            /// written on the failure <em>rate</em> rather than an absolute failure count; a success is
+            /// a measurement with no <c>error.type</c>, per the OpenTelemetry convention.
             /// </summary>
-            public void TokenValidation(string provider, string tokenType, string outcome)
-                => _tokenValidation.Add(
-                    1,
-                    new KeyValuePair<string, object?>("provider", provider),
-                    new KeyValuePair<string, object?>("token.type", tokenType),
-                    new KeyValuePair<string, object?>("outcome", outcome));
+            /// <param name="provider">The configured provider key, e.g. <c>idporten</c>.</param>
+            /// <param name="tokenType">Which upstream token was validated.</param>
+            /// <param name="errorType">The failure classification, or <c>null</c> on success.</param>
+            public void TokenValidation(string provider, string tokenType, string? errorType)
+            {
+                TagList tags = default;
+                tags.Add("provider", provider);
+                tags.Add("token.type", tokenType);
+
+                if (errorType is not null)
+                {
+                    tags.Add("error.type", errorType);
+                }
+
+                _tokenValidation.Add(1, tags);
+            }
         }
     }
 }

@@ -2,9 +2,11 @@
 using System;
 using System.Collections.Frozen;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Diagnostics.Metrics;
 using System.Net.Http;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using System.Threading;
 using System.Threading.Tasks;
 using Altinn.Authorization.ServiceDefaults.Telemetry;
@@ -20,8 +22,8 @@ namespace Altinn.Platform.Authentication.Services
     public class OidcProviderService : IOidcProvider
     {
         /// <summary>
-        /// The OAuth 2.0 / OIDC error codes we are willing to put on the <c>error.code</c> metric dimension.
-        /// Anything else is folded into <c>other</c>: the upstream controls this value, and an unbounded
+        /// The OAuth 2.0 / OIDC error codes we are willing to put on the <c>error.type</c> metric dimension.
+        /// Anything else is folded into <c>_OTHER</c>: the upstream controls this value, and an unbounded
         /// dimension would multiply the metric's time series (and the Application Insights bill).
         /// </summary>
         private static readonly FrozenSet<string> KnownErrorCodes = new[]
@@ -106,7 +108,7 @@ namespace Altinn.Platform.Authentication.Services
                 // timeout, or an open circuit breaker. The circuit-breaker exception type lives in
                 // Polly, which we only have transitively, so this catch is deliberately broad - the
                 // try block wraps nothing but the outbound call.
-                _metrics.TokenExchange(providerKey, Metrics.OutcomeUnavailable, statusCode: 0, errorCode: "transport");
+                _metrics.TokenExchange(providerKey, statusCode: null, errorType: ex.GetType().FullName);
                 _logger.LogError(ex, "Upstream token request to {Provider} failed before a response was received", providerKey);
                 return null;
             }
@@ -123,38 +125,24 @@ namespace Altinn.Platform.Authentication.Services
         }
 
         /// <summary>
-        /// Reads the <c>error</c> / <c>error_description</c> members of an OAuth 2.0 error response
-        /// (RFC 6749 section 5.2). Returns <c>(null, null)</c> when the body is not one - during an
-        /// outage it is often an HTML page from an intermediary rather than JSON from the OP.
+        /// Reads an OAuth 2.0 error response (RFC 6749 section 5.2). Returns <c>null</c> when the body
+        /// is not one - during an outage it is often an HTML page from an intermediary rather than
+        /// JSON from the OP, and <see cref="JsonSerializer"/> throws on that.
         /// </summary>
-        private static (string? Error, string? Description) TryReadOAuthError(string content)
+        private static Oauth2ErrorResponse? TryReadOAuthError(string content)
         {
             if (string.IsNullOrWhiteSpace(content))
             {
-                return (null, null);
+                return null;
             }
 
             try
             {
-                using JsonDocument document = JsonDocument.Parse(content);
-                if (document.RootElement.ValueKind != JsonValueKind.Object)
-                {
-                    return (null, null);
-                }
-
-                string? error = document.RootElement.TryGetProperty("error", out JsonElement errorElement) && errorElement.ValueKind == JsonValueKind.String
-                    ? errorElement.GetString()
-                    : null;
-
-                string? description = document.RootElement.TryGetProperty("error_description", out JsonElement descriptionElement) && descriptionElement.ValueKind == JsonValueKind.String
-                    ? descriptionElement.GetString()
-                    : null;
-
-                return (error, description);
+                return JsonSerializer.Deserialize<Oauth2ErrorResponse>(content);
             }
             catch (JsonException)
             {
-                return (null, null);
+                return null;
             }
         }
 
@@ -182,31 +170,26 @@ namespace Altinn.Platform.Authentication.Services
 
             if (codeResponse is null || string.IsNullOrEmpty(codeResponse.IdToken))
             {
-                _metrics.TokenExchange(providerKey, Metrics.OutcomeInvalidResponse, statusCode, errorCode: "malformed");
+                _metrics.TokenExchange(providerKey, statusCode, Metrics.ErrorTypeInvalidResponse);
                 _logger.LogError("Upstream {Provider} returned {StatusCode} without a usable id_token", providerKey, statusCode);
                 return null;
             }
 
-            _metrics.TokenExchange(providerKey, Metrics.OutcomeSuccess, statusCode, errorCode: null);
+            _metrics.TokenExchange(providerKey, statusCode, errorType: null);
             return codeResponse;
         }
 
         private OidcCodeResponse? ReadErrorResponse(string content, string providerKey, int statusCode)
         {
-            (string? error, string? description) = TryReadOAuthError(content);
-            string errorCode = error is not null && KnownErrorCodes.Contains(error) ? error : "other";
+            Oauth2ErrorResponse? oauthError = TryReadOAuthError(content);
+            string? error = oauthError?.Error;
+            string errorType = error is not null && KnownErrorCodes.Contains(error) ? error : Metrics.ErrorTypeOther;
 
-            // 5xx and 429 mean the upstream could not serve us; a 4xx with an OAuth error code means it
-            // refused us. Both break sign-in, but only the first says "the upstream provider is unhealthy".
-            string outcome = statusCode >= 500 || statusCode == 429
-                ? Metrics.OutcomeUnavailable
-                : Metrics.OutcomeUpstreamError;
-
-            _metrics.TokenExchange(providerKey, outcome, statusCode, errorCode);
+            _metrics.TokenExchange(providerKey, statusCode, errorType);
 
             // invalid_grant is routinely user-driven (back button, replayed or expired code), so a single
             // occurrence is not an incident. Everything else points at us or at the upstream.
-            LogLevel level = string.Equals(errorCode, "invalid_grant", StringComparison.Ordinal) ? LogLevel.Warning : LogLevel.Error;
+            LogLevel level = string.Equals(errorType, "invalid_grant", StringComparison.Ordinal) ? LogLevel.Warning : LogLevel.Error;
 
             if (error is null)
             {
@@ -225,45 +208,69 @@ namespace Altinn.Platform.Authentication.Services
                     providerKey,
                     statusCode,
                     error,
-                    Truncate(description));
+                    Truncate(oauthError!.ErrorDescription)); // non-null whenever error is
             }
 
             return null;
         }
 
+        /// <summary>
+        /// An OAuth 2.0 error response body (RFC 6749 section 5.2).
+        /// </summary>
+        private sealed record Oauth2ErrorResponse
+        {
+            [JsonPropertyName("error")]
+            public string? Error { get; init; }
+
+            [JsonPropertyName("error_description")]
+            public string? ErrorDescription { get; init; }
+        }
+
         private sealed class Metrics(Meter meter)
             : IMetrics<Metrics>
         {
-            /// <summary>The upstream returned a token response we can use.</summary>
-            public const string OutcomeSuccess = "success";
-
-            /// <summary>The upstream refused the request (4xx with an OAuth error code).</summary>
-            public const string OutcomeUpstreamError = "upstream_error";
-
-            /// <summary>The upstream could not serve the request: 5xx, 429, timeout, or an open circuit.</summary>
-            public const string OutcomeUnavailable = "upstream_unavailable";
+            /// <summary>
+            /// The OTel fallback when the failure has no low-cardinality name of its own — an upstream
+            /// error code outside <see cref="KnownErrorCodes"/>, or a body that is not an OAuth error
+            /// response at all. The accompanying <c>http.response.status_code</c> narrows it down.
+            /// </summary>
+            public const string ErrorTypeOther = "_OTHER";
 
             /// <summary>The upstream answered 2xx, but not with a usable token response.</summary>
-            public const string OutcomeInvalidResponse = "invalid_response";
+            public const string ErrorTypeInvalidResponse = "invalid_response";
 
             private readonly Counter<int> _tokenExchange
                 = meter.CreateCounter<int>(
                         name: "altinn.authentication.oidc.upstream_token_exchange",
-                        description: "Outcome of authorization-code-to-token requests against the upstream OIDC provider");
+                        description: "Authorization-code-to-token requests against the upstream OIDC provider");
 
             public static Metrics Create(Meter meter) => new(meter);
 
             /// <summary>
             /// Counts one authorization-code-to-token request. Successes are counted too, so that an
-            /// alert can be written on the failure <em>rate</em> rather than an absolute failure count.
+            /// alert can be written on the failure <em>rate</em> rather than an absolute failure count;
+            /// a success is a measurement with no <c>error.type</c>, per the OpenTelemetry convention.
             /// </summary>
-            public void TokenExchange(string provider, string outcome, int statusCode, string? errorCode)
-                => _tokenExchange.Add(
-                    1,
-                    new KeyValuePair<string, object?>("provider", provider),
-                    new KeyValuePair<string, object?>("outcome", outcome),
-                    new KeyValuePair<string, object?>("http.response.status_code", statusCode),
-                    new KeyValuePair<string, object?>("error.code", errorCode ?? "none"));
+            /// <param name="provider">The configured provider key, e.g. <c>idporten</c>.</param>
+            /// <param name="statusCode">The upstream HTTP status, or <c>null</c> when no response was received.</param>
+            /// <param name="errorType">The failure classification, or <c>null</c> on success.</param>
+            public void TokenExchange(string provider, int? statusCode, string? errorType)
+            {
+                TagList tags = default;
+                tags.Add("provider", provider);
+
+                if (statusCode is not null)
+                {
+                    tags.Add("http.response.status_code", statusCode.Value);
+                }
+
+                if (errorType is not null)
+                {
+                    tags.Add("error.type", errorType);
+                }
+
+                _tokenExchange.Add(1, tags);
+            }
         }
     }
 }

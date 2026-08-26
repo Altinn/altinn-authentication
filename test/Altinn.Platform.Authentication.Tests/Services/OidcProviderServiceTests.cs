@@ -21,7 +21,7 @@ using Xunit;
 namespace Altinn.Platform.Authentication.Tests.Services
 {
     /// <summary>
-    /// Tests for <see cref="OidcProviderService"/>, covering the outcome metric
+    /// Tests for <see cref="OidcProviderService"/>, covering the outcome counter
     /// (<c>altinn.authentication.oidc.upstream_token_exchange</c>) and the diagnostics we log when
     /// the upstream token endpoint refuses or fails to serve a code-to-token request.
     /// </summary>
@@ -65,12 +65,12 @@ namespace Altinn.Platform.Authentication.Tests.Services
             IReadOnlyList<CollectedMeasurement<int>> measurements = collector.GetMeasurementSnapshot();
             CollectedMeasurement<int> measurement = Assert.Single(measurements);
             Assert.Equal(1, measurement.Value);
-            AssertTags(measurement, outcome: "success", statusCode: 200, errorCode: "none");
+            AssertSuccessTags(measurement, statusCode: 200);
             VerifyNoErrorLogged();
         }
 
         [Fact]
-        public async Task GetTokens_InvalidGrant_ReturnsNull_CountsUpstreamError_AndLogsWarningNotError()
+        public async Task GetTokens_InvalidGrant_ReturnsNull_CountsErrorType_AndLogsWarningNotError()
         {
             // A replayed or expired code is normal user behaviour (back button), so it must not raise
             // the error rate an alert is written on.
@@ -81,14 +81,14 @@ namespace Altinn.Platform.Authentication.Tests.Services
 
             Assert.Null(result);
             CollectedMeasurement<int> measurement = Assert.Single(collector.GetMeasurementSnapshot());
-            AssertTags(measurement, outcome: "upstream_error", statusCode: 400, errorCode: "invalid_grant");
+            AssertFailureTags(measurement, statusCode: 400, errorType: "invalid_grant");
 
             VerifyNoErrorLogged();
             VerifyLogged(LogLevel.Warning, "idporten", "invalid_grant", "Authorization code is expired");
         }
 
         [Fact]
-        public async Task GetTokens_InvalidClient_ReturnsNull_CountsUpstreamError_AndLogsErrorWithDescription()
+        public async Task GetTokens_InvalidClient_ReturnsNull_CountsErrorType_AndLogsErrorWithDescription()
         {
             // The incident case: an expired client secret. The error_description is what tells an
             // on-call engineer which of the 4xx causes they are looking at.
@@ -99,13 +99,13 @@ namespace Altinn.Platform.Authentication.Tests.Services
 
             Assert.Null(result);
             CollectedMeasurement<int> measurement = Assert.Single(collector.GetMeasurementSnapshot());
-            AssertTags(measurement, outcome: "upstream_error", statusCode: 401, errorCode: "invalid_client");
+            AssertFailureTags(measurement, statusCode: 401, errorType: "invalid_client");
 
             VerifyLogged(LogLevel.Error, "idporten", "invalid_client", "client authentication failed");
         }
 
         [Fact]
-        public async Task GetTokens_UnknownErrorCode_IsFoldedIntoOther()
+        public async Task GetTokens_UnknownErrorCode_IsFoldedIntoOtherSentinel()
         {
             // Cardinality guard: the upstream controls this value, so only a known set reaches the metric.
             const string body = """{"error":"a_brand_new_upstream_code","error_description":"nope"}""";
@@ -114,7 +114,7 @@ namespace Altinn.Platform.Authentication.Tests.Services
             await sut.GetTokens("code", NewProvider(), "https://at.altinn.no/cb", "verifier", CancellationToken.None);
 
             CollectedMeasurement<int> measurement = Assert.Single(collector.GetMeasurementSnapshot());
-            AssertTags(measurement, outcome: "upstream_error", statusCode: 400, errorCode: "other");
+            AssertFailureTags(measurement, statusCode: 400, errorType: "_OTHER");
 
             // The raw code is still logged, it is only kept off the metric dimension.
             VerifyLogged(LogLevel.Error, "a_brand_new_upstream_code");
@@ -124,7 +124,7 @@ namespace Altinn.Platform.Authentication.Tests.Services
         [InlineData(HttpStatusCode.ServiceUnavailable, 503)]
         [InlineData(HttpStatusCode.InternalServerError, 500)]
         [InlineData(HttpStatusCode.TooManyRequests, 429)]
-        public async Task GetTokens_UpstreamUnhealthy_CountsUpstreamUnavailable(HttpStatusCode statusCode, int expected)
+        public async Task GetTokens_UpstreamUnhealthy_CountsOtherSentinelWithStatusCode(HttpStatusCode statusCode, int expected)
         {
             // A gateway in front of the OP typically answers HTML, not an OAuth error object.
             const string body = "<html><head><title>503 Service Unavailable</title></head></html>";
@@ -134,7 +134,7 @@ namespace Altinn.Platform.Authentication.Tests.Services
 
             Assert.Null(result);
             CollectedMeasurement<int> measurement = Assert.Single(collector.GetMeasurementSnapshot());
-            AssertTags(measurement, outcome: "upstream_unavailable", statusCode: expected, errorCode: "other");
+            AssertFailureTags(measurement, statusCode: expected, errorType: "_OTHER");
 
             VerifyLogged(LogLevel.Error, "503 Service Unavailable");
         }
@@ -153,7 +153,7 @@ namespace Altinn.Platform.Authentication.Tests.Services
         }
 
         [Fact]
-        public async Task GetTokens_TransportFailure_ReturnsNull_CountsUnavailableWithTransportCode()
+        public async Task GetTokens_TransportFailure_ReturnsNull_CountsExceptionTypeAndNoStatusCode()
         {
             // No HTTP response at all: DNS/TLS/connect failure, a request timeout, or an open circuit.
             (OidcProviderService sut, MetricCollector<int> collector) = CreateSutThatThrows(new HttpRequestException("no such host"));
@@ -162,7 +162,13 @@ namespace Altinn.Platform.Authentication.Tests.Services
 
             Assert.Null(result);
             CollectedMeasurement<int> measurement = Assert.Single(collector.GetMeasurementSnapshot());
-            AssertTags(measurement, outcome: "upstream_unavailable", statusCode: 0, errorCode: "transport");
+
+            Assert.Equal("idporten", measurement.Tags["provider"]);
+            Assert.Equal("System.Net.Http.HttpRequestException", measurement.Tags["error.type"]);
+
+            // There was no response, so there is no status code to report — the tag is omitted entirely
+            // rather than reported as a fictitious 0.
+            Assert.False(measurement.Tags.ContainsKey("http.response.status_code"));
 
             VerifyLogged(LogLevel.Error, "idporten");
         }
@@ -177,7 +183,7 @@ namespace Altinn.Platform.Authentication.Tests.Services
 
             Assert.Null(result);
             CollectedMeasurement<int> measurement = Assert.Single(collector.GetMeasurementSnapshot());
-            AssertTags(measurement, outcome: "invalid_response", statusCode: 200, errorCode: "malformed");
+            AssertFailureTags(measurement, statusCode: 200, errorType: "invalid_response");
         }
 
         [Fact]
@@ -189,7 +195,7 @@ namespace Altinn.Platform.Authentication.Tests.Services
 
             Assert.Null(result);
             CollectedMeasurement<int> measurement = Assert.Single(collector.GetMeasurementSnapshot());
-            AssertTags(measurement, outcome: "invalid_response", statusCode: 200, errorCode: "malformed");
+            AssertFailureTags(measurement, statusCode: 200, errorType: "invalid_response");
         }
 
         [Fact]
@@ -232,12 +238,22 @@ namespace Altinn.Platform.Authentication.Tests.Services
             ClientSecret = "test-secret",
         };
 
-        private static void AssertTags(CollectedMeasurement<int> measurement, string outcome, int statusCode, string errorCode)
+        /// <summary>
+        /// A success carries no <c>error.type</c> at all — that absence is what an alert query uses to
+        /// separate successes from failures, so assert it rather than a sentinel value.
+        /// </summary>
+        private static void AssertSuccessTags(CollectedMeasurement<int> measurement, int statusCode)
         {
             Assert.Equal("idporten", measurement.Tags["provider"]);
-            Assert.Equal(outcome, measurement.Tags["outcome"]);
             Assert.Equal(statusCode, measurement.Tags["http.response.status_code"]);
-            Assert.Equal(errorCode, measurement.Tags["error.code"]);
+            Assert.False(measurement.Tags.ContainsKey("error.type"));
+        }
+
+        private static void AssertFailureTags(CollectedMeasurement<int> measurement, int statusCode, string errorType)
+        {
+            Assert.Equal("idporten", measurement.Tags["provider"]);
+            Assert.Equal(statusCode, measurement.Tags["http.response.status_code"]);
+            Assert.Equal(errorType, measurement.Tags["error.type"]);
         }
 
         private (OidcProviderService Sut, MetricCollector<int> Collector) CreateSut(HttpStatusCode statusCode, string responseBody, string mediaType = "application/json")
