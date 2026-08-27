@@ -1925,7 +1925,6 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
                 Id = systemId,
                 Vendor = new VendorInfo
                 {
-                    Authority = "iso6523-actorid-upis",
                     ID = $"0192:991825827"
                 },
                 Name = new Dictionary<string, string>

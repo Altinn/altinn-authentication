@@ -19,13 +19,6 @@ public interface IAccessManagementClient
     Task<AuthorizedPartyExternal?> GetPartyFromReporteeListIfExists(int partyId, string token);
 
     /// <summary>
-    /// Gets the Party as a PartyExternal object from the partyid
-    /// </summary>
-    /// <param name="partyId">The party id</param>
-    /// <param name="token">The authorization header bearer token</param>
-    Task<PartyExternal> GetParty(int partyId, string token);
-
-    /// <summary>
     /// Delegates the rights to the systemuser
     /// </summary>
     /// <param name="partyUuid">The party id</param>
