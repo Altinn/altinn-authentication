@@ -1,24 +1,22 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace Altinn.Platform.Authentication.Core.Models.ResourceRegistry
+﻿namespace Altinn.Platform.Authentication.Core.Models.ResourceRegistry
 {
     /// <summary>
-    /// Model for defining keywords
+    /// Model for defining keywords.
     /// </summary>
+    /// <remarks>
+    /// Nothing in this service reads a keyword, and the only observed payload carrying the
+    /// property had an empty array, so neither member can be claimed non-null.
+    /// </remarks>
     public class Keyword
     {
         /// <summary>
         /// The key word
         /// </summary>
-        public string Word { get; set; } 
+        public string? Word { get; set; }
 
         /// <summary>
         /// Language of the key word
         /// </summary>
-        public string Language { get; set; }
+        public string? Language { get; set; }
     }
 }
