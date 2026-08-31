@@ -78,6 +78,20 @@ Declaring `AuthLevels` is what makes a provider reachable via `acr_values`; prov
 
 Step-up compares **normalised levels**, not acr strings (`AuthenticationHelper.NeedAcrUpgrade`), so a session from one provider can satisfy a level requested in another's vocabulary. A session whose acr resolves to no level does not satisfy a request above level 0.
 
+Acr values declared by a provider must be unique across the whole configuration, and only `idporten` may declare ID-porten's built-in values. Violations fail at startup rather than being resolved by configuration order, which would silently route existing clients to a different ID-provider.
+
+### Trust equivalence between providers — open policy question
+
+Comparing normalised levels means **equal numeric levels from different providers are treated as interchangeable**. A `helseid-loa-high` session (level 4) satisfies a request for `idporten-loa-high` (level 4) without a step-up.
+
+This is a deliberate consequence of normalising, and it is what makes step-up work at all for a provider that does not emit `acr` — but it is a *trust* decision, not a technical one, and it has **not been ratified**. It deserves scrutiny because HelseID federates onward: a HelseID level-4 session may be an ID-porten BankID authentication underneath, or it may come from a regional health IdP such as Helse Midt-Norge or Helseplattformen. Whether those are equivalent for an Altinn client that asked specifically for ID-porten level 4 is a question for the auth team and, plausibly, for legal.
+
+Until that is settled, treat cross-provider level equivalence as unratified. See [#2163](https://github.com/Altinn/altinn-authentication/issues/2163).
+
+### Not yet enforced: the level actually achieved
+
+The requested `acr_values` are used to pick the provider, to build the upstream request, and to decide whether an *existing* session needs a step-up. They are persisted on the login transaction, but **nothing compares them against the level actually achieved once the user returns from the upstream provider.** A client can request level 4, be authenticated at level 0, and receive a session with no error. This predates configurable providers and applies to every provider.
+
 ## Related
 
 - The session + cookie mechanics, refresh, and logout: [sessions-and-cookies.md](sessions-and-cookies.md).

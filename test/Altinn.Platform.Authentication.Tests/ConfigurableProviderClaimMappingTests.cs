@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Configuration;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using Altinn.Platform.Authentication.Configuration;
@@ -144,6 +145,63 @@ namespace Altinn.Platform.Authentication.Tests
             Assert.Null(result.ExternalIdentity);
             Assert.Null(result.Email);
             Assert.NotEqual("selfregistered-email", result.Acr);
+        }
+
+        [Fact]
+        public void GetUserFromToken_HelseId_NormalisesAmrSoResolvedMethodSurvivesTokenIssuance()
+        {
+            JwtSecurityToken token = Token(
+                ("helseid://claims/identity/security_level", "4"),
+                ("amr", "pwd"),
+                ("idp", "bankid-oidc"));
+
+            var result = AuthenticationHelper.GetUserFromToken(token, HelseId());
+
+            // Only Amr is persisted on the session; ClaimsPrincipalBuilder re-derives the method
+            // from Amr[0] through the built-in table with no access to provider configuration.
+            // Storing the raw 'bankid-oidc' would resolve to NotDefined there and drop
+            // urn:altinn:authenticatemethod from the issued tokens.
+            Assert.Equal(["BankID"], result.Amr!);
+            Assert.Equal(AuthenticationMethod.BankID, AuthenticationHelper.GetAuthenticationMethod(result.Amr![0]));
+        }
+
+        [Fact]
+        public void GetUserFromToken_IdPorten_AmrLeftUntouched()
+        {
+            JwtSecurityToken token = Token(("acr", "idporten-loa-high"), ("amr", "BankID"));
+
+            var result = AuthenticationHelper.GetUserFromToken(token, IdPorten());
+
+            // The built-in table already understands ID-porten's values, so normalisation is a
+            // no-op and the upstream amr is preserved verbatim.
+            Assert.Equal(["BankID"], result.Amr!);
+        }
+
+        [Fact]
+        public void Catalog_DuplicateAcrAcrossProviders_FailsStartup()
+        {
+            OidcProvider rival = HelseId();
+            rival.IssuerKey = "rival";
+
+            var ex = Assert.Throws<ConfigurationErrorsException>(
+                () => Catalog(("helseid", HelseId()), ("rival", rival)));
+
+            Assert.Contains("helseid-loa-high", ex.Message);
+        }
+
+        [Fact]
+        public void Catalog_ProviderClaimingIdPortenAcr_FailsStartup()
+        {
+            OidcProvider impostor = HelseId();
+            impostor.AuthLevels =
+            [
+                new() { Acr = "idporten-loa-high", Level = SecurityLevel.VerySensitive, UpstreamAcrValues = "Level4", ClaimValues = ["4"] }
+            ];
+
+            var ex = Assert.Throws<ConfigurationErrorsException>(
+                () => Catalog(("idporten", IdPorten()), ("helseid", impostor)));
+
+            Assert.Contains("idporten-loa-high", ex.Message);
         }
 
         [Fact]

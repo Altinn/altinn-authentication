@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Configuration;
 using System.Linq;
 using Altinn.Platform.Authentication.Configuration;
 using Altinn.Platform.Authentication.Core.Services.Interfaces;
@@ -50,22 +51,44 @@ namespace Altinn.Platform.Authentication.Services
 
                 foreach (OidcAuthLevel level in levels)
                 {
-                    if (!string.IsNullOrWhiteSpace(level.Acr) && !_byAcr.ContainsKey(level.Acr))
+                    if (string.IsNullOrWhiteSpace(level.Acr))
                     {
-                        _byAcr[level.Acr] = new Entry(kvp.Key, level);
+                        continue;
                     }
+
+                    // Fail startup rather than resolving collisions by configuration order. A
+                    // silently ignored duplicate would route an acr value to whichever provider
+                    // happened to be configured first, redirecting existing clients to a
+                    // different ID-provider with no error anywhere.
+                    if (_byAcr.TryGetValue(level.Acr, out Entry? clash))
+                    {
+                        throw new ConfigurationErrorsException(
+                            $"OidcProviders: acr value '{level.Acr}' is declared by both '{clash.ProviderKey}' and '{kvp.Key}'. Each acr value must belong to exactly one provider.");
+                    }
+
+                    _byAcr[level.Acr] = new Entry(kvp.Key, level);
                 }
             }
 
             // ID-porten's vocabulary stays bound to the default provider, which is what the
-            // previous hardcoded mapping did. Seeded last so a provider that explicitly declares
-            // one of these acr values can still claim it.
+            // previous hardcoded mapping did.
             foreach (OidcAuthLevel level in OidcAuthLevelDefaults.IdPorten)
             {
-                if (!_byAcr.ContainsKey(level.Acr))
+                if (_byAcr.TryGetValue(level.Acr, out Entry? existing))
                 {
-                    _byAcr[level.Acr] = new Entry(DefaultProviderKey, level);
+                    // Only the default provider may declare ID-porten's own acr values
+                    // explicitly. Any other provider claiming them would take over traffic from
+                    // clients that have requested these values for years.
+                    if (!string.Equals(existing.ProviderKey, DefaultProviderKey, StringComparison.OrdinalIgnoreCase))
+                    {
+                        throw new ConfigurationErrorsException(
+                            $"OidcProviders: provider '{existing.ProviderKey}' declares the built-in ID-porten acr value '{level.Acr}'. Only '{DefaultProviderKey}' may declare it.");
+                    }
+
+                    continue;
                 }
+
+                _byAcr[level.Acr] = new Entry(DefaultProviderKey, level);
             }
 
             _allowed = new HashSet<string>(_byAcr.Keys, StringComparer.Ordinal);

@@ -192,6 +192,30 @@ namespace Altinn.Platform.Authentication.Helpers
                 userAuthenticationModel.AuthenticationMethod = defaultMethod;
             }
 
+            // Normalise Amr to Altinn's vocabulary so the resolved method survives token issuance.
+            //
+            // Only Amr is persisted on the session; the resolved AuthenticationMethod is not.
+            // ClaimsPrincipalBuilder re-derives the method from Amr[0] through the built-in
+            // ID-porten table and has no access to provider configuration, so a provider value
+            // such as HelseID's 'bankid-oidc' would resolve to NotDefined there and
+            // urn:altinn:authenticatemethod would be dropped from the issued tokens — leaving
+            // AuthMethodMappings effective for the audit log only.
+            //
+            // Rewriting here rather than persisting a second column keeps this schema-compatible.
+            // It is a no-op for providers whose amr values the built-in table already understands,
+            // so ID-porten and UIDP are untouched. The raw upstream value remains available via
+            // ProviderClaims for providers that list the claim.
+            if (userAuthenticationModel.AuthenticationMethod != AuthenticationMethod.NotDefined
+                && (userAuthenticationModel.Amr is null or { Length: 0 }
+                    || GetAuthenticationMethod(userAuthenticationModel.Amr[0]) == AuthenticationMethod.NotDefined))
+            {
+                string normalisedAmr = GetAmrFromAuthenticationMethod(userAuthenticationModel.AuthenticationMethod);
+                if (!string.IsNullOrEmpty(normalisedAmr))
+                {
+                    userAuthenticationModel.Amr = [normalisedAmr];
+                }
+            }
+
             if (accessToken != null)
             {
                 foreach (Claim claim in accessToken.Claims)
