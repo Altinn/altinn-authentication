@@ -61,7 +61,8 @@ namespace Altinn.Platform.Authentication.Services
         IUnregisteredClientRepository unregisteredClientRequestRepository,
         IEventLog eventLog,
         IFeatureManager featureManager, 
-        IOidcDownstreamLogout oidcDownstreamLogout) : IOidcServerService
+        IOidcDownstreamLogout oidcDownstreamLogout,
+        IAcrValueCatalog acrValueCatalog) : IOidcServerService
     {
         private readonly ILogger<OidcServerService> _logger = logger;
         private readonly IOidcServerClientRepository _oidcServerClientRepository = oidcServerClientRepository;
@@ -70,6 +71,7 @@ namespace Altinn.Platform.Authentication.Services
         private readonly IAuthorizeRequestValidator _basicValidator = authorizeRequestValidator;
         private readonly IAuthorizeClientPolicyValidator _clientValidator = authorizeClientPolicyValidator;
         private readonly OidcProviderSettings _oidcProviderSettings = oidcProviderSettings.Value;
+        private readonly IAcrValueCatalog _acrValueCatalog = acrValueCatalog;
         private readonly TimeProvider _timeProvider = timeProvider;
         private readonly IOidcProvider _oidcProvider = oidcProvider;
         private readonly IUpstreamTokenValidator _upstreamTokenValidator = upstreamTokenValidator;
@@ -145,7 +147,7 @@ namespace Altinn.Platform.Authentication.Services
             if (existingSession is not null
                 && existingSession.ExpiresAt.HasValue
                 && _timeProvider.GetUtcNow() < existingSession.ExpiresAt.Value
-                && !AuthenticationHelper.NeedAcrUpgrade(existingSession.Acr, request.AcrValues))
+                && !AuthenticationHelper.NeedAcrUpgrade(existingSession.Acr, request.AcrValues, _acrValueCatalog))
             {
                 // There is a valid session with high enough ACR. We just create a code an return straight away. Also slide session expiry.
                 await _oidcSessionRepo.SlideExpiryToAsync(existingSession.Sid, _timeProvider.GetUtcNow().AddMinutes(_generalSettings.JwtValidityMinutes), cancellationToken);
@@ -266,13 +268,15 @@ namespace Altinn.Platform.Authentication.Services
             UserAuthenticationModel? identifiedUser = await IdentifyOrCreateAltinnUser(userIdenity, provider, cancellationToken);
             if (identifiedUser is null)
             {
-                // Self-identified user provisioning (via register) failed. Do not continue and create
-                // a session from an incomplete identity (missing UserID/PartyID/PartyUuid).
+                // Either self-identified provisioning (via register) failed, or the upstream token
+                // carried no identifier we could resolve to an Altinn user. Either way, do not
+                // continue and create a session from an incomplete identity (missing
+                // UserID/PartyID/PartyUuid). IdentifyOrCreateAltinnUser has logged which.
                 return new UpstreamCallbackResult
                 {
                     Kind = UpstreamCallbackResultKind.LocalError,
                     StatusCode = 500,
-                    LocalErrorMessage = "Could not provision the self-identified user; sign-in cannot complete."
+                    LocalErrorMessage = "Could not establish an Altinn identity for the user; sign-in cannot complete."
                 };
             }
 
@@ -1238,33 +1242,34 @@ namespace Altinn.Platform.Authentication.Services
             throw new ArgumentException("Invalid or unknown provider issuer.", nameof(issuer));
         }
 
-        private static string GetIdProviderFromAcr(string[]? acrValues)
+        /// <summary>
+        /// Maps requested acr values to the provider that offers them, using the configured
+        /// catalogue. Replaces the previous hardcoded mapping, whose <c>"uidp"</c> branch was in
+        /// fact unreachable: <c>"uidp"</c> was never in the acr allow-list, so a request carrying
+        /// it was rejected before ever reaching provider selection.
+        /// </summary>
+        private string GetIdProviderFromAcr(string[]? acrValues)
+            => _acrValueCatalog.ResolveProviderKey(acrValues) ?? DefaultProviderKey;
+
+        /// <summary>
+        /// The <c>acr_values</c> to send when the client requested no level.
+        /// </summary>
+        /// <remarks>
+        /// Providers that have not opted into configured <see cref="OidcProvider.AuthLevels"/>
+        /// keep the previous hardcoded ID-porten default, so this change is behaviour-preserving
+        /// for them. A provider that declares its own levels gets no ID-porten vocabulary at all
+        /// and must state its default explicitly.
+        /// </remarks>
+        private static string? GetDefaultUpstreamAcrValues(OidcProvider p)
         {
-            if (acrValues is null || acrValues.Length == 0)
+            if (!string.IsNullOrWhiteSpace(p.DefaultUpstreamAcrValues))
             {
-                return DefaultProviderKey;
+                return p.DefaultUpstreamAcrValues;
             }
 
-            var set = new HashSet<string>(acrValues, StringComparer.OrdinalIgnoreCase);
-
-            // IdPorten (high/substantial still go to the same upstream)
-            if (set.Contains("idporten-loa-high") || set.Contains("idporten-loa-substantial"))
-            {
-                return "idporten";
-            }
-
-            if (set.Contains("selfregistered-email"))
-            {
-                return "idporten";
-            }
-
-            // UDIR/UIDP
-            if (set.Contains("uidp"))
-            {
-                return "uidp";
-            }
-
-            return DefaultProviderKey;
+            return p.AuthLevels is { Count: > 0 }
+                ? null
+                : AuthzConstants.CLAIM_ACR_IDPORTEN_EMAIL + " " + AuthzConstants.CLAIM_ACR_IDPORTEN_SUBSTANTIAL;
         }
 
         private async Task NotifyDownstreamClientsOfLogout(string sid, CancellationToken cancellationToken)
@@ -1303,18 +1308,27 @@ namespace Altinn.Platform.Authentication.Services
             q["code_challenge"] = upstreamCodeChallenge;
             q["code_challenge_method"] = "S256";
 
-            if (incoming.AcrValues is { Length: > 0 })
-            {
-                q["acr_values"] = string.Join(' ', incoming.AcrValues);
-            }
+            // Translate the Altinn-facing acr values into this provider's own vocabulary.
+            // Previously the incoming values were forwarded verbatim, which meant ID-porten's
+            // vocabulary was sent to every provider regardless of whether it understood it.
+            string? upstreamAcr = _acrValueCatalog.GetUpstreamAcrValues(p.IssuerKey, incoming.AcrValues);
 
             // Only widen acr_values with selfregistered-email when the user is anonymous.
             // On an ACR upgrade for an already-logged-in user the requested LoA must be sent as-is.
-            if (!hasExistingSession
-                && q["acr_values"] != null
-                && !q["acr_values"]!.Contains(AuthzConstants.CLAIM_ACR_IDPORTEN_EMAIL))
+            // The widening applies only to providers that actually offer that level; it is
+            // ID-porten's concept and is a no-op elsewhere.
+            if (!hasExistingSession && !string.IsNullOrEmpty(upstreamAcr))
             {
-                q["acr_values"] = AuthzConstants.CLAIM_ACR_IDPORTEN_EMAIL + " " + q["acr_values"];
+                string? selfRegistered = _acrValueCatalog.GetUpstreamAcrValues(p.IssuerKey, [AuthzConstants.CLAIM_ACR_IDPORTEN_EMAIL]);
+                if (!string.IsNullOrEmpty(selfRegistered) && !upstreamAcr.Contains(selfRegistered, StringComparison.Ordinal))
+                {
+                    upstreamAcr = selfRegistered + " " + upstreamAcr;
+                }
+            }
+
+            if (!string.IsNullOrEmpty(upstreamAcr))
+            {
+                q["acr_values"] = upstreamAcr;
             }
 
             if (incoming.Prompts is { Length: > 0 })
@@ -1354,13 +1368,15 @@ namespace Altinn.Platform.Authentication.Services
             q["code_challenge"] = upstreamCodeChallenge;
             q["code_challenge_method"] = "S256";
 
-            if (incoming.AcrValues is { Length: > 0 })
+            string? upstreamAcr = _acrValueCatalog.GetUpstreamAcrValues(p.IssuerKey, incoming.AcrValues);
+            if (string.IsNullOrEmpty(upstreamAcr))
             {
-                q["acr_values"] = string.Join(' ', incoming.AcrValues);
+                upstreamAcr = GetDefaultUpstreamAcrValues(p);
             }
-            else
+
+            if (!string.IsNullOrEmpty(upstreamAcr))
             {
-                q["acr_values"] = AuthzConstants.CLAIM_ACR_IDPORTEN_EMAIL + " " + AuthzConstants.CLAIM_ACR_IDPORTEN_SUBSTANTIAL;
+                q["acr_values"] = upstreamAcr;
             }
 
             var ub = new UriBuilder(p.AuthorizationEndpoint) { Query = q.ToString()! };
@@ -1473,7 +1489,27 @@ namespace Altinn.Platform.Authentication.Services
                     return userAuthenticationModel;
                 }
             }
-            
+
+            // No branch established an Altinn identity. Returning the model here would let the
+            // caller continue: oidc_session.subject_id and subject_party_uuid are both nullable,
+            // so nothing downstream rejects it and the user ends up holding a valid cookie for no
+            // one. Fail the sign-in instead.
+            //
+            // Reachable when a token carries none of the identifiers the branches above look for —
+            // in practice a provider whose configured pid claim is absent (wrong ClaimMappings.Pid,
+            // or the pid scope not granted) and which has no ExternalIdentityClaim and is not on
+            // the self-registered-email path. The self-identified and email branches return
+            // earlier and are unaffected, including for first-time users.
+            if (userAuthenticationModel.PartyUuid is null)
+            {
+                _logger.LogError(
+                    "No Altinn identity could be established for provider {Provider}. The token carried no usable identifier: pid claim '{PidClaim}' was absent and the provider has no ExternalIdentityClaim configured. Sign-in cannot complete.",
+                    provider?.IssuerKey,
+                    provider?.ClaimMappings?.Pid ?? "pid");
+
+                return null;
+            }
+
             return userAuthenticationModel;
         }
 

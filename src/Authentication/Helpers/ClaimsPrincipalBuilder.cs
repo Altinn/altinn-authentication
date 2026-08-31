@@ -6,6 +6,7 @@ using System.Linq;
 using System.Security.Claims;
 using System.Text.Json;
 using Altinn.Platform.Authentication.Core.Models.Oidc;
+using Altinn.Platform.Authentication.Core.Services.Interfaces;
 using Altinn.Platform.Authentication.Enum;
 using Altinn.Platform.Authentication.Helpers;
 using Altinn.Urn;
@@ -21,9 +22,27 @@ namespace Altinn.Platform.Authentication.Core.Helpers
         private const string OriginalIssClaimName = "originaliss";
 
         /// <summary>
+        /// Resolves a stored acr value to a security level via the configured catalogue, falling
+        /// back to ID-porten's built-in table.
+        /// </summary>
+        /// <remarks>
+        /// The fallback matters for sessions written before providers became configurable, and
+        /// for the callers that do not have a catalogue to hand.
+        /// </remarks>
+        private static SecurityLevel ResolveLevel(string acr, IAcrValueCatalog? acrCatalog)
+        {
+            if (acrCatalog is not null && acrCatalog.TryGetLevel(acr, out int level))
+            {
+                return (SecurityLevel)level;
+            }
+
+            return AuthenticationHelper.GetAuthenticationLevelForIdPorten(acr);
+        }
+
+        /// <summary>
         /// Based on OidcBindingContextBase, creates a ClaimsPrincipal with relevant claims.
         /// </summary>
-        public static ClaimsPrincipal GetClaimsPrincipal(OidcBindingContextBase oidcBindingContext, string iss, bool isIDToken = false)
+        public static ClaimsPrincipal GetClaimsPrincipal(OidcBindingContextBase oidcBindingContext, string iss, bool isIDToken = false, IAcrValueCatalog? acrCatalog = null)
         {
             List<Claim> claims = new()
             {
@@ -74,7 +93,7 @@ namespace Altinn.Platform.Authentication.Core.Helpers
             if (oidcBindingContext.Acr != null)
             {
                 claims.Add(new Claim("acr", oidcBindingContext.Acr));
-                securityLevel = AuthenticationHelper.GetAuthenticationLevelForIdPorten(oidcBindingContext.Acr);
+                securityLevel = ResolveLevel(oidcBindingContext.Acr, acrCatalog);
             }
 
             if (oidcBindingContext.ProviderClaims != null)
@@ -103,8 +122,16 @@ namespace Altinn.Platform.Authentication.Core.Helpers
                 {
                     string amrJson = JsonSerializer.Serialize(amr); // e.g. ["TestID","pwd"]
                     claims.Add(new Claim("amr", amrJson, JsonClaimValueTypes.JsonArray));
-                    string amrClaim = AuthenticationHelper.GetAuthenticationMethod(amr[0]).ToString();
-                    claims.Add(new Claim(AltinnCoreClaimTypes.AuthenticateMethod, amrClaim));
+
+                    // Emit the method claim only when the amr value actually resolves. Emitting the
+                    // literal string "NotDefined" — which is what an unrecognised value used to
+                    // produce — is worse than emitting nothing, since consumers cannot tell it
+                    // apart from a real method.
+                    AuthenticationMethod method = AuthenticationHelper.GetAuthenticationMethod(amr[0]);
+                    if (method != AuthenticationMethod.NotDefined)
+                    {
+                        claims.Add(new Claim(AltinnCoreClaimTypes.AuthenticateMethod, method.ToString()));
+                    }
                 }
             }
 
@@ -138,7 +165,7 @@ namespace Altinn.Platform.Authentication.Core.Helpers
         /// <summary>
         /// Create a ClaimsPrincipal based on an OidcSession for AltinnStudio runtime cookie
         /// </summary>
-        public static ClaimsPrincipal GetClaimsPrincipal(OidcSession oidcSession, string iss, bool isIDToken = false, bool isAuthCookie = false)
+        public static ClaimsPrincipal GetClaimsPrincipal(OidcSession oidcSession, string iss, bool isIDToken = false, bool isAuthCookie = false, IAcrValueCatalog? acrCatalog = null)
         {
             List<Claim> claims = new()
             {
@@ -195,7 +222,7 @@ namespace Altinn.Platform.Authentication.Core.Helpers
             if (oidcSession.Acr != null)
             {
                 claims.Add(new Claim("acr", oidcSession.Acr));
-                securityLevel = AuthenticationHelper.GetAuthenticationLevelForIdPorten(oidcSession.Acr);
+                securityLevel = ResolveLevel(oidcSession.Acr, acrCatalog);
             }
 
             if (oidcSession.ProviderClaims != null)
@@ -224,8 +251,16 @@ namespace Altinn.Platform.Authentication.Core.Helpers
                 {
                     string amrJson = JsonSerializer.Serialize(amr); // e.g. ["TestID","pwd"]
                     claims.Add(new Claim("amr", amrJson, JsonClaimValueTypes.JsonArray));
-                    string amrClaim = AuthenticationHelper.GetAuthenticationMethod(amr[0]).ToString();
-                    claims.Add(new Claim(AltinnCoreClaimTypes.AuthenticateMethod, amrClaim));
+
+                    // Emit the method claim only when the amr value actually resolves. Emitting the
+                    // literal string "NotDefined" — which is what an unrecognised value used to
+                    // produce — is worse than emitting nothing, since consumers cannot tell it
+                    // apart from a real method.
+                    AuthenticationMethod method = AuthenticationHelper.GetAuthenticationMethod(amr[0]);
+                    if (method != AuthenticationMethod.NotDefined)
+                    {
+                        claims.Add(new Claim(AltinnCoreClaimTypes.AuthenticateMethod, method.ToString()));
+                    }
                 }
             }
            

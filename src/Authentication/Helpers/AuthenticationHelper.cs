@@ -11,6 +11,7 @@ using Altinn.Authorization.ProblemDetails;
 using Altinn.Platform.Authentication.Core.Constants;
 using Altinn.Platform.Authentication.Core.Models;
 using Altinn.Platform.Authentication.Core.Models.AccessPackages;
+using Altinn.Platform.Authentication.Core.Services.Interfaces;
 using Altinn.Platform.Authentication.Core.SystemRegister.Models;
 using Altinn.Platform.Authentication.Enum;
 using Altinn.Platform.Authentication.Model;
@@ -27,15 +28,14 @@ namespace Altinn.Platform.Authentication.Helpers
     /// </summary>
     public static class AuthenticationHelper
     {
-        private const string IdPortenAcrHigh = "idporten-loa-high";
-
         /// <summary>
-        /// The acr_values accepted on the public authentication entry point. Mirrors the allow-list
-        /// enforced for registered clients in <c>AuthorizeRequestValidator</c>.
+        /// The acr_values accepted when no configured catalogue is supplied. Derived from
+        /// ID-porten's built-in level table so there is a single source for it; the runtime
+        /// allow-list comes from <see cref="IAcrValueCatalog"/>, which is built from the
+        /// configured providers.
         /// </summary>
-        private static readonly HashSet<string> AllowedAcrValues = new(
-            new[] { "selfregistered-email", "idporten-loa-substantial", "idporten-loa-high", "level0", "level1", "level2" },
-            StringComparer.Ordinal);
+        private static readonly IReadOnlySet<string> AllowedAcrValues =
+            OidcAuthLevelDefaults.IdPorten.Select(l => l.Acr).ToHashSet(StringComparer.Ordinal);
 
         /// <summary>
         /// Get user information from the token
@@ -60,6 +60,8 @@ namespace Altinn.Platform.Authentication.Helpers
                 TokenIssuer = jwtSecurityToken.Issuer,
                 TokenSubject = jwtSecurityToken.Subject
             };
+
+            OidcClaimMappings claimMappings = provider.ClaimMappings ?? new OidcClaimMappings();
 
             foreach (Claim claim in jwtSecurityToken.Claims)
             {
@@ -103,32 +105,36 @@ namespace Altinn.Platform.Authentication.Helpers
                     continue;
                 }
 
-                // ID-porten specific claims
-                if (claim.Type.Equals("email"))
+                // Provider-mapped claims. Names default to ID-porten's (pid/acr/amr/email) and are
+                // overridden per provider for IdPs outside that convention — see OidcClaimMappings.
+                if (claim.Type.Equals(claimMappings.Email))
                 {
                     userAuthenticationModel.Email = claim.Value.ToLowerInvariant();
                     continue;
                 }
 
-                if (claim.Type.Equals("pid"))
+                if (claim.Type.Equals(claimMappings.Pid))
                 {
                     userAuthenticationModel.SSN = claim.Value;
                     continue;
                 }
 
-                if (claim.Type.Equals("amr"))
+                if (claim.Type.Equals(claimMappings.AuthMethod))
                 {
                     List<string> list = userAuthenticationModel.Amr?.ToList() ?? [];
                     list.Add(claim.Value);
                     userAuthenticationModel.Amr = [.. list];
-                    userAuthenticationModel.AuthenticationMethod = GetAuthenticationMethod(list.First());
+                    userAuthenticationModel.AuthenticationMethod = ResolveAuthenticationMethod(provider, list.First());
                     continue;
                 }
 
-                if (claim.Type.Equals("acr"))
+                if (claim.Type.Equals(claimMappings.AuthLevel))
                 {
-                    userAuthenticationModel.Acr = claim.Value;
-                    userAuthenticationModel.AuthenticationLevel = GetAuthenticationLevelForIdPorten(claim.Value);
+                    // Store the Altinn-facing acr rather than the raw upstream value, so that
+                    // everything downstream (session, step-up, the emitted acr claim) speaks one
+                    // vocabulary regardless of which IdP authenticated the user.
+                    userAuthenticationModel.Acr = ResolveAcr(provider, claim.Value);
+                    userAuthenticationModel.AuthenticationLevel = ResolveAuthenticationLevel(provider, claim.Value);
                     continue;
                 }
 
@@ -244,6 +250,85 @@ namespace Altinn.Platform.Authentication.Helpers
                 default:
                     return SecurityLevel.SelfIdentifed;
             }
+        }
+
+        /// <summary>
+        /// Resolves the value of a provider's authentication-level claim to the Altinn-facing acr
+        /// value configured for it.
+        /// </summary>
+        /// <remarks>
+        /// For ID-porten the claim value already <em>is</em> the acr, so this is an identity
+        /// mapping. For a provider like HelseID, whose level claim carries <c>"4"</c>, this is
+        /// what turns that into a meaningful acr. Falls back to the raw value when nothing
+        /// matches, so an unmapped provider value is at least visible in logs and audit rather
+        /// than silently dropped.
+        /// </remarks>
+        public static string ResolveAcr(OidcProvider provider, string claimValue)
+        {
+            OidcAuthLevel? match = MatchLevel(provider, claimValue);
+            return match?.Acr ?? claimValue;
+        }
+
+        /// <summary>
+        /// Resolves the value of a provider's authentication-level claim to a normalised Altinn
+        /// <see cref="SecurityLevel"/>.
+        /// </summary>
+        public static SecurityLevel ResolveAuthenticationLevel(OidcProvider provider, string claimValue)
+        {
+            OidcAuthLevel? match = MatchLevel(provider, claimValue);
+
+            // Unknown values stay at the lowest level. This is the safe direction: an
+            // unrecognised level must never be treated as a high one.
+            return match?.Level ?? SecurityLevel.SelfIdentifed;
+        }
+
+        /// <summary>
+        /// Resolves the value of a provider's authentication-method claim to an Altinn
+        /// <see cref="AuthenticationMethod"/>, using the provider's configured mappings and
+        /// falling back to its <see cref="OidcProvider.DefaultAuthenticationMethod"/>.
+        /// </summary>
+        public static AuthenticationMethod ResolveAuthenticationMethod(OidcProvider provider, string claimValue)
+        {
+            if (provider.AuthMethodMappings is { Count: > 0 } mappings)
+            {
+                foreach (KeyValuePair<string, string> kvp in mappings)
+                {
+                    if (kvp.Key.Equals(claimValue, StringComparison.OrdinalIgnoreCase)
+                        && System.Enum.TryParse<AuthenticationMethod>(kvp.Value, ignoreCase: true, out var mapped))
+                    {
+                        return mapped;
+                    }
+                }
+            }
+            else
+            {
+                AuthenticationMethod builtIn = GetAuthenticationMethod(claimValue);
+                if (builtIn != AuthenticationMethod.NotDefined)
+                {
+                    return builtIn;
+                }
+            }
+
+            // Deliberately NotDefined rather than a guess: the caller applies the provider's
+            // configured default, and ClaimsPrincipalBuilder must not emit "NotDefined" as a
+            // literal claim value.
+            return AuthenticationMethod.NotDefined;
+        }
+
+        private static OidcAuthLevel? MatchLevel(OidcProvider provider, string claimValue)
+        {
+            foreach (OidcAuthLevel level in OidcAuthLevelDefaults.For(provider))
+            {
+                foreach (string candidate in level.ClaimValues)
+                {
+                    if (candidate.Equals(claimValue, StringComparison.OrdinalIgnoreCase))
+                    {
+                        return level;
+                    }
+                }
+            }
+
+            return null;
         }
 
         /// <summary>
@@ -755,21 +840,34 @@ namespace Altinn.Platform.Authentication.Helpers
         }
 
         /// <summary>
-        /// Verifies if an ACR upgrade is needed based on the current and requested ACR values.
+        /// Verifies if an ACR upgrade is needed, by comparing the session's normalised
+        /// authentication level against the highest level requested.
         /// </summary>
-        internal static bool NeedAcrUpgrade(string? currentAcr, string[] requestedAcr)
+        /// <remarks>
+        /// Compares levels rather than acr strings. The previous string comparison against
+        /// <c>idporten-loa-high</c> could not express "this session is high enough" for any
+        /// provider using a different vocabulary, and its <c>currentAcr is null =&gt; no upgrade</c>
+        /// guard was fail-open: a session carrying no acr — which is every session from a provider
+        /// that does not emit one, such as HelseID — satisfied a request for any level.
+        /// </remarks>
+        public static bool NeedAcrUpgrade(string? currentAcr, string[] requestedAcr, IAcrValueCatalog catalog)
         {
-           if (string.IsNullOrEmpty(currentAcr))
-           {
-               return false;
-           }
-           
-           if (requestedAcr.Contains(IdPortenAcrHigh, StringComparer.OrdinalIgnoreCase) && !currentAcr.Equals(IdPortenAcrHigh, StringComparison.OrdinalIgnoreCase))
-           {
-                return true;
-           }
+            int? requestedLevel = catalog.GetRequestedLevel(requestedAcr);
+            if (requestedLevel is null)
+            {
+                // Nothing meaningful requested — any existing session will do.
+                return false;
+            }
 
-           return false;
+            if (!catalog.TryGetLevel(currentAcr, out int currentLevel))
+            {
+                // The session carries no level we can resolve. Step up whenever anything above
+                // the lowest level was asked for; requests for level 0 still reuse the session,
+                // so this cannot introduce a redirect loop on the self-registered path.
+                return requestedLevel > (int)SecurityLevel.SelfIdentifed;
+            }
+
+            return currentLevel < requestedLevel;
         }
 
         /// <summary>
@@ -777,9 +875,20 @@ namespace Altinn.Platform.Authentication.Helpers
         /// entry point against the allowed set.
         /// </summary>
         /// <param name="raw">The raw, space-separated acr_values query value. Null/empty is valid (no level requested).</param>
+        /// <param name="catalog">The configured acr catalogue that defines what is accepted.</param>
         /// <param name="values">The parsed acr values, or an empty array when none were requested or validation failed.</param>
         /// <returns><c>true</c> when the input is absent or contains only allowed values; otherwise <c>false</c>.</returns>
+        public static bool TryParseAcrValues(string? raw, IAcrValueCatalog catalog, out string[] values)
+            => TryParseAcrValues(raw, catalog.AllowedAcrValues, out values);
+
+        /// <summary>
+        /// Overload validating against ID-porten's built-in level table. Retained for callers and
+        /// tests that predate configurable providers.
+        /// </summary>
         public static bool TryParseAcrValues(string? raw, out string[] values)
+            => TryParseAcrValues(raw, AllowedAcrValues, out values);
+
+        private static bool TryParseAcrValues(string? raw, IReadOnlySet<string> allowed, out string[] values)
         {
             values = Array.Empty<string>();
             if (string.IsNullOrWhiteSpace(raw))
@@ -790,7 +899,7 @@ namespace Altinn.Platform.Authentication.Helpers
             string[] parsed = raw.Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
             foreach (string v in parsed)
             {
-                if (!AllowedAcrValues.Contains(v))
+                if (!allowed.Contains(v))
                 {
                     return false;
                 }

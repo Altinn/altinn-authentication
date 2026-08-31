@@ -57,7 +57,26 @@ Beyond the "unregistered client" browser flow above, the service is also a small
 
 ## acr_values
 
-The `acrValues` parameter accepts (validated set, see `AuthenticationHelper.AllowedAcrValues`): `idporten-loa-substantial`, `idporten-loa-high`, `selfregistered-email`. The legacy `level0` / `level1` / `level2` values are still accepted but **deprecated**. Any other value yields `400 Bad Request`.
+The accepted set is **derived from the configured ID-providers** rather than hardcoded: it is the union of every `AuthLevels[].Acr` declared under `OidcProviders`, plus ID-porten's built-in vocabulary. See `IAcrValueCatalog` / `OidcAcrValueCatalog`. Any other value yields `400 Bad Request`.
+
+With ID-porten alone that set is `idporten-loa-substantial`, `idporten-loa-high` and `selfregistered-email`; the legacy `level0` / `level1` / `level2` values are still accepted but **deprecated**.
+
+These acr values are **Altinn-facing**. They are what a client requests, what is stored on the session, and what is emitted in the `acr` claim — deliberately not the upstream provider's vocabulary. Each configured level carries its own `UpstreamAcrValues`, which is what gets sent to that provider's authorize endpoint, so one provider's vocabulary is never forwarded to another.
+
+### Providers outside ID-porten's conventions
+
+A provider whose token does not follow ID-porten's claim names or values is described in configuration, not in code:
+
+| Setting | Purpose |
+|---|---|
+| `ClaimMappings` | Which claim carries pid / level / method / email. Defaults to `pid`, `acr`, `amr`, `email`. |
+| `AuthLevels` | The levels the provider offers: Altinn-facing `Acr`, normalised `Level`, `UpstreamAcrValues` to request it, and the `ClaimValues` that come back for it. |
+| `AuthMethodMappings` | Provider method-claim values to Altinn's `AuthenticationMethod`. |
+| `DefaultUpstreamAcrValues` | What to send when the client requested no level. |
+
+Declaring `AuthLevels` is what makes a provider reachable via `acr_values`; providers without it do not take part in acr routing and are selected by the `iss` parameter instead.
+
+Step-up compares **normalised levels**, not acr strings (`AuthenticationHelper.NeedAcrUpgrade`), so a session from one provider can satisfy a level requested in another's vocabulary. A session whose acr resolves to no level does not satisfy a request above level 0.
 
 ## Related
 

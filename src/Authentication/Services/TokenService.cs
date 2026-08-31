@@ -27,9 +27,11 @@ namespace Altinn.Platform.Authentication.Services
         ILogger<TokenService> logger,
         IOptions<GeneralSettings> generalSettings,
         IRefreshTokenRepository refreshTokenRepository,
-        IOidcSessionRepository oidcSessionRepository) : ITokenService
+        IOidcSessionRepository oidcSessionRepository,
+        IAcrValueCatalog acrValueCatalog) : ITokenService
     {
         private readonly ILogger<TokenService> _logger = logger;
+        private readonly IAcrValueCatalog _acrValueCatalog = acrValueCatalog;
         private readonly IAuthorizationCodeRepository _authorizationCodeRepository = authorizationCodeRepository;
         private readonly GeneralSettings _generalSettings = generalSettings.Value;
         private readonly IRefreshTokenRepository _refreshTokenRepository = refreshTokenRepository;
@@ -62,8 +64,8 @@ namespace Altinn.Platform.Authentication.Services
             // 2) Issue tokens (ID + Access) + refresh token
             DateTimeOffset exchangeTime = time.GetUtcNow();
             DateTimeOffset tokenExpiration = exchangeTime.AddMinutes(_generalSettings.OidcTokenValidityMinutes);
-            ClaimsPrincipal idTokenPrincipal = ClaimsPrincipalBuilder.GetClaimsPrincipal(row, _generalSettings.AltinnOidcIssuerUrl, true);
-            ClaimsPrincipal accessTokenPrincipal = ClaimsPrincipalBuilder.GetClaimsPrincipal(row, _generalSettings.AltinnOidcIssuerUrl, false);
+            ClaimsPrincipal idTokenPrincipal = ClaimsPrincipalBuilder.GetClaimsPrincipal(row, _generalSettings.AltinnOidcIssuerUrl, true, _acrValueCatalog);
+            ClaimsPrincipal accessTokenPrincipal = ClaimsPrincipalBuilder.GetClaimsPrincipal(row, _generalSettings.AltinnOidcIssuerUrl, false, _acrValueCatalog);
 
             // Now atomically consume
             if (!await _authorizationCodeRepository.TryConsumeAsync(row.Code, row.ClientId, row.RedirectUri, time.GetUtcNow(), ct))
@@ -145,7 +147,7 @@ namespace Altinn.Platform.Authentication.Services
             await _oidcSessionRepository.SlideExpiryToAsync(row.SessionId, sessionExpiration, ct);
             DateTimeOffset tokenExpiration = now.AddMinutes(_generalSettings.OidcTokenValidityMinutes);
 
-            ClaimsPrincipal accessPrincipal = ClaimsPrincipalBuilder.GetClaimsPrincipal(row, _generalSettings.AltinnOidcIssuerUrl, isIDToken: false);
+            ClaimsPrincipal accessPrincipal = ClaimsPrincipalBuilder.GetClaimsPrincipal(row, _generalSettings.AltinnOidcIssuerUrl, isIDToken: false, acrCatalog: _acrValueCatalog);
 
             // Preferred: use issuer overloads that take the pieces directly (clean)
             string accessToken = await tokenIssuer.CreateAccessTokenAsync(
@@ -156,7 +158,7 @@ namespace Altinn.Platform.Authentication.Services
             string? idToken = null;
             if (resultingScopes.Contains("openid"))
             {
-                ClaimsPrincipal idtokenPrincipal = ClaimsPrincipalBuilder.GetClaimsPrincipal(row, _generalSettings.AltinnOidcIssuerUrl, isIDToken: true);
+                ClaimsPrincipal idtokenPrincipal = ClaimsPrincipalBuilder.GetClaimsPrincipal(row, _generalSettings.AltinnOidcIssuerUrl, isIDToken: true, acrCatalog: _acrValueCatalog);
                 idToken = await tokenIssuer.CreateIdTokenAsync(
                     idtokenPrincipal,
                     client,
@@ -177,7 +179,7 @@ namespace Altinn.Platform.Authentication.Services
         /// <inheritdoc/>
         public Task<string> CreateCookieToken(OidcSession oidcSession, CancellationToken ct)
         {
-           ClaimsPrincipal principal = ClaimsPrincipalBuilder.GetClaimsPrincipal(oidcSession, _generalSettings.AltinnOidcIssuerUrl, isIDToken: false, isAuthCookie: true);
+           ClaimsPrincipal principal = ClaimsPrincipalBuilder.GetClaimsPrincipal(oidcSession, _generalSettings.AltinnOidcIssuerUrl, isIDToken: false, isAuthCookie: true, acrCatalog: _acrValueCatalog);
            return tokenIssuer.CreateAccessTokenAsync(principal, time.GetUtcNow().AddMinutes(_generalSettings.JwtValidityMinutes),  cancellationToken: ct);
         }
 
