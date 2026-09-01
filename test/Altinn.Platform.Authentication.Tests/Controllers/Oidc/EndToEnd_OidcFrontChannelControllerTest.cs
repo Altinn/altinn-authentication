@@ -2254,6 +2254,171 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
         }
 
         /// <summary>
+        /// Step-up across HelseID's own level vocabulary: an existing session at
+        /// <c>helseid-loa-substantial</c> must not satisfy a request for
+        /// <c>helseid-loa-high</c>.
+        /// <para>
+        /// This is the case the previous implementation could not express. Step-up used to be a
+        /// string comparison against <c>idporten-loa-high</c>, so a request for
+        /// <c>helseid-loa-high</c> matched nothing and the level-3 session would simply have been
+        /// reused. Comparing normalised levels is what makes it work, and this is the only
+        /// end-to-end coverage of that.
+        /// </para>
+        /// </summary>
+        [Fact]
+        public async Task TC17_HelseIdAuth_App_Level3_StepUp_Level4_End_To_End_OK()
+        {
+            using HttpClient client = CreateClientWithHeaders();
+            OidcTestScenario testScenario = OidcScenarioHelper.GetScenario("HelseId_Bruker");
+
+            OidcClientCreate create = OidcServerTestUtils.NewClientCreate(testScenario);
+            _ = await Repository.InsertClientAsync(create);
+
+            const string gotoUrl =
+                "/authentication/api/v1/authentication?iss=helseid&goto=https%3A%2F%2Fhelse.apps.localhost%2Fsykemelding%2Finstance%2F51441547";
+            const string appRedirectPrefix = "https://helse.apps.localhost/sykemelding/instance/51441547";
+
+            // === Phase 1: unauthenticated user, app asks for substantial ===
+            testScenario.Acr = ["helseid-loa-substantial"];
+            testScenario.Amr = ["BankID"];
+
+            HttpResponseMessage initialRedirect = await client.GetAsync(gotoUrl + "&acr_values=helseid-loa-substantial");
+            Assert.Equal(HttpStatusCode.Redirect, initialRedirect.StatusCode);
+            Assert.StartsWith("https://helseid-sts.test.nhn.no/connect/authorize", initialRedirect.Headers.Location!.ToString());
+
+            // HelseID documents no filter for substantial, so nothing is sent — and the provider
+            // default must not be substituted for that deliberate silence.
+            Assert.Null(HttpUtility.ParseQueryString(initialRedirect.Headers.Location!.Query)["acr_values"]);
+
+            (string? upstreamState, UpstreamLoginTransaction? upstreamTx) =
+                await AssertAutorizeRequestResult(testScenario, initialRedirect, _fakeTime.GetUtcNow());
+            Debug.Assert(upstreamTx != null);
+
+            _fakeTime.Advance(TimeSpan.FromMinutes(1));
+            ConfigureMockHelseIdProviderTokenResponse(testScenario, upstreamTx, _fakeTime.GetUtcNow(), securityLevel: "3");
+            await ConfigureProfileMock(testScenario);
+
+            // === Phase 2: callback -> level-3 session ===
+            string callbackUrl = $"/authentication/api/v1/upstream/callback?code={Uri.EscapeDataString(testScenario.GetUpstreamProviderCode())}&state={Uri.EscapeDataString(upstreamState!)}";
+            HttpResponseMessage callbackResp = await client.GetAsync(callbackUrl);
+            Assert.Equal(HttpStatusCode.Redirect, callbackResp.StatusCode);
+            Assert.StartsWith(appRedirectPrefix, callbackResp.Headers.Location!.ToString());
+
+            _fakeTime.Advance(TimeSpan.FromMinutes(1));
+            string level3CookieToken = await (await client.GetAsync("/authentication/api/v1/refresh")).Content.ReadAsStringAsync();
+            string level3Sid = TokenAssertsHelper.AssertCookieAccessToken(level3CookieToken, testScenario, _fakeTime.GetUtcNow());
+            OidcSession? level3Session = await OidcServerDatabaseUtil.GetOidcSessionAsync(level3Sid, DataSource);
+            Assert.Equal("helseid-loa-substantial", level3Session!.Acr);
+
+            ClaimsPrincipal level3Principal = JwtTokenMock.ValidateToken(level3CookieToken, _fakeTime.GetUtcNow());
+            Assert.Contains(level3Principal.Claims, c => c.Type == AltinnCoreClaimTypes.AuthenticationLevel && c.Value == "3");
+
+            // === Phase 3 (regression guard): no level requested -> reuse, straight back to the app ===
+            HttpResponseMessage reuseResp = await client.GetAsync(gotoUrl);
+            Assert.Equal(HttpStatusCode.Redirect, reuseResp.StatusCode);
+            Assert.StartsWith(appRedirectPrefix, reuseResp.Headers.Location!.ToString());
+
+            // === Phase 4: app asks for high -> step-up, not reuse ===
+            testScenario.Acr = ["helseid-loa-high"];
+            testScenario.SetLoginAttempt(2);
+
+            HttpResponseMessage stepUpRedirect = await client.GetAsync(gotoUrl + "&acr_values=helseid-loa-high");
+            Assert.Equal(HttpStatusCode.Redirect, stepUpRedirect.StatusCode);
+            Assert.StartsWith("https://helseid-sts.test.nhn.no/connect/authorize", stepUpRedirect.Headers.Location!.ToString());
+            Assert.Equal("Level4", HttpUtility.ParseQueryString(stepUpRedirect.Headers.Location!.Query)["acr_values"]);
+
+            (string? stepUpState, UpstreamLoginTransaction? stepUpTx) =
+                await AssertAutorizeRequestResult(testScenario, stepUpRedirect, _fakeTime.GetUtcNow());
+            Debug.Assert(stepUpTx != null);
+
+            _fakeTime.Advance(TimeSpan.FromMinutes(1));
+            ConfigureMockHelseIdProviderTokenResponse(testScenario, stepUpTx, _fakeTime.GetUtcNow(), securityLevel: "4");
+
+            // === Phase 5: callback -> old session gone, fresh level-4 session ===
+            string stepUpCallbackUrl = $"/authentication/api/v1/upstream/callback?code={Uri.EscapeDataString(testScenario.GetUpstreamProviderCode())}&state={Uri.EscapeDataString(stepUpState!)}";
+            HttpResponseMessage stepUpCallbackResp = await client.GetAsync(stepUpCallbackUrl);
+            Assert.Equal(HttpStatusCode.Redirect, stepUpCallbackResp.StatusCode);
+            Assert.StartsWith(appRedirectPrefix, stepUpCallbackResp.Headers.Location!.ToString());
+
+            Assert.Null(await OidcServerDatabaseUtil.GetOidcSessionAsync(level3Sid, DataSource));
+
+            _fakeTime.Advance(TimeSpan.FromMinutes(1));
+            string level4CookieToken = await (await client.GetAsync("/authentication/api/v1/refresh")).Content.ReadAsStringAsync();
+            string level4Sid = TokenAssertsHelper.AssertCookieAccessToken(level4CookieToken, testScenario, _fakeTime.GetUtcNow());
+            OidcSession? level4Session = await OidcServerDatabaseUtil.GetOidcSessionAsync(level4Sid, DataSource);
+            Assert.Equal("helseid-loa-high", level4Session!.Acr);
+            Assert.NotEqual(level3Sid, level4Sid);
+
+            ClaimsPrincipal level4Principal = JwtTokenMock.ValidateToken(level4CookieToken, _fakeTime.GetUtcNow());
+            Assert.Contains(level4Principal.Claims, c => c.Type == AltinnCoreClaimTypes.AuthenticationLevel && c.Value == "4");
+        }
+
+        /// <summary>
+        /// Pins a known gap rather than a guarantee: the app requests level 4, HelseID returns a
+        /// level-3 identity, and the sign-in currently succeeds anyway at level 3 with no error.
+        /// <para>
+        /// The requested acr_values are used to choose the provider, to build the upstream request
+        /// and to decide whether an <em>existing</em> session needs a step-up, but nothing compares
+        /// them against the level actually achieved once the user returns. See
+        /// <see href="https://github.com/Altinn/altinn-authentication/issues/2165">#2165</see>,
+        /// which predates configurable providers and applies to every provider.
+        /// </para>
+        /// <para>
+        /// When #2165 is fixed this test will fail. That is deliberate: the fix must change it
+        /// consciously rather than let the behaviour shift unnoticed.
+        /// </para>
+        /// </summary>
+        [Fact]
+        public async Task TC18_HelseIdAuth_RequestedLevel4_UpstreamReturnsLevel3_CurrentlyNotEnforced()
+        {
+            using HttpClient client = CreateClientWithHeaders();
+            OidcTestScenario testScenario = OidcScenarioHelper.GetScenario("HelseId_Bruker");
+
+            OidcClientCreate create = OidcServerTestUtils.NewClientCreate(testScenario);
+            _ = await Repository.InsertClientAsync(create);
+
+            // The level we actually end up with, which the assert helpers compare against.
+            testScenario.Acr = ["helseid-loa-substantial"];
+            testScenario.Amr = ["BankID"];
+
+            HttpResponseMessage appRedirectResponse = await client.GetAsync(
+                "/authentication/api/v1/authentication?iss=helseid&acr_values=helseid-loa-high&goto=https%3A%2F%2Fhelse.apps.localhost%2Fsykemelding%2Finstance%2F51441547");
+
+            Assert.Equal(HttpStatusCode.Redirect, appRedirectResponse.StatusCode);
+
+            // The request upstream is correct: we did ask HelseID for a high-level identity.
+            Assert.Equal("Level4", HttpUtility.ParseQueryString(appRedirectResponse.Headers.Location!.Query)["acr_values"]);
+
+            (string? upstreamState, UpstreamLoginTransaction? upstreamTx) =
+                await AssertAutorizeRequestResult(testScenario, appRedirectResponse, _fakeTime.GetUtcNow());
+            Debug.Assert(upstreamTx != null);
+
+            _fakeTime.Advance(TimeSpan.FromMinutes(1));
+
+            // HelseID answers with a level-3 identity regardless.
+            ConfigureMockHelseIdProviderTokenResponse(testScenario, upstreamTx, _fakeTime.GetUtcNow(), securityLevel: "3");
+            await ConfigureProfileMock(testScenario);
+
+            string callbackUrl = $"/authentication/api/v1/upstream/callback?code={Uri.EscapeDataString(testScenario.GetUpstreamProviderCode())}&state={Uri.EscapeDataString(upstreamState!)}";
+            HttpResponseMessage callbackResp = await client.GetAsync(callbackUrl);
+
+            // Current behaviour: the sign-in succeeds and the user is sent back to the app.
+            Assert.Equal(HttpStatusCode.Redirect, callbackResp.StatusCode);
+            Assert.StartsWith("https://helse.apps.localhost/sykemelding/instance/51441547", callbackResp.Headers.Location!.ToString());
+
+            _fakeTime.Advance(TimeSpan.FromMinutes(1));
+            string cookieToken = await (await client.GetAsync("/authentication/api/v1/refresh")).Content.ReadAsStringAsync();
+            string sid = TokenAssertsHelper.AssertCookieAccessToken(cookieToken, testScenario, _fakeTime.GetUtcNow());
+
+            OidcSession? session = await OidcServerDatabaseUtil.GetOidcSessionAsync(sid, DataSource);
+            Assert.Equal("helseid-loa-substantial", session!.Acr);
+
+            // The app asked for 4 and got a session at 3, with nothing signalling the shortfall.
+            ClaimsPrincipal principal = JwtTokenMock.ValidateToken(cookieToken, _fakeTime.GetUtcNow());
+            Assert.Contains(principal.Claims, c => c.Type == AltinnCoreClaimTypes.AuthenticationLevel && c.Value == "3");
+        }
+
+        /// <summary>
         /// A HelseID token without the configured pid claim — the pid scope not granted, or
         /// ClaimMappings.Pid misconfigured — must abort the sign-in. None of the identifiers
         /// IdentifyOrCreateAltinnUser branches on are present, and before the guard was added this
