@@ -172,9 +172,35 @@ namespace Altinn.Platform.Authentication.Tests
 
             var result = AuthenticationHelper.GetUserFromToken(token, IdPorten());
 
-            // The built-in table already understands ID-porten's values, so normalisation is a
-            // no-op and the upstream amr is preserved verbatim.
+            // A provider that has not opted into the configurable method vocabulary keeps its amr
+            // verbatim.
             Assert.Equal(["BankID"], result.Amr!);
+        }
+
+        [Fact]
+        public void GetUserFromToken_IdPortenAmrOutsideBuiltInTable_KeepsRawValue()
+        {
+            // MinIDTOTP is in the AuthenticationMethod enum but in neither mapping table, so this
+            // stands in for any upstream amr value the built-in table does not know. Normalisation
+            // must not rewrite it to the provider's DefaultAuthenticationMethod ("SelfIdentified"),
+            // which would drop the real value from the issued token.
+            JwtSecurityToken token = Token(("acr", "idporten-loa-high"), ("amr", "Minid-TOTP"));
+
+            var result = AuthenticationHelper.GetUserFromToken(token, IdPorten());
+
+            Assert.Equal(["Minid-TOTP"], result.Amr!);
+        }
+
+        [Fact]
+        public void GetUserFromToken_ProviderWithoutAmrClaim_AmrStaysNull()
+        {
+            // UIDP sends neither acr nor amr. Its Amr is set later, by the self-identified branch
+            // in IdentifyOrCreateAltinnUser; GetUserFromToken must not invent one here.
+            JwtSecurityToken token = Token(("sub", "some-external-identity"));
+
+            var result = AuthenticationHelper.GetUserFromToken(token, IdPorten());
+
+            Assert.Null(result.Amr);
         }
 
         [Fact]

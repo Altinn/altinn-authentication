@@ -202,10 +202,22 @@ namespace Altinn.Platform.Authentication.Helpers
             // AuthMethodMappings effective for the audit log only.
             //
             // Rewriting here rather than persisting a second column keeps this schema-compatible.
-            // It is a no-op for providers whose amr values the built-in table already understands,
-            // so ID-porten and UIDP are untouched. The raw upstream value remains available via
-            // ProviderClaims for providers that list the claim.
-            if (userAuthenticationModel.AuthenticationMethod != AuthenticationMethod.NotDefined
+            //
+            // Restricted to providers that have opted into the configurable method vocabulary.
+            // Keying only on "the value does not resolve" would be too broad: an ID-porten amr
+            // value missing from the built-in table (MinIDTOTP, for instance, is in the enum but
+            // in neither mapping table) would be rewritten to the provider's default and the raw
+            // upstream value would be lost from the token. Providers that have not opted in keep
+            // their amr byte-for-byte, exactly as before.
+            //
+            // The raw upstream value remains available via ProviderClaims for providers that
+            // list the claim.
+            bool usesConfiguredMethodVocabulary =
+                provider.AuthMethodMappings is { Count: > 0 }
+                || !string.Equals(claimMappings.AuthMethod, "amr", StringComparison.Ordinal);
+
+            if (usesConfiguredMethodVocabulary
+                && userAuthenticationModel.AuthenticationMethod != AuthenticationMethod.NotDefined
                 && (userAuthenticationModel.Amr is null or { Length: 0 }
                     || GetAuthenticationMethod(userAuthenticationModel.Amr[0]) == AuthenticationMethod.NotDefined))
             {
