@@ -1369,7 +1369,13 @@ namespace Altinn.Platform.Authentication.Services
             q["code_challenge_method"] = "S256";
 
             string? upstreamAcr = _acrValueCatalog.GetUpstreamAcrValues(p.IssuerKey, incoming.AcrValues);
-            if (string.IsNullOrEmpty(upstreamAcr))
+
+            // Fall back to the provider default only when the client asked for nothing at all.
+            // A requested level that maps to no upstream filter is a deliberate "send nothing"
+            // — HelseID, for instance, has a filter for high but none for substantial — and must
+            // not be silently turned into the default, which would narrow the request the client
+            // actually made.
+            if (string.IsNullOrEmpty(upstreamAcr) && incoming.AcrValues is null or { Length: 0 })
             {
                 upstreamAcr = GetDefaultUpstreamAcrValues(p);
             }

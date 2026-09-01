@@ -2149,13 +2149,13 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
             string location = appRedirectResponse.Headers.Location!.ToString();
             Assert.StartsWith("https://helseid-sts.test.nhn.no/connect/authorize", location);
 
-            // The upstream request must speak HelseID's vocabulary. Before provider-configurable
-            // acr, this carried "selfregistered-email idporten-loa-substantial" — values HelseID
-            // does not know.
-            string upstreamAcrValues = HttpUtility.ParseQueryString(new Uri(location).Query)["acr_values"]!;
-            Assert.Equal("Level4", upstreamAcrValues);
-            Assert.DoesNotContain("idporten", upstreamAcrValues);
-            Assert.DoesNotContain("selfregistered-email", upstreamAcrValues);
+            // The app set no level requirement, so Altinn must impose none either: HelseID's own
+            // default already offers both level 3 and level 4 providers, and sending a filter here
+            // would silently narrow their IdP picker on the app's behalf. Before provider-
+            // configurable acr this carried "selfregistered-email idporten-loa-substantial" —
+            // values HelseID does not know at all.
+            string? upstreamAcrValues = HttpUtility.ParseQueryString(new Uri(location).Query)["acr_values"];
+            Assert.Null(upstreamAcrValues);
 
             (string? upstreamState, UpstreamLoginTransaction? createdUpstreamLogingTransaction) =
                 await AssertAutorizeRequestResult(testScenario, appRedirectResponse, _fakeTime.GetUtcNow());
@@ -2221,6 +2221,36 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
 
             OidcSession? loggedOutSession = await OidcServerDatabaseUtil.GetOidcSessionAsync(sidFromCodeResponse, DataSource);
             Assert.Null(loggedOutSession);
+        }
+
+        /// <summary>
+        /// When the app does state a level, it must reach HelseID in HelseID's own vocabulary.
+        /// <c>helseid-loa-high</c> becomes the documented <c>Level4</c> filter;
+        /// <c>helseid-loa-substantial</c> sends nothing, because HelseID documents a filter for
+        /// high but none for substantial — and "nothing" must not be turned into the provider
+        /// default, which would narrow the request the app actually made.
+        /// </summary>
+        [Theory]
+        [InlineData("helseid-loa-high", "Level4")]
+        [InlineData("helseid-loa-substantial", null)]
+        public async Task TC16_HelseIdAuth_RequestedLevel_TranslatedToHelseIdVocabulary(string requestedAcr, string? expectedUpstreamAcr)
+        {
+            using HttpClient client = CreateClientWithHeaders();
+            OidcTestScenario testScenario = OidcScenarioHelper.GetScenario("HelseId_Bruker");
+
+            OidcClientCreate create = OidcServerTestUtils.NewClientCreate(testScenario);
+            _ = await Repository.InsertClientAsync(create);
+
+            HttpResponseMessage appRedirectResponse = await client.GetAsync(
+                $"/authentication/api/v1/authentication?iss=helseid&acr_values={requestedAcr}&goto=https%3A%2F%2Fhelse.apps.localhost%2Fsykemelding%2Finstance%2F51441547");
+
+            Assert.Equal(HttpStatusCode.Redirect, appRedirectResponse.StatusCode);
+
+            string location = appRedirectResponse.Headers.Location!.ToString();
+            Assert.StartsWith("https://helseid-sts.test.nhn.no/connect/authorize", location);
+
+            string? upstreamAcrValues = HttpUtility.ParseQueryString(new Uri(location).Query)["acr_values"];
+            Assert.Equal(expectedUpstreamAcr, upstreamAcrValues);
         }
 
         /// <summary>

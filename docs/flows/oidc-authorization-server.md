@@ -72,9 +72,13 @@ A provider whose token does not follow ID-porten's claim names or values is desc
 | `ClaimMappings` | Which claim carries pid / level / method / email. Defaults to `pid`, `acr`, `amr`, `email`. |
 | `AuthLevels` | The levels the provider offers: Altinn-facing `Acr`, normalised `Level`, `UpstreamAcrValues` to request it, and the `ClaimValues` that come back for it. |
 | `AuthMethodMappings` | Provider method-claim values to Altinn's `AuthenticationMethod`. |
-| `DefaultUpstreamAcrValues` | What to send when the client requested no level. |
+| `DefaultUpstreamAcrValues` | What to send when the client requested **no** level at all. Omit it to let the provider apply its own default. |
 
 Declaring `AuthLevels` is what makes a provider reachable via `acr_values`; providers without it do not take part in acr routing and are selected by the `iss` parameter instead.
+
+A level whose `UpstreamAcrValues` is omitted deliberately sends **nothing** upstream, and this is distinct from the client requesting nothing: `DefaultUpstreamAcrValues` applies only in the latter case. HelseID needs both — it documents a filter for high (`Level4`, or its synonym `High`) but none for substantial — so `helseid-loa-substantial` must send no filter rather than fall back to the default, which would narrow the request the client actually made.
+
+For the same reason, do not set `DefaultUpstreamAcrValues` unless there is a decision behind it. Sending a level filter when the client asked for nothing overrides the provider's own default and narrows its identity-provider picker on the client's behalf — for HelseID, `Level4` would exclude Helse Midt-Norge, Helseplattformen and MinID users entirely. The level requirement belongs with the application that knows its data, expressed as an explicit `acr_values`.
 
 Step-up compares **normalised levels**, not acr strings (`AuthenticationHelper.NeedAcrUpgrade`), so a session from one provider can satisfy a level requested in another's vocabulary. A session whose acr resolves to no level does not satisfy a request above level 0.
 
