@@ -14,13 +14,14 @@ namespace Altinn.Platform.Authentication.Core.Models.AccessPackages
     public class PackagePermission
     {
         /// <summary>
-        /// Package the permissions are for
+        /// Package the permissions are for. Nullable because both consumers
+        /// (SystemUserService and DelegationHelper) already guard on it before reading the urn.
         /// </summary>
-        public CompactPackage Package { get; set; }
+        public CompactPackage? Package { get; set; }
 
         /// <summary>
         /// Parties with permissions
         /// </summary>
-        public IEnumerable<Permission> Permissions { get; set; }
+        public IEnumerable<Permission>? Permissions { get; set; }
     }
 }

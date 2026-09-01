@@ -140,30 +140,6 @@ public class AccessManagementClient : IAccessManagementClient
         }
     }
 
-    /// <inheritdoc/>
-    public async Task<PartyExternal> GetParty(int partyId, string token)
-    {
-        try
-        {
-            string endpointUrl = $"authorizedparty/{partyId}?includeAltinn2=true";
-
-            HttpResponseMessage response = await _client.GetAsync(token, endpointUrl);
-
-            if (response.StatusCode == System.Net.HttpStatusCode.OK)
-            {
-                string responseContent = await response.Content.ReadAsStringAsync();
-                return JsonSerializer.Deserialize<PartyExternal>(responseContent, _serializerOptions)!;
-            }
-
-            return null!;
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Authentication // AccessManagementClient // GetParty // Exception");
-            throw;
-        }
-    }
-
     public async Task<ResourceCheckDto?> CheckDelegationAccess(Guid partyUuid, string resource, CancellationToken cancellationToken) 
     {
         try

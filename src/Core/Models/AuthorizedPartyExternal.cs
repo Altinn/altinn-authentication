@@ -1,7 +1,11 @@
 ﻿namespace Altinn.Platform.Authentication.Core.Models;
 
-#nullable enable
-public  class AuthorizedPartyExternal
+/// <summary>
+/// A party from Access Management's <c>authorizedparty</c> endpoint. This service only uses the
+/// lookup as an existence probe ("does the user have a relation to this party?"), so none of the
+/// members below are read anywhere today.
+/// </summary>
+public class AuthorizedPartyExternal
 {
     /// <summary>
     /// Gets or sets the universally unique identifier of the party
@@ -11,17 +15,18 @@ public  class AuthorizedPartyExternal
     /// <summary>
     /// Gets or sets the name of the party
     /// </summary>
-    public string Name { get; set; }
+    /// <remarks>Always present in the authorizedparty response, hence <c>null!</c> rather than nullable.</remarks>
+    public string Name { get; set; } = null!;
 
     /// <summary>
-    /// Gets the organization number if the party is an organization
+    /// Gets the organization number if the party is an organization, otherwise null
     /// </summary>
-    public string OrganizationNumber { get; set; }
+    public string? OrganizationNumber { get; set; }
 
     /// <summary>
-    /// Gets the national identity number if the party is a person
+    /// Gets the national identity number if the party is a person, otherwise null
     /// </summary>
-    public string PersonId { get; set; }
+    public string? PersonId { get; set; }
 
     /// <summary>
     /// Gets or sets the party id
@@ -34,9 +39,9 @@ public  class AuthorizedPartyExternal
     public AuthorizedPartyTypeExternal Type { get; set; }
 
     /// <summary>
-    /// Gets or sets the unit type if the party is an organization
+    /// Gets or sets the unit type if the party is an organization, otherwise null
     /// </summary>
-    public string UnitType { get; set; }
+    public string? UnitType { get; set; }
 
     /// <summary>
     /// Gets or sets whether this party is marked as deleted in the Central Coordinating Register for Legal Entities

@@ -1249,24 +1249,6 @@ namespace Altinn.Platform.Authentication.Services
             return rights;
         }
 
-        private static Result<List<Customer>> OldConvertConnectionDTOToClient(List<ClientDto> value)
-        {
-            List<Customer> result = [];
-            foreach (var item in value)
-            {
-                var newCustomer = new Customer()
-                {
-                    DisplayName = item.Party.Name,
-                    OrganizationIdentifier = item.Party.OrganizationNumber,
-                    PartyUuid = item.Party.Id,
-                    Access = item.Access
-                };
-                result.Add(newCustomer);
-            }
-
-            return result;
-        }
-
         private static Result<List<ExternalClientDto>> ConvertConnectionDTOToClient(List<ClientDelegationDto> value)
         {
             List<ExternalClientDto> result = [];
