@@ -13,6 +13,7 @@ using Altinn.Platform.Authentication.Core.Models.AccessPackages;
 using Altinn.Platform.Authentication.Core.Models.Parties;
 using Altinn.Platform.Authentication.Core.Models.Rights;
 using Altinn.Platform.Authentication.Core.Models.Rights.ConnectionsDtos;
+using Altinn.Platform.Authentication.Core.Models.SystemRegisters;
 using Altinn.Platform.Authentication.Core.Models.SystemUsers;
 using Altinn.Platform.Authentication.Core.RepositoryInterfaces;
 using Altinn.Platform.Authentication.Core.SystemRegister.Models;
@@ -394,6 +395,76 @@ namespace Altinn.Platform.Authentication.Services
             return await InsertNewSystemUser(newSystemUser, userId, regSystem, delegationCheckFinalResult, partyId, accessPackageDelegationCheckResult, partyUuid, cancellationToken);
         }
 
+        /// <inheritdoc/>
+        public async Task<Result<SystemUserInternalDTO>> CreateOwnSystemUser(CreateOwnSystemUserRequest request, string vendorOrgNumber, string clientId, int userId, CancellationToken cancellationToken)
+        {
+            if (await systemRegisterService.DoesClientIdExists([clientId], cancellationToken))
+            {
+                return Problem.SystemRegister_ClientId_AlreadyExists;
+            }
+
+            Party? party = await _partiesClient.GetPartyByOrgNo(vendorOrgNumber, cancellationToken);
+            if (party is null || string.IsNullOrEmpty(party.OrgNumber))
+            {
+                return Problem.Reportee_Orgno_NotFound;
+            }
+
+            if (!party.PartyUuid.HasValue)
+            {
+                return Problem.Party_PartyUuid_NotFound;
+            }
+
+            Guid partyUuid = party.PartyUuid.Value;
+            string systemId = $"{vendorOrgNumber}_own_{Guid.NewGuid():N}";
+
+            RegisterSystemRequest newRegisteredSystem = new()
+            {
+                Id = systemId,
+                Vendor = new VendorInfo { ID = $"0192:{vendorOrgNumber}" },
+                Name = new Dictionary<string, string> { ["nb"] = request.IntegrationTitle },
+                Description = new Dictionary<string, string> { ["nb"] = request.IntegrationTitle },
+                Rights = [],
+                AccessPackages = [],
+                ClientId = [clientId],
+                IsVisible = false
+            };
+
+            SystemChangeLog systemChangeLog = new()
+            {
+                ChangedByOrgNumber = vendorOrgNumber,
+                ChangeType = SystemChangeType.Create,
+                ChangedData = newRegisteredSystem,
+                ClientId = clientId
+            };
+
+            Guid? registeredSystemInternalId = await systemRegisterService.CreateRegisteredSystem(newRegisteredSystem, systemChangeLog, cancellationToken);
+            if (registeredSystemInternalId is null)
+            {
+                return Problem.SystemUser_FailedToCreate;
+            }
+
+            string partyId = party.PartyId.ToString();
+            SystemUserInternalDTO newSystemUser = new()
+            {
+                UserType = SystemUserType.Standalone,
+                ReporteeOrgNo = vendorOrgNumber,
+                SystemInternalId = registeredSystemInternalId,
+                IntegrationTitle = request.IntegrationTitle,
+                SystemId = systemId,
+                PartyId = partyId
+            };
+
+            return await InsertNewSystemUser(
+                newSystemUser,
+                userId,
+                regSystem: null,
+                delegationCheckFinalResult: null,
+                partyId: partyId,
+                accessPackageDelegationCheckResult: null,
+                partyUuid: partyUuid,
+                cancellationToken: cancellationToken);
+        }
+
         private async Task<Result<SystemUserInternalDTO>> CreateSystemUserFromApprovedVendorRequest(
             SystemUserType systemUserType,
             string systemId,
@@ -562,7 +633,7 @@ namespace Altinn.Platform.Authentication.Services
         private async Task<Result<SystemUserInternalDTO>> InsertNewSystemUser(
             SystemUserInternalDTO newSystemUser,
             int userId,
-            RegisteredSystemResponse regSystem,
+            RegisteredSystemResponse? regSystem,
             DelegationCheckResult? delegationCheckFinalResult,
             string partyId,
             AccessPackageDelegationCheckResult? accessPackageDelegationCheckResult,
@@ -622,9 +693,9 @@ namespace Altinn.Platform.Authentication.Services
             return false;
         }
 
-        private static bool IsStandardSystemUserDelegatgeSingleRights(SystemUserInternalDTO newSystemUser, RegisteredSystemResponse regSystem, DelegationCheckResult? delegationCheckFinalResult)
+        private static bool IsStandardSystemUserDelegatgeSingleRights(SystemUserInternalDTO newSystemUser, RegisteredSystemResponse? regSystem, DelegationCheckResult? delegationCheckFinalResult)
         {
-            if (newSystemUser.UserType == SystemUserType.Standard && regSystem.Rights is not null && regSystem.Rights.Count > 0 && delegationCheckFinalResult is not null && delegationCheckFinalResult.CanDelegate)
+            if (newSystemUser.UserType == SystemUserType.Standard && regSystem?.Rights is not null && regSystem.Rights.Count > 0 && delegationCheckFinalResult is not null && delegationCheckFinalResult.CanDelegate)
             {
                 return true;
             }

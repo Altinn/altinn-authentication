@@ -263,4 +263,19 @@ public interface ISystemUserService
     /// <param name="cancellationToken">CancellationToken</param>
     /// <returns>Result of True or False</returns>
     Task<Result<bool>> IsSelfDelegatedToAgentSystemUser(SystemUserInternalDTO systemUser, int userId, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Creates a <see cref="Altinn.Platform.Authentication.Core.Enums.SystemUserType.Standalone"/>
+    /// SystemUser for an organisation's own, self-built system: the Registered System (vendor ==
+    /// the calling organisation, no Rights/AccessPackages) and the SystemUser are created together
+    /// in a single operation. Rights/AccessPackages are delegated afterwards through the Access
+    /// Management UI, not declared up front.
+    /// </summary>
+    /// <param name="request">The display name for the new SystemUser.</param>
+    /// <param name="vendorOrgNumber">The calling organisation's number, from the Maskinporten <c>consumer</c> claim.</param>
+    /// <param name="clientId">The calling organisation's Maskinporten ClientId, from the <c>client_id</c> claim.</param>
+    /// <param name="userId">The user id to record as the creator; 0 for an unattended, Maskinporten-authenticated call with no interactive Altinn user.</param>
+    /// <param name="cancellationToken">The cancellation token.</param>
+    /// <returns>The created SystemUser, or a Problem.</returns>
+    Task<Result<SystemUserInternalDTO>> CreateOwnSystemUser(CreateOwnSystemUserRequest request, string vendorOrgNumber, string clientId, int userId, CancellationToken cancellationToken);
 }

@@ -18,6 +18,7 @@ using Altinn.Common.AccessToken.Services;
 using Altinn.Common.PEP.Interfaces;
 using Altinn.Platform.Authentication.Clients.Interfaces;
 using Altinn.Platform.Authentication.Configuration;
+using Altinn.Platform.Authentication.Core.Enums;
 using Altinn.Platform.Authentication.Core.Models;
 using Altinn.Platform.Authentication.Core.Models.AccessPackages;
 using Altinn.Platform.Authentication.Core.Models.Rights;
@@ -3442,6 +3443,93 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             ProblemDetails? problemDetails = await revokeResponse.Content.ReadFromJsonAsync<ProblemDetails>();
             Assert.NotNull(problemDetails);
             Assert.Equal(Problem.CustomerDelegation_FailedToRevoke.Title, problemDetails.Title);
+        }
+
+        // Standalone ("own system") SystemUser tests
+        private const string StandaloneScope = "altinn:authentication/systemregister.write";
+
+        [Fact]
+        public async Task CreateOwnSystemUser_ReturnsCreated_WithStandaloneType()
+        {
+            string orgNumber = "912345671";
+            string clientId = Guid.NewGuid().ToString();
+
+            HttpClient client = CreateClient();
+            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue(
+                "Bearer",
+                PrincipalUtil.GetOrgToken("digdir", orgNumber, StandaloneScope, now: TestTime, clientId: clientId));
+
+            CreateOwnSystemUserRequest newSystemUser = new()
+            {
+                IntegrationTitle = "My Own System"
+            };
+
+            HttpRequestMessage request = new(HttpMethod.Post, "/authentication/api/v1/systemuser/own");
+            request.Content = JsonContent.Create(newSystemUser, new MediaTypeHeaderValue("application/json"));
+            HttpResponseMessage response = await client.SendAsync(request, HttpCompletionOption.ResponseContentRead);
+
+            Assert.Equal(HttpStatusCode.Created, response.StatusCode);
+            SystemUserInternalDTO? created = await response.Content.ReadFromJsonAsync<SystemUserInternalDTO>();
+            Assert.NotNull(created);
+            Assert.Equal(SystemUserType.Standalone, created!.UserType);
+            Assert.Equal(orgNumber, created.ReporteeOrgNo);
+            Assert.StartsWith($"{orgNumber}_own_", created.SystemId);
+        }
+
+        [Fact]
+        public async Task CreateOwnSystemUser_MissingClientIdClaim_ReturnsUnauthorized()
+        {
+            string orgNumber = "912345672";
+
+            HttpClient client = CreateClient();
+            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue(
+                "Bearer",
+                PrincipalUtil.GetOrgToken("digdir", orgNumber, StandaloneScope, now: TestTime));
+
+            CreateOwnSystemUserRequest newSystemUser = new()
+            {
+                IntegrationTitle = "My Own System"
+            };
+
+            HttpRequestMessage request = new(HttpMethod.Post, "/authentication/api/v1/systemuser/own");
+            request.Content = JsonContent.Create(newSystemUser, new MediaTypeHeaderValue("application/json"));
+            HttpResponseMessage response = await client.SendAsync(request, HttpCompletionOption.ResponseContentRead);
+
+            Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+            ProblemDetails? problemDetails = await response.Content.ReadFromJsonAsync<ProblemDetails>();
+            Assert.NotNull(problemDetails);
+            Assert.Equal(Problem.Vendor_ClientId_NotFound.Title, problemDetails!.Title);
+        }
+
+        [Fact]
+        public async Task CreateOwnSystemUser_DuplicateClientId_ReturnsConflict()
+        {
+            string orgNumber = "912345673";
+            string clientId = Guid.NewGuid().ToString();
+
+            HttpClient client = CreateClient();
+            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue(
+                "Bearer",
+                PrincipalUtil.GetOrgToken("digdir", orgNumber, StandaloneScope, now: TestTime, clientId: clientId));
+
+            CreateOwnSystemUserRequest newSystemUser = new()
+            {
+                IntegrationTitle = "My Own System"
+            };
+
+            HttpRequestMessage firstRequest = new(HttpMethod.Post, "/authentication/api/v1/systemuser/own");
+            firstRequest.Content = JsonContent.Create(newSystemUser, new MediaTypeHeaderValue("application/json"));
+            HttpResponseMessage firstResponse = await client.SendAsync(firstRequest, HttpCompletionOption.ResponseContentRead);
+            Assert.Equal(HttpStatusCode.Created, firstResponse.StatusCode);
+
+            HttpRequestMessage secondRequest = new(HttpMethod.Post, "/authentication/api/v1/systemuser/own");
+            secondRequest.Content = JsonContent.Create(newSystemUser, new MediaTypeHeaderValue("application/json"));
+            HttpResponseMessage secondResponse = await client.SendAsync(secondRequest, HttpCompletionOption.ResponseContentRead);
+
+            Assert.Equal(HttpStatusCode.Conflict, secondResponse.StatusCode);
+            ProblemDetails? problemDetails = await secondResponse.Content.ReadFromJsonAsync<ProblemDetails>();
+            Assert.NotNull(problemDetails);
+            Assert.Equal(Problem.SystemRegister_ClientId_AlreadyExists.Title, problemDetails!.Title);
         }
     }
 }
