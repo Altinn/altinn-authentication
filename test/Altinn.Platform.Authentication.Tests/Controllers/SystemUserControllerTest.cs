@@ -7,6 +7,7 @@ using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
+using System.Security.Claims;
 using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
@@ -18,6 +19,7 @@ using Altinn.Common.AccessToken.Services;
 using Altinn.Common.PEP.Interfaces;
 using Altinn.Platform.Authentication.Clients.Interfaces;
 using Altinn.Platform.Authentication.Configuration;
+using Altinn.Platform.Authentication.Core.Constants;
 using Altinn.Platform.Authentication.Core.Enums;
 using Altinn.Platform.Authentication.Core.Models;
 using Altinn.Platform.Authentication.Core.Models.AccessPackages;
@@ -3499,6 +3501,32 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             ProblemDetails? problemDetails = await response.Content.ReadFromJsonAsync<ProblemDetails>();
             Assert.NotNull(problemDetails);
             Assert.Equal(Problem.Vendor_ClientId_NotFound.Title, problemDetails!.Title);
+        }
+
+        [Fact]
+        public async Task CreateOwnSystemUser_MissingConsumerClaim_ReturnsUnauthorized()
+        {
+            // A token with the required scope but no "consumer" claim, e.g. GetOrgToken always adds one.
+            List<Claim> claims = [new Claim(AuthzConstants.CLAIM_SCOPE, StandaloneScope)];
+
+            HttpClient client = CreateClient();
+            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue(
+                "Bearer",
+                PrincipalUtil.GetToken(1337, claims, now: TestTime));
+
+            CreateOwnSystemUserRequest newSystemUser = new()
+            {
+                IntegrationTitle = "My Own System"
+            };
+
+            HttpRequestMessage request = new(HttpMethod.Post, "/authentication/api/v1/systemuser/own");
+            request.Content = JsonContent.Create(newSystemUser, new MediaTypeHeaderValue("application/json"));
+            HttpResponseMessage response = await client.SendAsync(request, HttpCompletionOption.ResponseContentRead);
+
+            Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+            ProblemDetails? problemDetails = await response.Content.ReadFromJsonAsync<ProblemDetails>();
+            Assert.NotNull(problemDetails);
+            Assert.Equal(Problem.Vendor_Orgno_NotFound.Title, problemDetails!.Title);
         }
 
         [Fact]
