@@ -417,12 +417,21 @@ namespace Altinn.Platform.Authentication.Services
             Guid partyUuid = party.PartyUuid.Value;
             string systemId = $"{vendorOrgNumber}_own_{Guid.NewGuid():N}";
 
+            // The translated_text domain requires all of en/nb/nn; this system is never shown in any
+            // UI (IsVisible = false), so the same title is used for all three.
+            Dictionary<string, string> title = new()
+            {
+                ["en"] = request.IntegrationTitle,
+                ["nb"] = request.IntegrationTitle,
+                ["nn"] = request.IntegrationTitle
+            };
+
             RegisterSystemRequest newRegisteredSystem = new()
             {
                 Id = systemId,
                 Vendor = new VendorInfo { ID = $"0192:{vendorOrgNumber}" },
-                Name = new Dictionary<string, string> { ["nb"] = request.IntegrationTitle },
-                Description = new Dictionary<string, string> { ["nb"] = request.IntegrationTitle },
+                Name = title,
+                Description = title,
                 Rights = [],
                 AccessPackages = [],
                 ClientId = [clientId],
