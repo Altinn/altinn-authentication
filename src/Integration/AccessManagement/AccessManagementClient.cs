@@ -845,7 +845,12 @@ public class AccessManagementClient : IAccessManagementClient
                 {
                     Id = client.Party.Id,
                     Name = client.Party.Name,
-                    OrganizationIdentifier = client.Party.OrganizationNumber
+                    OrganizationIdentifier = client.Party.OrganizationNumber,
+
+                    // The internal API names the organisation unit type "unitType"; the enduser API
+                    // carries the same value on the entity "variant" field.
+                    Variant = client.Party.UnitType,
+                    IsDeleted = client.Party.IsDeleted
                 },
                 Access =
                 [
@@ -1043,6 +1048,10 @@ public class AccessManagementClient : IAccessManagementClient
             public string? Name { get; set; }
 
             public string? OrganizationNumber { get; set; }
+
+            public string? UnitType { get; set; }
+
+            public bool IsDeleted { get; set; }
         }
 
         internal sealed class InternalRoleAccessPackages
