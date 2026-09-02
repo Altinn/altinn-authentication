@@ -95,7 +95,7 @@ namespace Altinn.Platform.Authentication.Tests.Services
                It.IsAny<EventId>(),
                It.IsAny<It.IsAnyType>(),
                It.IsAny<Exception>(),
-               (Func<It.IsAnyType, Exception, string>)It.IsAny<object>()),
+               (Func<It.IsAnyType, Exception?, string>)It.IsAny<object>()),
               Times.Once);
 
             Assert.False(actual.Active);

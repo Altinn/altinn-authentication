@@ -13,6 +13,7 @@ using Altinn.Platform.Authentication.Core.Constants;
 using Altinn.Platform.Authentication.Core.Errors;
 using Altinn.Platform.Authentication.Core.Models;
 using Altinn.Platform.Authentication.Core.Models.Rights;
+using Altinn.Platform.Authentication.Core.Models.Rights.ConnectionsDtos;
 using Altinn.Platform.Authentication.Core.Models.SystemUsers;
 using Altinn.Platform.Authentication.Helpers;
 using Altinn.Platform.Authentication.Model;
@@ -47,14 +48,14 @@ namespace Altinn.Platform.Authentication.Controllers
         {
             SystemUserInternalDTO systemUser = await SystemUserService.GetSingleSystemUserById(agent);
 
-            ValidationErrorBuilder systemUserErrors = ValidateSystemUser(systemUser, agent);
+            ValidationProblemBuilder systemUserErrors = ValidateSystemUser(systemUser, agent);
 
             if (systemUserErrors.TryToActionResult(out ActionResult errorResult))
             {
                 return errorResult;
             }
 
-            Party party = await PartiesClient.GetPartyByOrgNo(systemUser.ReporteeOrgNo);
+            Party? party = await PartiesClient.GetPartyByOrgNo(systemUser.ReporteeOrgNo);
 
             if (party is null)
             {
@@ -90,8 +91,7 @@ namespace Altinn.Platform.Authentication.Controllers
 
             // Otherwise, get the value
             var customerList = result.Result as OkObjectResult;
-            List<Customer>? customers = new List<Customer>();
-            customers = customerList?.Value as List<Customer>;
+            List<ExternalClientDto>? customers = customerList?.Value as List<ExternalClientDto> ?? [];
 
             return MapCustomerToSystemUserInfo(customers, agent, systemUser.ReporteeOrgNo);
         }
@@ -107,14 +107,14 @@ namespace Altinn.Platform.Authentication.Controllers
         {
             SystemUserInternalDTO systemUser = await SystemUserService.GetSingleSystemUserById(agent);
 
-            ValidationErrorBuilder systemUserErrors = ValidateSystemUser(systemUser, agent);
+            ValidationProblemBuilder systemUserErrors = ValidateSystemUser(systemUser, agent);
 
             if (systemUserErrors.TryToActionResult(out ActionResult errorResult))
             {
                 return errorResult;
             }
 
-            Party party = await PartiesClient.GetPartyByOrgNo(systemUser.ReporteeOrgNo);
+            Party? party = await PartiesClient.GetPartyByOrgNo(systemUser.ReporteeOrgNo);
             if (party is null)
             {
                 return NotFound(new ProblemDetails
@@ -136,7 +136,7 @@ namespace Altinn.Platform.Authentication.Controllers
                 return Forbid();
             }
 
-            var result = await SystemUserService.OldGetListOfDelegationsForAgentSystemUser(party.PartyId, party.PartyUuid.Value, agent);
+            var result = await SystemUserService.GetListOfDelegationsForAgentSystemUser(party.PartyId, party.PartyUuid.Value, agent);
 
             // If the result is a problem (not 200 OK), return it directly
             if (result.IsProblem)
@@ -166,15 +166,18 @@ namespace Altinn.Platform.Authentication.Controllers
         public async Task<ActionResult<ClientDelegationResponse>> DelegateClientToSystemUser([FromQuery] Guid agent, [FromQuery] Guid client, CancellationToken cancellationToken)
         {
             SystemUserInternalDTO systemUser = await SystemUserService.GetSingleSystemUserById(agent);
-            ValidationErrorBuilder systemUserErrors = ValidateSystemUser(systemUser, agent);
-            ValidationErrorBuilder clientErrors = ValidateClient(client);
-            ValidationErrorBuilder mergedErrors = MergeValidationErrors(systemUserErrors, clientErrors);
-            if (mergedErrors.TryToActionResult(out ActionResult errorResult))
+            ValidationProblemBuilder errors = default;
+            errors.MergeWith([
+                ValidateSystemUser(systemUser, agent),
+                ValidateClient(client),
+            ]);
+
+            if (errors.TryToActionResult(out ActionResult errorResult))
             {
                 return errorResult;
             }
 
-            Party party = await PartiesClient.GetPartyByOrgNo(systemUser.ReporteeOrgNo);
+            Party? party = await PartiesClient.GetPartyByOrgNo(systemUser.ReporteeOrgNo);
             if (party is null)
             {
                 return NotFound(new ProblemDetails
@@ -196,39 +199,11 @@ namespace Altinn.Platform.Authentication.Controllers
                 return Forbid();
             }
 
-            var customerResult = await inner.GetClientsForFacilitator(party.PartyUuid.Value, null);
-
-            if (customerResult.Result is not OkObjectResult) 
-            {
-                return customerResult.Result;
-            }
-
-            // Otherwise, get the value
-            var customerList = customerResult.Result as OkObjectResult;
-            List<Customer>? customers = customerList?.Value as List<Customer>;
-
-            Customer customer = customers?.Find(c => c.PartyUuid == client);
-
-            if (customer == null)
-            {
-                return NotFound(new ProblemDetails
-                {
-                    Title = "Client not found",
-                    Detail = $"Client with client id {client} not found",
-                    Status = 404
-                });
-            }
-
-            AgentDelegationInputDto agentDelegationInput = new AgentDelegationInputDto
-            {
-                CustomerId = client.ToString(),
-                FacilitatorId = party.PartyUuid.Value.ToString(),
-                Access = customer.Access
-            };
-
             var userId = AuthenticationHelper.GetUserId(HttpContext);
 
-            Result<List<DelegationResponse>> delegationResult = await SystemUserService.OldDelegateToAgentSystemUser(systemUser, agentDelegationInput, userId, cancellationToken);
+            // The new delegation service validates the client and its access packages internally
+            // (via GetClientsForFacilitator) and builds the delegation batch itself.
+            Result<List<DelegationResponse>> delegationResult = await SystemUserService.DelegateToAgentSystemUser(systemUser, party.PartyUuid.Value, client, userId, cancellationToken);
             if (delegationResult.IsProblem)
             {
                 return delegationResult.Problem.ToActionResult();
@@ -252,18 +227,20 @@ namespace Altinn.Platform.Authentication.Controllers
         [HttpDelete("clients")]
         public async Task<ActionResult<List<DelegationResponse>>> RemoveClientFromSystemUser([FromQuery] Guid agent, [FromQuery] Guid client, CancellationToken cancellationToken)
         {
-            Guid delegationId = Guid.Empty;
             SystemUserInternalDTO systemUser = await SystemUserService.GetSingleSystemUserById(agent);
 
-            ValidationErrorBuilder systemUserErrors = ValidateSystemUser(systemUser, agent);
-            ValidationErrorBuilder clientErrors = ValidateClient(client);
-            ValidationErrorBuilder mergedErrors = MergeValidationErrors(systemUserErrors, clientErrors);
-            if (mergedErrors.TryToActionResult(out ActionResult errorResult))
+            ValidationProblemBuilder errors = default;
+            errors.MergeWith([
+                ValidateSystemUser(systemUser, agent),
+                ValidateClient(client),
+            ]);
+
+            if (errors.TryToActionResult(out ActionResult errorResult))
             {
                 return errorResult;
             }
 
-            Party party = await PartiesClient.GetPartyByOrgNo(systemUser.ReporteeOrgNo);
+            Party? party = await PartiesClient.GetPartyByOrgNo(systemUser.ReporteeOrgNo);
             if (party is null)
             {
                 return NotFound(new ProblemDetails
@@ -284,37 +261,12 @@ namespace Altinn.Platform.Authentication.Controllers
             {
                 return Forbid();
             }
-
-            var result = await SystemUserService.OldGetListOfDelegationsForAgentSystemUser(party.PartyId, party.PartyUuid.Value, agent, client);
-            if (result.IsSuccess)
+            
+            Result<bool> removeResult = await SystemUserService.DeleteClientDelegationToAgentSystemUser(party.PartyId.ToString(), agent, client, party.PartyUuid.Value, cancellationToken);
+            
+            if (removeResult.IsProblem)
             {
-                DelegationResponse? delegation = result.Value?.FirstOrDefault(d => d.CustomerId == client);
-                if (delegation == null)
-                {
-                    return NotFound(new ProblemDetails
-                    {
-                        Title = "Delegation not found",
-                        Detail = $"No delegation found for customer {client} and system user {agent}",
-                        Status = 404
-                    });
-                }
-                else
-                {
-                    delegationId = delegation.DelegationId;
-                }
-            }
-            else if (result.IsProblem)
-            {
-                return result.Problem.ToActionResult();
-            }
-
-            var removeResult = await inner.DeleteCustomerFromAgentSystemUser(party.PartyId.ToString(), delegationId, party.PartyUuid.Value, cancellationToken);
-
-            // If the result is a problem (not 200 OK), return it directly
-            // If the result is an ObjectResult and status code is not 200, return it directly
-            if (removeResult is ObjectResult objectResult && objectResult.StatusCode != 200)
-            {
-                return objectResult;
+                return removeResult.Problem.ToActionResult();
             }
 
             return Ok(new ClientDelegationResponse
@@ -335,8 +287,8 @@ namespace Altinn.Platform.Authentication.Controllers
         [HttpGet("agents")]
         [Authorize(Policy = AuthzConstants.POLICY_CLIENTDELEGATION_READ)]
         public async Task<ActionResult<List<SystemUserInternalDTO>>> GetAllAgentSystemUsersForParty([FromQuery] string party)
-        {    
-            Party partyInfo = await PartiesClient.GetPartyByOrgNo(party);
+        {
+            Party? partyInfo = await PartiesClient.GetPartyByOrgNo(party);
             if (partyInfo is null)
             {
                 return NotFound(new ProblemDetails
@@ -388,7 +340,7 @@ namespace Altinn.Platform.Authentication.Controllers
             return true;
         }
 
-        private static ClientInfoPaginated<ClientInfo> MapCustomerToSystemUserInfo(List<Customer> customers, Guid systemUserId, string systemUserOwner)
+        private static ClientInfoPaginated<ClientInfo> MapCustomerToSystemUserInfo(List<ExternalClientDto> customers, Guid systemUserId, string systemUserOwner)
         {
             SystemUserInfo systemUser = new SystemUserInfo
             {
@@ -417,7 +369,7 @@ namespace Altinn.Platform.Authentication.Controllers
                 SystemUserId = systemUserId,
                 SystemUserOwnerOrg = systemUser.ReporteeOrgNo,
             };
-           
+
             var clients = delegationResponses
                 .Where(r => r.CustomerId is not null)
                 .Select(r => new ClientInfo
@@ -430,9 +382,9 @@ namespace Altinn.Platform.Authentication.Controllers
             return ClientInfoPaginated.Create(clients, null, systemUserInfo);
         }
 
-        private static ValidationErrorBuilder ValidateSystemUser(SystemUserInternalDTO systemUser, Guid systemUserId)
+        private static ValidationProblemBuilder ValidateSystemUser(SystemUserInternalDTO systemUser, Guid systemUserId)
         {
-            ValidationErrorBuilder errors = default;
+            ValidationProblemBuilder errors = default;
 
             if (systemUserId == Guid.Empty)
             {
@@ -461,9 +413,9 @@ namespace Altinn.Platform.Authentication.Controllers
             return errors;
         }
 
-        private static ValidationErrorBuilder ValidateClient(Guid client)
+        private static ValidationProblemBuilder ValidateClient(Guid client)
         {
-            ValidationErrorBuilder errors = default;
+            ValidationProblemBuilder errors = default;
             if (client == Guid.Empty)
             {
                 errors.Add(ValidationErrors.SystemUser_Missing_ClientParameter, [
@@ -472,20 +424,6 @@ namespace Altinn.Platform.Authentication.Controllers
             }
 
             return errors;
-        }
-
-        private static ValidationErrorBuilder MergeValidationErrors(params ValidationErrorBuilder[] errorBuilders)
-        {
-            ValidationErrorBuilder mergedErrors = default;
-            foreach (var errorBuilder in errorBuilders)
-            {
-                foreach (var error in errorBuilder)
-                {
-                    mergedErrors.Add(error);
-                }
-            }
-
-            return mergedErrors;
         }
     }
 }

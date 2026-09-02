@@ -5,6 +5,7 @@ using System.Configuration;
 using System.Diagnostics;
 using System.IdentityModel.Tokens.Jwt;
 using System.Linq;
+using System.Net.Http;
 using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
@@ -33,6 +34,7 @@ using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Microsoft.FeatureManagement;
+using Microsoft.IdentityModel.Tokens;
 
 namespace Altinn.Platform.Authentication.Services
 {
@@ -49,7 +51,6 @@ namespace Altinn.Platform.Authentication.Services
         TimeProvider timeProvider,
         IOidcProvider oidcProvider,
         IUpstreamTokenValidator upstreamTokenValidator,
-        IUserProfileService userProfileService,
         IRegisterUserProvisioningClient registerUserProvisioningClient,
         IProfile profile,
         IOidcSessionRepository oidcSessionRepository,
@@ -58,7 +59,6 @@ namespace Altinn.Platform.Authentication.Services
         ITokenService tokenService,
         IRefreshTokenRepository refreshTokenRepository,
         IUnregisteredClientRepository unregisteredClientRequestRepository,
-        ISblCookieDecryptionService sblCookieDecryptionService,
         IEventLog eventLog,
         IFeatureManager featureManager, 
         IOidcDownstreamLogout oidcDownstreamLogout) : IOidcServerService
@@ -73,7 +73,6 @@ namespace Altinn.Platform.Authentication.Services
         private readonly TimeProvider _timeProvider = timeProvider;
         private readonly IOidcProvider _oidcProvider = oidcProvider;
         private readonly IUpstreamTokenValidator _upstreamTokenValidator = upstreamTokenValidator;
-        private readonly IUserProfileService _userProfileService = userProfileService;
         private readonly IRegisterUserProvisioningClient _registerUserProvisioningClient = registerUserProvisioningClient;
         private readonly IProfile _profileService = profile;
         private readonly IOidcSessionRepository _oidcSessionRepo = oidcSessionRepository;
@@ -82,7 +81,6 @@ namespace Altinn.Platform.Authentication.Services
         private readonly ITokenService _tokenService = tokenService;
         private readonly IRefreshTokenRepository _refreshTokenRepo = refreshTokenRepository;
         private readonly IUnregisteredClientRepository _unregisteredClientRequestRepository = unregisteredClientRequestRepository;
-        private readonly ISblCookieDecryptionService _cookieDecryptionService = sblCookieDecryptionService;
         private static readonly string DefaultProviderKey = "idporten";
         private readonly IEventLog _eventLog = eventLog;
         private readonly IFeatureManager _featureManager = featureManager;
@@ -91,10 +89,10 @@ namespace Altinn.Platform.Authentication.Services
         /// <summary>
         /// Handles an incoming OIDC <c>/authorize</c> request from a Downstream client in the Altinn Platform.
         /// This can be Arbeidsflate or other application.
-        /// Identifes the correct Upstream ID Provider like ID-porten, UIDP, Testlogin or other configured provider
+        /// Identifies the correct Upstream ID Provider like ID-porten, UIDP, Testlogin or other configured provider
         /// Stores downstream login transaction and upstream transaction before redirecting to the correct upstream ID-provider
         /// </summary>
-        public async Task<AuthorizeResult> Authorize(AuthorizeRequest request, ClaimsPrincipal principal, string? sessionHandle, string? encryptedTicket, CancellationToken cancellationToken)
+        public async Task<AuthorizeResult> Authorize(AuthorizeRequest request, ClaimsPrincipal principal, string? sessionHandle, CancellationToken cancellationToken)
         {
             // Local helper to choose error redirect or local error based on redirect_uri validity
             // 1) Client lookup
@@ -141,59 +139,6 @@ namespace Altinn.Platform.Authentication.Services
             {
                 byte[] sessionHandleByte = HashHandle(FromBase64Url(sessionHandle));
                 existingSession = await _oidcSessionRepo.GetBySessionHandleHashAsync(sessionHandleByte, cancellationToken);
-            }
-            else if (!string.IsNullOrEmpty(encryptedTicket))
-            {
-                // Try to extract session from Altinn 2 ticket
-                UserAuthenticationModel userAuthenticationModel = await _cookieDecryptionService.DecryptTicket(encryptedTicket);
-                if (userAuthenticationModel?.UserID.HasValue == true && userAuthenticationModel.UserID.Value > 0)
-                {
-                    userAuthenticationModel = await IdentifyOrCreateAltinnUser(userAuthenticationModel, null);
-
-                    AuthenticateFromAltinn2TicketInput ticketInput = new AuthenticateFromAltinn2TicketInput
-                    {
-                        EncryptedTicket = encryptedTicket,
-                        CreatedByIp = request.ClientIp!,
-                        UserAgentHash = request.UserAgentHash,
-                        CorrelationId = request.CorrelationId!.Value
-                    };
-
-                    EnrichIdentityFromLegacyValues(userAuthenticationModel);
-                    AddLocalScopes(userAuthenticationModel);
-                    (OidcSession session, string newSessionHandle) = await CreateOrUpdateOidcSessionFromAltinn2Ticket(ticketInput, userAuthenticationModel, cancellationToken);
-
-                    existingSession = session;
-
-                    // Since session was created by Altinn 2 ticket we need to create cookies for the response before returning to the OIDC client
-                    if (session is not null && session.ExpiresAt.HasValue && session.ExpiresAt.Value > _timeProvider.GetUtcNow())
-                    {
-                        string token = await _tokenService.CreateCookieToken(session, cancellationToken);
-                        CookieInstruction cookieInstruction
-                            = new()
-                            {
-                                Name = _generalSettings.JwtCookieName,
-                                Value = token,
-                                HttpOnly = true,
-                                Secure = true,
-                                Path = "/",
-                                SameSite = SameSiteMode.Lax,
-                                Domain = _generalSettings.HostName,
-                            };
-
-                        CookieInstruction altinnSessionCookie = new()
-                        {
-                            Name = _generalSettings.AltinnSessionCookieName,
-                            Value = newSessionHandle,
-                            HttpOnly = true,
-                            Secure = true,
-                            Path = "/",
-                            SameSite = SameSiteMode.Lax,
-                            Domain = _generalSettings.HostName,
-                        };
-
-                        cookieInstructions = new List<CookieInstruction> { cookieInstruction, altinnSessionCookie };
-                    }
-                }
             }
 
             // Verify that found session and Check if existing session meets ACR requirements from request
@@ -311,8 +256,27 @@ namespace Altinn.Platform.Authentication.Services
 
             // ===== 2) Exchange upstream code for upstream tokens =====
             OidcProvider provider = ChooseProviderByKey(upstreamTx.Provider);
-            UserAuthenticationModel userIdenity = await ExtractUserIdentityFromUpstream(input, upstreamTx, provider, cancellationToken);
-            userIdenity = await IdentifyOrCreateAltinnUser(userIdenity, provider);
+            UserAuthenticationModel? userIdenity = await ExtractUserIdentityFromUpstream(input, upstreamTx, provider, cancellationToken);
+            if (userIdenity is null)
+            {
+                // The upstream token call was refused/unreachable, or its tokens did not validate.
+                return await BuildUpstreamIdentityFailedResult(upstreamTx, cancellationToken);
+            }
+
+            UserAuthenticationModel? identifiedUser = await IdentifyOrCreateAltinnUser(userIdenity, provider, cancellationToken);
+            if (identifiedUser is null)
+            {
+                // Self-identified user provisioning (via register) failed. Do not continue and create
+                // a session from an incomplete identity (missing UserID/PartyID/PartyUuid).
+                return new UpstreamCallbackResult
+                {
+                    Kind = UpstreamCallbackResultKind.LocalError,
+                    StatusCode = 500,
+                    LocalErrorMessage = "Could not provision the self-identified user; sign-in cannot complete."
+                };
+            }
+
+            userIdenity = identifiedUser;
             AddLocalScopes(userIdenity);
 
             // 3. Create or refresh Altinn session session
@@ -434,12 +398,6 @@ namespace Altinn.Platform.Authentication.Services
         {
             Claim? sidClaim = principal.Claims.FirstOrDefault(c => c.Type == "sid");
             Claim? scopeClaim = principal.Claims.FirstOrDefault(c => c.Type == "scope");
-            
-            // Disable code that forces presence of sid claim. Enable when all users have new token
-            //if (sidClaim == null && _generalSettings.ForceOidc)
-            //{
-            //    throw new InvalidOperationException("No sid claim present in principal");
-            //}
 
             if (sidClaim == null)
             {
@@ -458,7 +416,7 @@ namespace Altinn.Platform.Authentication.Services
 
             await _oidcSessionRepo.SlideExpiryToAsync(sidClaim.Value, _timeProvider.GetUtcNow().AddMinutes(_generalSettings.JwtValidityMinutes), cancellationToken);
             var session = await _oidcSessionRepo.GetBySidAsync(sidClaim.Value, cancellationToken);
-            if (session is null && _generalSettings.ForceOidc)
+            if (session is null)
             {
                 throw new InvalidOperationException("No valid session found for sid");
             }
@@ -528,11 +486,10 @@ namespace Altinn.Platform.Authentication.Services
                         Domain = _generalSettings.HostName,
                     }
                 };
-                noSidCookies.AddRange(BuildLegacySblCookieDeletes());
 
                 return new EndSessionResult
                 {
-                    RedirectUri = await ResolveLogoutFallbackAsync(),
+                    RedirectUri = new Uri(_generalSettings.BaseUrl),
                     State = input.State,
                     Cookies = noSidCookies
                 };
@@ -568,9 +525,9 @@ namespace Altinn.Platform.Authentication.Services
                 string issuer = oidcSession.UpstreamIssuer;
                 if (issuer.Equals(AuthzConstants.ISSUER_ALTINN_PORTAL, StringComparison.OrdinalIgnoreCase))
                 {
-                    // Session was created based on Altinn 2 ticket. Redirect back to Altinn 2 for logout
-                    // unless the Altinn 2 servers are gone — in which case fall back to BaseUrl.
-                    redirect = await ResolveLogoutFallbackAsync();
+                    // Session was created based on an Altinn 2 ticket. Altinn 2 is shut down, so logout
+                    // falls back to BaseUrl.
+                    redirect = new Uri(_generalSettings.BaseUrl);
                 }
                 else
                 {
@@ -633,7 +590,6 @@ namespace Altinn.Platform.Authentication.Services
             };
             
             List<CookieInstruction> finalCookies = new() { deleteRuntime, deleteSession };
-            finalCookies.AddRange(BuildLegacySblCookieDeletes());
 
             return new EndSessionResult
             {
@@ -641,46 +597,6 @@ namespace Altinn.Platform.Authentication.Services
                 State = input.State,
                 Cookies = finalCookies
             };
-        }
-
-        private async Task<Uri> ResolveLogoutFallbackAsync()
-        {
-            if (await _featureManager.IsEnabledAsync(FeatureFlags.Altinn2LogoutRedirectDisabled))
-            {
-                return new Uri(_generalSettings.BaseUrl);
-            }
-
-            return new Uri(_generalSettings.SBLLogoutEndpoint);
-        }
-
-        private IEnumerable<CookieInstruction> BuildLegacySblCookieDeletes()
-        {
-            yield return new CookieInstruction
-            {
-                Name = _generalSettings.SblAuthCookieName,
-                Value = string.Empty,
-                HttpOnly = true,
-                Secure = true,
-                Path = "/",
-                SameSite = SameSiteMode.Lax,
-                Expires = DateTimeOffset.UnixEpoch,
-                Domain = _generalSettings.HostName,
-            };
-
-            if (!string.Equals(_generalSettings.SblAuthCookieEnvSpecificName, _generalSettings.SblAuthCookieName, StringComparison.Ordinal))
-            {
-                yield return new CookieInstruction
-                {
-                    Name = _generalSettings.SblAuthCookieEnvSpecificName,
-                    Value = string.Empty,
-                    HttpOnly = true,
-                    Secure = true,
-                    Path = "/",
-                    SameSite = SameSiteMode.Lax,
-                    Expires = DateTimeOffset.UnixEpoch,
-                    Domain = _generalSettings.HostName,
-                };
-            }
         }
 
         /// <summary>
@@ -796,65 +712,6 @@ namespace Altinn.Platform.Authentication.Services
             };
         }
 
-        /// <summary>
-        /// Handles the authentication process based on the provided Altinn2 ticket input.
-        /// </summary>
-        public async Task<AuthenticateFromAltinn2TicketResult> HandleAuthenticateFromTicket(AuthenticateFromAltinn2TicketInput ticketInput, CancellationToken cancellationToken)
-        {
-            UserAuthenticationModel userAuthenticationModel = await _cookieDecryptionService.DecryptTicket(ticketInput.EncryptedTicket);
-            if (userAuthenticationModel == null || userAuthenticationModel.UserID == null || userAuthenticationModel.UserID.Value == 0)
-            {
-                return new AuthenticateFromAltinn2TicketResult()
-                {
-                    Kind = AuthenticateFromAltinn2TicketResultKind.NoValidSession
-                };
-            }
-
-            userAuthenticationModel = await IdentifyOrCreateAltinnUser(userAuthenticationModel, null);
-
-            EnrichIdentityFromLegacyValues(userAuthenticationModel);
-            AddLocalScopes(userAuthenticationModel);
-            (OidcSession session, string sessionHandle) = await CreateOrUpdateOidcSessionFromAltinn2Ticket(ticketInput, userAuthenticationModel, cancellationToken);
-            if (session is not null && session.ExpiresAt.HasValue && session.ExpiresAt.Value > _timeProvider.GetUtcNow())
-            {
-                string token = await _tokenService.CreateCookieToken(session, cancellationToken);
-                CookieInstruction cookieInstruction
-                    = new()
-                    {
-                        Name = _generalSettings.JwtCookieName,
-                        Value = token,
-                        HttpOnly = true,
-                        Secure = true,
-                        Path = "/",
-                        SameSite = SameSiteMode.Lax,
-                        Domain = _generalSettings.HostName,
-                    };
-
-                CookieInstruction altinnSessionCookie = new()
-                {
-                    Name = _generalSettings.AltinnSessionCookieName,
-                    Value = sessionHandle,
-                    HttpOnly = true,
-                    Secure = true,
-                    Path = "/",
-                    SameSite = SameSiteMode.Lax,
-                    Domain = _generalSettings.HostName,
-                };
-
-                return new AuthenticateFromAltinn2TicketResult
-                {
-                    Kind = AuthenticateFromAltinn2TicketResultKind.Success,
-                    Cookies = [cookieInstruction, altinnSessionCookie],
-                    Acr = session.Acr
-                };
-            }
-
-            return new AuthenticateFromAltinn2TicketResult()
-            {
-                Kind = AuthenticateFromAltinn2TicketResultKind.NoValidSession
-            };
-        }
-
         private void AddLocalScopes(UserAuthenticationModel userAuthenticationModel)
         {
             string[] localScopes = _generalSettings.DefaultPortalScopes.Split(' ', StringSplitOptions.RemoveEmptyEntries);
@@ -874,15 +731,6 @@ namespace Altinn.Platform.Authentication.Services
             }
         }
 
-        private static void EnrichIdentityFromLegacyValues(UserAuthenticationModel model)
-        {
-            model.Iss = AuthzConstants.ISSUER_ALTINN_PORTAL;
-            model.Amr = [AuthenticationHelper.GetAmrFromAuthenticationMethod(model.AuthenticationMethod)];
-            model.Acr = AuthenticationHelper.GetAcrForAuthenticationLevel(model.AuthenticationLevel);
-            model.TokenIssuer = model.Iss;
-            model.TokenSubject = model.PartyUuid.ToString();
-        }
- 
         private async Task MarkUpstreamTokenExchanged(UpstreamLoginTransaction upstreamTx, UserAuthenticationModel userIdenity, CancellationToken cancellationToken)
         {
             await _upstreamLoginTxRepo.MarkTokenExchangedAsync(
@@ -896,13 +744,72 @@ namespace Altinn.Platform.Authentication.Services
                 cancellationToken: cancellationToken);
         }
 
-        private async Task<UserAuthenticationModel> ExtractUserIdentityFromUpstream(UpstreamCallbackInput input, UpstreamLoginTransaction upstreamTx, OidcProvider provider, CancellationToken cancellationToken)
+        /// <summary>
+        /// Redeems the upstream authorization code and turns the resulting tokens into an identity.
+        /// Returns <c>null</c> when the upstream refused or could not serve the token request, or when
+        /// the tokens it returned did not validate. Both causes are logged and counted further down
+        /// (<c>altinn.authentication.oidc.upstream_token_exchange</c> and
+        /// <c>…upstream_token_validation</c>); the caller only decides what the user sees.
+        /// </summary>
+        private async Task<UserAuthenticationModel?> ExtractUserIdentityFromUpstream(UpstreamCallbackInput input, UpstreamLoginTransaction upstreamTx, OidcProvider provider, CancellationToken cancellationToken)
         {
-            OidcCodeResponse codeReponse = await _oidcProvider.GetTokens(input.Code!, provider, upstreamTx.UpstreamRedirectUri.ToString(), upstreamTx.CodeVerifier, cancellationToken);
-            JwtSecurityToken idToken = await _upstreamTokenValidator.ValidateTokenAsync(codeReponse.IdToken, provider, upstreamTx.Nonce, cancellationToken);
-            JwtSecurityToken accesstoken = await _upstreamTokenValidator.ValidateTokenAsync(codeReponse.AccessToken, provider, null, cancellationToken);
-            UserAuthenticationModel userIdenity = AuthenticationHelper.GetUserFromToken(idToken, provider, accesstoken);
-            return userIdenity;
+            OidcCodeResponse? codeReponse = await _oidcProvider.GetTokens(input.Code!, provider, upstreamTx.UpstreamRedirectUri.ToString(), upstreamTx.CodeVerifier, cancellationToken);
+            if (codeReponse is null)
+            {
+                return null;
+            }
+
+            try
+            {
+                JwtSecurityToken idToken = await _upstreamTokenValidator.ValidateTokenAsync(codeReponse.IdToken, provider, upstreamTx.Nonce, cancellationToken);
+                JwtSecurityToken accesstoken = await _upstreamTokenValidator.ValidateTokenAsync(codeReponse.AccessToken, provider, null, cancellationToken);
+                UserAuthenticationModel userIdenity = AuthenticationHelper.GetUserFromToken(idToken, provider, accesstoken);
+                return userIdenity;
+            }
+            catch (Exception ex) when (ex is SecurityTokenException or ArgumentException or InvalidOperationException or HttpRequestException)
+            {
+                // Fail closed: no session is created. Surfacing this as an OIDC error beats letting it
+                // escape as an unhandled 500, which is what used to happen.
+                _logger.LogError(ex, "Validation of upstream tokens from {Provider} failed", provider.IssuerKey ?? provider.Issuer);
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// Builds the callback result for a sign-in that could not be completed because the upstream
+        /// token exchange or the upstream token validation failed. Prefers an OIDC error redirect back
+        /// to the downstream client, so the user lands on a real error page rather than an unhandled 500.
+        /// </summary>
+        private async Task<UpstreamCallbackResult> BuildUpstreamIdentityFailedResult(UpstreamLoginTransaction upstreamTx, CancellationToken cancellationToken)
+        {
+            const string ErrorDescription = "Could not complete sign-in with the upstream identity provider.";
+
+            if (upstreamTx.RequestId is not null)
+            {
+                LoginTransaction? loginTx = await _loginTxRepo.GetByRequestIdAsync(upstreamTx.RequestId.Value, cancellationToken);
+
+                // Safety: we only ever redirect to the redirect_uri we validated on /authorize.
+                if (loginTx?.RedirectUri is not null && loginTx.RedirectUri.IsAbsoluteUri)
+                {
+                    return new UpstreamCallbackResult
+                    {
+                        Kind = UpstreamCallbackResultKind.ErrorRedirectToClient,
+                        ClientRedirectUri = loginTx.RedirectUri,
+                        ClientState = loginTx.State,
+                        Error = "temporarily_unavailable",
+                        ErrorDescription = ErrorDescription
+                    };
+                }
+            }
+
+            // Unregistered-client (goto) flow, or no usable redirect_uri. Bouncing the user back to the
+            // goto URL without a session would send them straight into another login attempt, so stop here.
+            return new UpstreamCallbackResult
+            {
+                Kind = UpstreamCallbackResultKind.LocalError,
+                StatusCode = 502,
+                LocalErrorMessage = ErrorDescription
+            };
         }
 
         /// <summary>
@@ -1226,60 +1133,6 @@ namespace Altinn.Platform.Authentication.Services
             return (session, sessionHandle);
         }
 
-        /// <summary>
-        /// Method that creates or updates an OIDC session based on the Altinn2 ticket identity.
-        /// This can be deleted in the future when Altinn2 is decommissioned.
-        /// </summary>
-        private async Task<(OidcSession OidcSession, string SessionHandle)> CreateOrUpdateOidcSessionFromAltinn2Ticket(AuthenticateFromAltinn2TicketInput authInput,  UserAuthenticationModel userIdenity, CancellationToken cancellationToken)
-        {
-            string[]? scopes = [];
-            if (!string.IsNullOrWhiteSpace(userIdenity.Scope))
-            {
-                scopes = userIdenity.Scope.Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).Distinct(StringComparer.OrdinalIgnoreCase).ToArray();
-            }
-
-            // 1) Generate 256-bit random handle for the cookie
-            byte[] handleBytes = RandomNumberGenerator.GetBytes(32);
-            string sessionHandle = ToBase64Url(handleBytes); // this is what you'll set as the cookie value
-
-            // 2) Hash it for storage (HMAC with server-side pepper)
-            byte[] handleHash = HashHandle(handleBytes);
-
-            string? externalId = null;
-
-            if (!string.IsNullOrEmpty(userIdenity.SSN))
-            {
-                externalId = $"{AltinnCoreClaimTypes.PersonIdentifier}:{userIdenity.SSN}";
-            }
-
-            OidcSession session = await _oidcSessionRepo.CreateSession(
-                new OidcSessionCreate
-                {
-                    Sid = CryptoHelpers.RandomBase64Url(32),
-                    SessionHandleHash = handleHash, // store hash only
-                    Provider = "altinn2",
-                    UpstreamIssuer = userIdenity.TokenIssuer!,
-                    UpstreamSub = userIdenity.TokenSubject!,
-                    SubjectId = $"{AltinnCoreClaimTypes.PartyUUID}:{userIdenity.PartyUuid}",
-                    ExternalId = externalId,
-                    SubjectPartyUuid = userIdenity.PartyUuid,            // <- Altinn GUID
-                    SubjectPartyId = userIdenity.PartyID,              // <- legacy
-                    SubjectUserId = userIdenity.UserID,    
-                    SubjectUserName = userIdenity.Username,  // <- legacy
-                    Acr = userIdenity.Acr,
-                    AuthTime = userIdenity.AuthTime,
-                    Amr = userIdenity.Amr,
-                    Scopes = scopes,
-                    ExpiresAt = _timeProvider.GetUtcNow().AddMinutes(_generalSettings.JwtValidityMinutes),
-                    UpstreamSessionSid = userIdenity.SessionId,
-                    Now = _timeProvider.GetUtcNow(),
-                    CreatedByIp = authInput.CreatedByIp,
-                    UserAgentHash = authInput.UserAgentHash,
-                },
-                cancellationToken);
-            return (session, sessionHandle);
-        }
-
         private static AuthorizeResult Fail(AuthorizeRequest req, AuthorizeValidationError e, OidcClient? oidcClient)
         {
             // If we can safely redirect back, do an OIDC error redirect; else local error.
@@ -1514,7 +1367,7 @@ namespace Altinn.Platform.Authentication.Services
             return ub.Uri;
         }
 
-        private async Task<UserAuthenticationModel> IdentifyOrCreateAltinnUser(UserAuthenticationModel userAuthenticationModel, OidcProvider? provider)
+        private async Task<UserAuthenticationModel?> IdentifyOrCreateAltinnUser(UserAuthenticationModel userAuthenticationModel, OidcProvider? provider, CancellationToken cancellationToken)
         {
             ArgumentNullException.ThrowIfNull(userAuthenticationModel);
 
@@ -1560,55 +1413,27 @@ namespace Altinn.Platform.Authentication.Services
                 string issExternalIdentity = userAuthenticationModel.Iss + ":" + userAuthenticationModel.ExternalIdentity;
                 string userName = CreateUserName(userAuthenticationModel, provider);
 
-                if (await _featureManager.IsEnabledAsync(FeatureFlags.RegisterSelfIdentifiedUserProvisioning))
+                var provisioned = await GetOrCreateSelfIdentifiedUserViaRegister(
+                    SelfIdentifiedUserType.Educational,
+                    issExternalIdentity,
+                    userName,
+                    email: null,
+                    cancellationToken);
+
+                if (provisioned is null)
                 {
-                    var provisioned = await GetOrCreateSelfIdentifiedUserViaRegister(
-                        SelfIdentifiedUserType.Educational,
-                        issExternalIdentity,
-                        userName,
-                        email: null,
-                        CancellationToken.None);
-
-                    if (provisioned is null)
-                    {
-                        return userAuthenticationModel;
-                    }
-
-                    userAuthenticationModel.UserID = (int)provisioned.User.Value.UserId.Value;
-                    userAuthenticationModel.PartyID = (int)provisioned.PartyId.Value;
-                    userAuthenticationModel.PartyUuid = provisioned.Uuid;
-                    userAuthenticationModel.Username = provisioned.User.Value.Username.Value;
-                    userAuthenticationModel.Amr = ["SelfIdentified"];
-                    userAuthenticationModel.Acr = "Selfidentified";
-                    return userAuthenticationModel;
+                    // Provisioning failed - signal the caller to fail the callback rather than
+                    // continuing with an incomplete identity.
+                    return null;
                 }
 
-                userProfile = await _userProfileService.GetUser(issExternalIdentity);
-
-                if (userProfile != null)
-                {
-                    userAuthenticationModel.UserID = userProfile.UserId;
-                    userAuthenticationModel.PartyID = userProfile.PartyId;
-                    userAuthenticationModel.PartyUuid = userProfile.UserUuid;
-                    userAuthenticationModel.Username = userProfile.UserName;
-                    userAuthenticationModel.Amr = ["SelfIdentified"];
-                    userAuthenticationModel.Acr = "Selfidentified";
-                    return userAuthenticationModel;
-                }
-
-                UserProfile userToCreate = new()
-                {
-                    ExternalIdentity = issExternalIdentity,
-                    UserName = userName,
-                    UserType = Altinn.Platform.Authentication.Core.Models.Profile.Enums.UserType.SelfIdentified
-                };
-
-                UserProfile userCreated = await _userProfileService.CreateUser(userToCreate);
-                userAuthenticationModel.UserID = userCreated.UserId;
-                userAuthenticationModel.PartyID = userCreated.PartyId;
-                userAuthenticationModel.PartyUuid = userCreated.UserUuid;
+                userAuthenticationModel.UserID = (int)provisioned.User.Value.UserId.Value;
+                userAuthenticationModel.PartyID = (int)provisioned.PartyId.Value;
+                userAuthenticationModel.PartyUuid = provisioned.Uuid;
+                userAuthenticationModel.Username = provisioned.User.Value.Username.Value;
                 userAuthenticationModel.Amr = ["SelfIdentified"];
                 userAuthenticationModel.Acr = "Selfidentified";
+                return userAuthenticationModel;
             }
             else if (userAuthenticationModel.Acr != null && userAuthenticationModel.Acr.Equals("selfregistered-email") && !string.IsNullOrEmpty(userAuthenticationModel.Email))
             {
@@ -1616,50 +1441,25 @@ namespace Altinn.Platform.Authentication.Services
                 string issExternalIdentity = AltinnCoreClaimTypes.IdPortenEmailPrefix + ":" + UrnEncoded.Create(userAuthenticationModel.Email.ToLowerInvariant()).Encoded;
                 string userName = "epost:" + userAuthenticationModel.Email;
 
-                if (await _featureManager.IsEnabledAsync(FeatureFlags.RegisterSelfIdentifiedUserProvisioning))
+                var provisioned = await GetOrCreateSelfIdentifiedUserViaRegister(
+                    SelfIdentifiedUserType.IdPortenEmail,
+                    issExternalIdentity,
+                    userName,
+                    userAuthenticationModel.Email,
+                    cancellationToken);
+
+                if (provisioned is null)
                 {
-                    var provisioned = await GetOrCreateSelfIdentifiedUserViaRegister(
-                        SelfIdentifiedUserType.IdPortenEmail,
-                        issExternalIdentity,
-                        userName,
-                        userAuthenticationModel.Email,
-                        CancellationToken.None);
-
-                    if (provisioned is null)
-                    {
-                        return userAuthenticationModel;
-                    }
-
-                    userAuthenticationModel.UserID = (int)provisioned.User.Value.UserId.Value;
-                    userAuthenticationModel.PartyID = (int)provisioned.PartyId.Value;
-                    userAuthenticationModel.PartyUuid = provisioned.Uuid;
-                    userAuthenticationModel.Username = provisioned.User.Value.Username.Value;
-                    return userAuthenticationModel;
+                    // Provisioning failed - signal the caller to fail the callback rather than
+                    // continuing with an incomplete identity.
+                    return null;
                 }
 
-                userProfile = await _userProfileService.GetUser(issExternalIdentity);
-
-                if (userProfile != null)
-                {
-                    userAuthenticationModel.UserID = userProfile.UserId;
-                    userAuthenticationModel.PartyID = userProfile.PartyId;
-                    userAuthenticationModel.PartyUuid = userProfile.UserUuid;
-                    userAuthenticationModel.Username = userProfile.UserName;
-                    return userAuthenticationModel;
-                }
-
-                // Todo: Verifiser prefix på brukernavn
-                UserProfile userToCreate = new()
-                {
-                    ExternalIdentity = issExternalIdentity,
-                    UserName = userName,
-                    UserType = Altinn.Platform.Authentication.Core.Models.Profile.Enums.UserType.SelfIdentified
-                };
-
-                UserProfile userCreated = await _userProfileService.CreateUser(userToCreate);
-                userAuthenticationModel.UserID = userCreated.UserId;
-                userAuthenticationModel.PartyID = userCreated.PartyId;
-                userAuthenticationModel.PartyUuid = userCreated.UserUuid;
+                userAuthenticationModel.UserID = (int)provisioned.User.Value.UserId.Value;
+                userAuthenticationModel.PartyID = (int)provisioned.PartyId.Value;
+                userAuthenticationModel.PartyUuid = provisioned.Uuid;
+                userAuthenticationModel.Username = provisioned.User.Value.Username.Value;
+                return userAuthenticationModel;
             }
             else if (userAuthenticationModel.UserID.HasValue && userAuthenticationModel.UserID.Value > 0)
             {
@@ -1696,6 +1496,8 @@ namespace Altinn.Platform.Authentication.Services
 
             if (response is null)
             {
+                // Log the external identity (may be email-derived) verbatim: this is an internal error
+                // log for a failing sign-in, and support needs to identify which user is affected.
                 _logger.LogError(
                     "Register self-identified provisioning returned no result for externalIdentity {ExternalIdentity}; sign-in cannot complete.",
                     externalIdentity);

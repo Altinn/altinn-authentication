@@ -12,7 +12,7 @@ internal class AsyncConcurrencyLimiter
 
     public AsyncConcurrencyLimiter(int maxConcurrency)
     {
-        //Guard.IsGreaterThanOrEqualTo(maxConcurrency, 1);
+        // Guard.IsGreaterThanOrEqualTo(maxConcurrency, 1);
         Assert.True(maxConcurrency > 0);
 
         _semaphoreSlim = new SemaphoreSlim(maxConcurrency, maxConcurrency);
@@ -53,7 +53,7 @@ internal class AsyncConcurrencyLimiter
         {
             if (_semaphoreSlim != null)
             {
-                //ThrowHelper.ThrowInvalidOperationException("Lock not released.");
+                // ThrowHelper.ThrowInvalidOperationException("Lock not released.");
                 throw new InvalidOperationException("Lock not released.");
             }
         }

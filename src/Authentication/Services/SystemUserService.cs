@@ -26,7 +26,6 @@ using Microsoft.Extensions.Options;
 using Microsoft.FeatureManagement;
 using Newtonsoft.Json.Linq;
 
-using static Microsoft.ApplicationInsights.MetricDimensionNames.TelemetryContext;
 using SystemUserType = Altinn.Platform.Authentication.Core.Enums.SystemUserType;
 
 #nullable enable
@@ -62,7 +61,7 @@ namespace Altinn.Platform.Authentication.Services
         /// <summary>
         /// Used to set the stream chunk limit, for the internal API
         /// </summary>
-        const int STREAM_LIMIT = 100;
+        private const int STREAM_LIMIT = 100;
 
         /// <summary>
         /// Creates a new SystemUser
@@ -77,7 +76,7 @@ namespace Altinn.Platform.Authentication.Services
                 return Problem.SystemIdNotFound;
             }
 
-            Party party = await _partiesClient.GetPartyAsync(int.Parse(partyId));
+            Party? party = await _partiesClient.GetPartyAsync(int.Parse(partyId));
 
             if (party is null || string.IsNullOrEmpty(party.OrgNumber))
             {
@@ -165,7 +164,7 @@ namespace Altinn.Platform.Authentication.Services
         /// <returns>Boolean True if row affected</returns>
         public async Task<Result<bool>> SetDeleteFlagOnSystemUser(string partyId, Guid systemUserId, CancellationToken cancellationToken = default)
         {
-            Party party = await _partiesClient.GetPartyAsync(int.Parse(partyId), cancellationToken);
+            Party? party = await _partiesClient.GetPartyAsync(int.Parse(partyId), cancellationToken);
 
             if (party is null || string.IsNullOrEmpty(party.OrgNumber))
             {
@@ -326,7 +325,7 @@ namespace Altinn.Platform.Authentication.Services
                 return Problem.SystemIdNotFound;
             }
 
-            Party party = await _partiesClient.GetPartyAsync(int.Parse(partyId), cancellationToken);
+            Party? party = await _partiesClient.GetPartyAsync(int.Parse(partyId), cancellationToken);
 
             if (party is null || string.IsNullOrEmpty(party.OrgNumber))
             {
@@ -424,7 +423,7 @@ namespace Altinn.Platform.Authentication.Services
                 return Problem.SystemIdNotFound;
             }
 
-            Party party = await _partiesClient.GetPartyAsync(int.Parse(partyId), cancellationToken);
+            Party? party = await _partiesClient.GetPartyAsync(int.Parse(partyId), cancellationToken);
 
             if (party is null || string.IsNullOrEmpty(party.OrgNumber))
             {
@@ -451,12 +450,17 @@ namespace Altinn.Platform.Authentication.Services
                 return Problem.SystemUser_AlreadyExists;
             }
 
+            // Stage 1 - request/format validation. Run both rights and packages (do not bail after rights)
+            // so problems from both are reported together, then combine into one problem. When both fail the
+            // rights code is used as the headline; the package specifics ride along in the extensions.
+            List<ProblemInstance> validationProblems = [];
+
             if (rights is not null && rights.Count > 0)
             {
                 Result<bool> validatedRequestedRights = ValidateRights(rights, regSystem);
                 if (validatedRequestedRights.IsProblem)
                 {
-                    return validatedRequestedRights.Problem;
+                    validationProblems.Add(validatedRequestedRights.Problem);
                 }
             }
 
@@ -465,9 +469,25 @@ namespace Altinn.Platform.Authentication.Services
                 Result<bool> validatedRequestedPackages = await ValidateAccessPackages(accessPackages, regSystem, systemUserType == SystemUserType.Agent);
                 if (validatedRequestedPackages.IsProblem)
                 {
-                    return validatedRequestedPackages.Problem;
+                    validationProblems.Add(validatedRequestedPackages.Problem);
                 }
             }
+
+            if (validationProblems.Count == 1)
+            {
+                return validationProblems[0];
+            }
+
+            if (validationProblems.Count > 1)
+            {
+                return DelegationHelper.CombineProblems(Problem.Rights_NotFound_Or_NotDelegable, [.. validationProblems]);
+            }
+
+            // Stage 2 - delegation check (only reached when validation passed). Run both the rights and the
+            // access package check so the reportee sees every not-delegable resource/package together; their
+            // delegationReasons are merged into one problem (rights code as headline when both fail).
+            List<ProblemInstance> delegationProblems = [];
+            ProblemDescriptor? delegationHeadline = null;
 
             if (systemUserType == SystemUserType.Standard && rights is not null && rights.Count > 0)
             {
@@ -481,8 +501,10 @@ namespace Altinn.Platform.Authentication.Services
 
                 if (!delegationCheckFinalResult.CanDelegate)
                 {
-                    // This represents that the rights are not delegable, but the DelegationCheck method call has been completed.
-                    return DelegationHelper.MapDetailExternalErrorListToProblemInstance(delegationCheckFinalResult.errors);
+                    // The rights are not delegable, but the DelegationCheck call completed. Collect the problem
+                    // instead of returning, so a package failure can be reported alongside it.
+                    delegationProblems.Add(DelegationHelper.MapDetailExternalErrorListToProblemInstance(delegationCheckFinalResult.errors));
+                    delegationHeadline = DelegationHelper.SelectRightsProblemDescriptor(delegationCheckFinalResult.errors);
                 }
             }
 
@@ -491,12 +513,23 @@ namespace Altinn.Platform.Authentication.Services
                 var accessPackageCheckResult = await delegationHelper.ValidateDelegationRightsForAccessPackages(partyUuid, regSystem.Id, accessPackages, fromBff: false, cancellationToken);
                 if (accessPackageCheckResult.IsProblem)
                 {
-                    return accessPackageCheckResult.Problem;
+                    delegationProblems.Add(accessPackageCheckResult.Problem);
+                    delegationHeadline ??= Problem.AccessPackage_Delegation_MissingRequiredAccess;
                 }
                 else
                 {
                     accessPackageDelegationCheckResult = accessPackageCheckResult.Value;
                 }
+            }
+
+            if (delegationProblems.Count == 1)
+            {
+                return delegationProblems[0];
+            }
+
+            if (delegationProblems.Count > 1)
+            {
+                return DelegationHelper.CombineProblems(delegationHeadline!, [.. delegationProblems]);
             }
 
             regSystem.Name.TryGetValue("nb", out string? systemName);
@@ -524,7 +557,6 @@ namespace Altinn.Platform.Authentication.Services
             }
 
             return await InsertNewSystemUser(newSystemUser, userId, regSystem, delegationCheckFinalResult, partyId, accessPackageDelegationCheckResult, partyUuid, cancellationToken);
-
         }
 
         private async Task<Result<SystemUserInternalDTO>> InsertNewSystemUser(
@@ -691,19 +723,9 @@ namespace Altinn.Platform.Authentication.Services
 
             if (systemInfo is not { AccessPackages.Count: { } systemInfoAccessPackagesCount } || systemInfoAccessPackagesCount < accessPackages.Count)
             {
-                activity?.SetStatus(System.Diagnostics.ActivityStatusCode.Error, Problem.AccessPackage_NotFound.Detail);
+                activity?.SetStatus(System.Diagnostics.ActivityStatusCode.Error, Problem.AccessPackage_NotFound.Title);
                 return Problem.AccessPackage_NotFound;
             }
-
-            //if (systemInfo.AccessPackages.Count == 0)
-            //{
-            //    return Problem.AccessPackage_NotFound;
-            //}
-
-            //if (accessPackages.Count > systemInfo.AccessPackages.Count)
-            //{
-            //    return Problem.AccessPackage_NotFound;
-            //}
 
             List<string> notFoundPackages = [];
             List<string> notDelegablePackages = [];
@@ -714,17 +736,17 @@ namespace Altinn.Platform.Authentication.Services
                 if (found)
                 {
                     string urnValue = accessPackage.Urn!;
-                    Package package = await _accessManagementClient.GetAccessPackage(urnValue);
+                    Package? package = await _accessManagementClient.GetAccessPackage(urnValue);
                     if (isAgentRequest)
                     {
-                        if (!package.IsDelegable)
+                        if (package is null || !package.IsDelegable)
                         {
                             notDelegablePackages.Add(accessPackage.Urn!);
                         }
                     }
                     else
                     {
-                        if (!package.IsAssignable)
+                        if (package is null || !package.IsAssignable)
                         {
                             notDelegablePackages.Add(accessPackage.Urn!);
                         }
@@ -829,32 +851,6 @@ namespace Altinn.Platform.Authentication.Services
         }
 
         /// <inheritdoc/>
-        public async Task<Result<List<DelegationResponse>>> OldDelegateToAgentSystemUser(SystemUserInternalDTO systemUser, AgentDelegationInputDto request, int userId, CancellationToken cancellationToken)
-        {           
-            Result<List<AgentDelegationResponse>> result = await _accessManagementClient.OldDelegateCustomerToAgentSystemUser(systemUser, request, userId, cancellationToken);
-            if (result.IsSuccess)
-            {
-                List<DelegationResponse> theList = [];
-
-                foreach (var item in result.Value)
-                {
-                    var newDel = new DelegationResponse()
-                    {
-                        DelegationId = item.DelegationId,
-                        CustomerId = item.FromEntityId,
-                        AgentSystemUserId = new Guid(systemUser.Id!)
-                    };
-
-                    theList.Add(newDel);
-                }
-
-                return theList;
-            }
-
-            return result.Problem;
-        }
-
-        /// <inheritdoc/>
         public async Task<Result<List<DelegationResponse>>> DelegateToAgentSystemUser(SystemUserInternalDTO systemUser, Guid provider, Guid client, int userId, CancellationToken cancellationToken)
         {
             List<AccessPackage> packages = systemUser.AccessPackages ?? [];             
@@ -918,22 +914,24 @@ namespace Altinn.Platform.Authentication.Services
             bool[] outerValidationSet = new bool[packages.Count];
             List<string> packageUrns = [.. packages.Select(p => p.Urn!)];
 
-            Result<List<ClientDelegationDto>> clients = await _accessManagementClient.GetClientsForFacilitator(provider, cancellationToken);
+            Result<List<ClientDelegationDto>> clients = await _accessManagementClient.GetClientsForFacilitator(provider, packageUrns, cancellationToken);
             if (clients.IsProblem)
             {
                 return clients.Problem;
             }
 
+            int clientCount = 0;
             foreach (var agentClient in clients.Value)
             {
                 if (agentClient.Client.Id == client)
                 {
+                    clientCount++;
                     foreach (var access in agentClient.Access)
                     {
                         List<string> clientAccessPackages = [];
                         foreach (var package in access.Packages)
                         {
-                            if (packageUrns.Contains(package.Urn))
+                            if (package.Urn is not null && packageUrns.Contains(package.Urn))
                             {
                                 clientAccessPackages.Add(package.Urn);
                                 outerValidationSet[packages.FindIndex(p => p.Urn == package.Urn)] = true;
@@ -944,7 +942,7 @@ namespace Altinn.Platform.Authentication.Services
                         {
                             var roleAccess = new RoleAccessPackagesPrimitive()
                             {
-                                Role = access.Role.Urn,
+                                Role = access.Role.Urn ?? string.Empty,
                                 Packages = clientAccessPackages
                             };
                             clientAccessPrimitive.Add(roleAccess);
@@ -958,9 +956,14 @@ namespace Altinn.Platform.Authentication.Services
                 }
             }
 
+            if (clientCount == 0)
+            {
+                return Problem.AgentSystemUser_ClientNotFound;
+            }
+
             if (!outerValidationSet.All(v => v))
             {
-                return Problem.AccessPackage_NotFound;
+                return Problem.AgentSystemUser_ClientMissingAccessPackages;
             }
 
             return clientAccessPrimitive;
@@ -1054,31 +1057,12 @@ namespace Altinn.Platform.Authentication.Services
         }
 
         /// <inheritdoc/>
-        public async Task<Result<List<DelegationResponse>>> OldGetListOfDelegationsForAgentSystemUser(int partyId, Guid facilitator, Guid systemUserId, Guid? client = null)
-        {
-            Party party = await _partiesClient.GetPartyAsync(partyId);
-
-            if (party.PartyUuid != facilitator)
-            {
-                return Problem.AgentSystemUser_DelegationNotFound;
-            }
-
-            var res = await _accessManagementClient.OldGetDelegationsForAgent(systemUserId, facilitator, client);
-            if (res.IsSuccess)
-            {
-                return ConvertExtDelegationToDTO(res.Value);
-            }
-
-            return res.Problem ?? Problem.UnableToDoDelegationCheck;
-        }
-
-        /// <inheritdoc/>
         public async Task<Result<List<DelegationResponse>>> GetListOfDelegationsForAgentSystemUser(int partyId, Guid facilitator, Guid systemUserId, Guid? client = null)
         {
-            Party party = await _partiesClient.GetPartyAsync(partyId);
+            Party? party = await _partiesClient.GetPartyAsync(partyId);
             List<DelegationResponse> found = [];
 
-            if (party.PartyUuid != facilitator)
+            if (party?.PartyUuid != facilitator)
             {
                 return Problem.AgentSystemUser_DelegationNotFound;
             }
@@ -1097,18 +1081,6 @@ namespace Altinn.Platform.Authentication.Services
             }
 
             return res.Problem ?? Problem.UnableToDoDelegationCheck;
-        }
-
-        /// <inheritdoc/>
-        public async Task<Result<bool>> DeleteClientDelegationToAgentSystemUser(string partyId, Guid delegationId, Guid partyUUId, CancellationToken cancellationToken = default)
-        {
-            Result<bool> result = await _accessManagementClient.OldDeleteCustomerDelegationToAgent(partyUUId, delegationId, cancellationToken);
-            if (result.IsProblem)
-            {
-                return result.Problem;
-            }
-
-            return true;
         }
 
         /// <inheritdoc/>
@@ -1145,7 +1117,7 @@ namespace Altinn.Platform.Authentication.Services
             Result<bool> result = await _accessManagementClient.DeleteSystemUserAssignment(facilitatorId, systemUserId, cancellationToken);
             if (result.IsProblem)
             {
-                if (result.Problem.Detail == Problem.AgentSystemUser_AssignmentNotFound.Detail)
+                if (result.Problem.ErrorCode == Problem.AgentSystemUser_AssignmentNotFound.ErrorCode)
                 {
                     await _repository.SetDeleteSystemUserById(systemUserId);
                     return true;
@@ -1178,33 +1150,18 @@ namespace Altinn.Platform.Authentication.Services
         }
 
         /// <inheritdoc/>
-        public async Task<Result<List<Customer>>> OldGetClientsForFacilitator(Guid facilitator, List<string> packages, IFeatureManager featureManager, CancellationToken cancellationToken)
-        {
-            var res = await _accessManagementClient.OldGetClientsForFacilitator(facilitator, packages, cancellationToken);
-            if (res.IsSuccess)
-            {
-                return OldConvertConnectionDTOToClient(res.Value);
-            }
-
-            return res.Problem ?? Problem.AgentSystemUser_FailedToGetClients;
-        }
-
-        /// <inheritdoc/>
         public async Task<Result<List<ExternalClientDto>>> GetClientsForFacilitator(Guid facilitator, List<string>? packages, IFeatureManager featureManager, CancellationToken cancellationToken)
         {
-            var res = await _accessManagementClient.GetClientsForFacilitator(facilitator, cancellationToken);
-            if (res.IsSuccess)
+            // Temporary: use the Access Management internal API, which requires the client to hold ALL
+            // requested packages (AND). The enduser clientdelegations API (v1/v2) filters with OR, which
+            // lists partially-matching clients. Revert to GetClientsForFacilitator once v2 supports AND.
+            var res = await _accessManagementClient.GetClientsForFacilitatorFromInternalApi(facilitator, packages!, cancellationToken);
+            if (!res.IsSuccess)
             {
-                if (packages is not null && packages.Count > 0)
-                {
-                    // If a list of packages to filter on is provided, filter the clients based on those packages before converting to DTOs
-                    var filtered = res.Value.Where(client => client.Access.Any(access => access.Packages.Any(p => packages.Contains(p.Urn)))).ToList();
-                }
-
-                return ConvertConnectionDTOToClient(res.Value);
+                return res.Problem ?? Problem.AgentSystemUser_FailedToGetClients;
             }
 
-            return res.Problem ?? Problem.AgentSystemUser_FailedToGetClients;
+            return ConvertConnectionDTOToClient(res.Value);
         }
 
         /// <inheritdoc/>
@@ -1216,7 +1173,7 @@ namespace Altinn.Platform.Authentication.Services
                 return Problem.SystemUserNotFound;
             }
 
-            Party party = await _partiesClient.GetPartyAsync(partyId, cancellationToken);
+            Party? party = await _partiesClient.GetPartyAsync(partyId, cancellationToken);
 
             if (party is null || string.IsNullOrEmpty(party.OrgNumber))
             {
@@ -1289,47 +1246,6 @@ namespace Altinn.Platform.Authentication.Services
             return rights;
         }
 
-        private static Result<List<DelegationResponse>> ConvertExtDelegationToDTO(List<ConnectionDto> value)
-        {
-            List<DelegationResponse> result = [];
-
-            foreach (var item in value)
-            {
-                var newDel = new DelegationResponse()
-                {
-                    AgentSystemUserId = item.To.Id,
-                    DelegationId = item.Id,
-                    CustomerId = item.From.Id,
-                    AssignmentId = item.Delegation.ToId,
-                    CustomerName = item.From.Name,
-                    CustomerOrganizationNumber = item.From.RefId
-                };
-
-                result.Add(newDel);
-            }
-
-            return result;
-        }
-
-        private static Result<List<Customer>> OldConvertConnectionDTOToClient(List<ClientDto> value)
-        {
-            List<Customer> result = [];
-            foreach (var item in value)
-            {
-                var newCustomer = new Customer()
-                {
-                    DisplayName = item.Party.Name,
-                    OrganizationIdentifier = item.Party.OrganizationNumber,
-                    PartyUuid = item.Party.Id,
-                    Access = item.Access,
-                    UnitType = item.Party.UnitType
-                };
-                result.Add(newCustomer);
-            }
-
-            return result;
-        }
-
         private static Result<List<ExternalClientDto>> ConvertConnectionDTOToClient(List<ClientDelegationDto> value)
         {
             List<ExternalClientDto> result = [];
@@ -1337,7 +1253,7 @@ namespace Altinn.Platform.Authentication.Services
             {
                 var newCustomer = new ExternalClientDto()
                 {
-                    DisplayName = item.Client.Name,
+                    DisplayName = item.Client.Name ?? string.Empty,
                     OrganizationIdentifier = item.Client.OrganizationIdentifier ?? string.Empty,
                     PartyUuid = item.Client.Id,
                     Access = ConvertAccessToPrimitive(item.Access)
@@ -1374,8 +1290,8 @@ namespace Altinn.Platform.Authentication.Services
             {
                 RoleAccessPackagesPrimitive primitive = new()
                 {
-                    Role = item.Role.Urn,
-                    Packages = [.. item.Packages.Select(p => p.Urn!)]
+                    Role = item.Role.Urn ?? string.Empty,
+                    Packages = [.. item.Packages.Select(p => p.Urn ?? string.Empty)]
                 };
                 primitiveList.Add(primitive);
             }
@@ -1385,7 +1301,7 @@ namespace Altinn.Platform.Authentication.Services
 
         private async Task<Result<Guid>> GetPartyUuId(int partyId, CancellationToken cancellationToken)
         {
-            Party party = await _partiesClient.GetPartyAsync(partyId, cancellationToken);
+            Party? party = await _partiesClient.GetPartyAsync(partyId, cancellationToken);
 
             if (party is null || string.IsNullOrEmpty(party.OrgNumber))
             {

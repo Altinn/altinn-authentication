@@ -6,7 +6,7 @@ using RegisterContracts = Altinn.Register.Contracts;
 namespace Altinn.Authentication.Core.Clients.Interfaces;
 
 /// <summary>
-/// Interface for a client wrapper for integration with SBL bridge delegation request API
+/// Interface for a client wrapper for the Register party and organisation lookup API.
 /// </summary>
 public interface IPartiesClient
 {
@@ -23,24 +23,24 @@ public interface IPartiesClient
     /// </summary>
     /// <param name="partyId">The party ID to lookup</param>
     /// <param name="cancellationToken">The cancellation token<see cref="CancellationToken"/></param>
-    /// <returns>party information</returns>
-    Task<Party> GetPartyAsync(int partyId, CancellationToken cancellationToken = default);
+    /// <returns>party information, or <see langword="null"/> if Register did not return the party</returns>
+    Task<Party?> GetPartyAsync(int partyId, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Returns partyInfo
     /// </summary>
     /// <param name="orgNo">The OrgNo to lookup</param>
     /// <param name="cancellationToken">The cancellation token<see cref="CancellationToken"/></param>
-    /// <returns>party information</returns>
-    Task<Party> GetPartyByOrgNo(string orgNo, CancellationToken cancellationToken = default);
+    /// <returns>party information, or <see langword="null"/> if Register did not return the party</returns>
+    Task<Party?> GetPartyByOrgNo(string orgNo, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Returns partyInfo
     /// </summary>
     /// <param name="partyUuId">The party uuid to lookup</param>
     /// <param name="cancellationToken">The cancellation token<see cref="CancellationToken"/></param>
-    /// <returns>party information</returns>
-    Task<Party> GetPartyByUuId(Guid partyUuId, CancellationToken cancellationToken = default);
+    /// <returns>party information, or <see langword="null"/> if Register did not return the party</returns>
+    Task<Party?> GetPartyByUuId(Guid partyUuId, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Looks up a person party in Register by national identity number (SSN), returning a minimal

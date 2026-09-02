@@ -50,7 +50,7 @@ namespace Altinn.Platform.Authentication.Integration.ResourceRegister
 
         public async Task<ServiceResource?> GetResource(string resourceId)
         {
-            ServiceResource resource = null;
+            ServiceResource? resource = null;
 
             try
             {

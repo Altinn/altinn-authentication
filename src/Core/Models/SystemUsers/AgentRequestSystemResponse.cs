@@ -41,7 +41,7 @@ public class AgentRequestSystemResponse()
     /// </summary>
     [Required]
     [JsonPropertyName("systemId")]
-    public string SystemId { get; set; }
+    public required string SystemId { get; set; }
 
     /// <summary>
     /// The organisation number for the SystemUser's Party ( the customer that delegates rights to the systemuser).
@@ -49,7 +49,7 @@ public class AgentRequestSystemResponse()
     /// </summary>
     [Required]
     [JsonPropertyName("partyOrgNo")]
-    public string PartyOrgNo { get; set; }
+    public required string PartyOrgNo { get; set; }
 
     /// <summary>
     /// The set of Rights requested for this system user. Must be equal to or less than the set defined in the Registered System.
@@ -57,7 +57,7 @@ public class AgentRequestSystemResponse()
     /// </summary>
     [Required]
     [JsonPropertyName("accessPackages")]
-    public List<AccessPackage> AccessPackages { get; set; }
+    public List<AccessPackage> AccessPackages { get; set; } = [];
 
     /// <summary>
     /// Initially the request is "new", 
@@ -65,7 +65,7 @@ public class AgentRequestSystemResponse()
     /// </summary>
     [Required]
     [JsonPropertyName("status")]
-    public string Status { get; set; }
+    public required string Status { get; set; }
 
     /// <summary>
     /// Optional redirect URL to navigate to after the customer has accepted/denied the Request

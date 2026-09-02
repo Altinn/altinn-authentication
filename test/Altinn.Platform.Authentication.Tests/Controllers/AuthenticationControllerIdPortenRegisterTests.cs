@@ -30,17 +30,13 @@ using RegisterContracts = Altinn.Register.Contracts;
 namespace Altinn.Platform.Authentication.Tests.Controllers
 {
     /// <summary>
-    /// Covers the Register branch of the ID-porten token exchange, i.e. when the
-    /// <see cref="FeatureFlags.IdPortenUserLookupFromRegister"/> flag is enabled and the user fields
-    /// are resolved from Register (<see cref="IPartiesClient.GetPartyIdentifiersAndUsernameByPersonIdentifier"/>) instead of the
-    /// platform Profile API. The flag-off (Profile) branch is covered by
-    /// <see cref="AuthenticationControllerTests"/>.
+    /// Covers the ID-porten token exchange resolving the user fields
+    /// (<see cref="IPartiesClient.GetPartyIdentifiersAndUsernameByPersonIdentifier"/>) from Register.
     /// </summary>
     public class AuthenticationControllerIdPortenRegisterTests(DbFixture dbFixture, WebApplicationFixture webApplicationFixture)
         : WebApplicationTests(dbFixture, webApplicationFixture)
     {
         private readonly Mock<IUserProfileService> _userProfileService = new();
-        private readonly Mock<ISblCookieDecryptionService> _cookieDecryptionService = new();
         private readonly Mock<IGuidService> _guidService = new();
         private readonly Mock<IEventsQueueClient> _eventQueue = new();
         private readonly Mock<IPartiesClient> _partiesClient = new();
@@ -49,10 +45,6 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
         {
             builder.UseSetting("feature_management:feature_flags:0:id", "AuditLog");
             builder.UseSetting("feature_management:feature_flags:0:enabled", "true");
-
-            // Enable the Register-based ID-porten user lookup for this test class.
-            builder.UseSetting("feature_management:feature_flags:1:id", FeatureFlags.IdPortenUserLookupFromRegister);
-            builder.UseSetting("feature_management:feature_flags:1:enabled", "true");
             base.ConfigureHost(builder);
         }
 
@@ -65,10 +57,8 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             IConfiguration configuration = new ConfigurationBuilder()
                 .AddJsonFile(configPath)
                 .AddInMemoryCollection(
-                    new Dictionary<string, string>
+                    new Dictionary<string, string?>
                     {
-                        { "GeneralSettings:EnableOidc", "false" },
-                        { "GeneralSettings:ForceOidc", "false" },
                         { "GeneralSettings:DefaultOidcProvider", "altinn" }
                     })
                 .Build();
@@ -78,7 +68,6 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             _eventQueue.Setup(q => q.EnqueueAuthenticationEvent(It.IsAny<string>()));
 
             services.Configure<GeneralSettings>(generalSettingSection);
-            services.AddSingleton(_cookieDecryptionService);
             services.AddSingleton(_userProfileService);
             services.AddSingleton(_partiesClient.Object);
             services.AddSingleton<IOrganisationsService, OrganisationsServiceMock>();
@@ -86,12 +75,10 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             services.AddSingleton<IJwtSigningCertificateProvider, JwtSigningCertificateProviderStub>();
             services.AddSingleton<IPostConfigureOptions<JwtCookieOptions>, JwtCookiePostConfigureOptionsStub>();
             services.AddSingleton<IPublicSigningKeyProvider, SigningKeyResolverStub>();
-            services.AddSingleton<IEnterpriseUserAuthenticationService, EnterpriseUserAuthenticationServiceMock>();
             services.AddSingleton<IOidcProvider, OidcProviderServiceMock>();
             services.AddSingleton(_eventQueue.Object);
             services.AddSingleton(_guidService.Object);
             services.AddSingleton<IUserProfileService>(_userProfileService.Object);
-            services.AddSingleton<ISblCookieDecryptionService>(_cookieDecryptionService.Object);
             _guidService.Setup(q => q.NewGuid()).Returns("eaec330c-1e2d-4acb-8975-5f3eba12b2fb");
         }
 
@@ -124,7 +111,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
 
             // The mock returns a Register party (deserialized to exercise the real polymorphic contract)
             // whose User object carries the Altinn user id and username.
-            RegisterContracts.Party party = JsonSerializer.Deserialize<RegisterContracts.Party>(
+            RegisterContracts.Party? party = JsonSerializer.Deserialize<RegisterContracts.Party>(
                 """
                 {
                   "partyType": "person",
@@ -140,6 +127,8 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
                 }
                 """,
                 new JsonSerializerOptions(JsonSerializerDefaults.Web));
+
+            Assert.NotNull(party);
 
             _partiesClient
                 .Setup(p => p.GetPartyIdentifiersAndUsernameByPersonIdentifier(It.IsAny<string>(), It.IsAny<CancellationToken>()))
@@ -171,7 +160,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
 
         private static string GetConfigPath()
         {
-            string unitTestFolder = Path.GetDirectoryName(new Uri(typeof(AuthenticationControllerIdPortenRegisterTests).Assembly.Location).LocalPath);
+            string unitTestFolder = Path.GetDirectoryName(new Uri(typeof(AuthenticationControllerIdPortenRegisterTests).Assembly.Location).LocalPath)!; // assembly location always has a directory
             return Path.Combine(unitTestFolder, $"../../../appsettings.test.json");
         }
     }

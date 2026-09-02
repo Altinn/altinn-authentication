@@ -149,7 +149,7 @@ namespace Altinn.Platform.Authentication.Tests.Utils
             return new ClaimsPrincipal(identity);
         }
 
-        public static string GetClientDelegationToken(int userId, List<Claim> claims, string scopes, int authenticationLevel = 2, DateTimeOffset? now = null)
+        public static string GetClientDelegationToken(int userId, List<Claim>? claims, string scopes, int authenticationLevel = 2, DateTimeOffset? now = null)
         {
             if (now == null)
             {

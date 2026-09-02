@@ -26,7 +26,6 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 using Microsoft.FeatureManagement;
 using Microsoft.FeatureManagement.Mvc;
-using static Microsoft.ApplicationInsights.MetricDimensionNames.TelemetryContext;
 
 namespace Altinn.Platform.Authentication.Controllers;
 
@@ -499,41 +498,6 @@ public class SystemUserController : ControllerBase
     }
 
     /// <summary>
-    /// Creates a new delegation of a customer to an Agent SystemUser.
-    /// The endpoint is idempotent.
-    /// </summary>
-    /// <returns>OK</returns>    
-    [Authorize(Policy = AuthzConstants.POLICY_CLIENT_ADMINISTRATION_WRITE)]
-    [Produces("application/json")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
-    [HttpPost("agent/{party}/{systemUserId}/delegation/")]
-    public async Task<ActionResult<List<DelegationResponse>>> DelegateToAgentSystemUser(string party, Guid systemUserId, [FromBody] AgentDelegationInputDto request, CancellationToken cancellationToken)
-    {
-        var userId = AuthenticationHelper.GetUserId(HttpContext);
-
-        SystemUserInternalDTO? systemUser = await _systemUserService.GetSingleSystemUserById(systemUserId);
-        if (systemUser is null)
-        {
-            ModelState.AddModelError("return", $"SystemUser with Id {systemUserId} Not Found");
-            return ValidationProblem(ModelState);
-        }
-
-        if (systemUser.PartyId != party)
-        {
-            return Forbid();
-        }
-
-        Result<List<DelegationResponse>> delegationResult = await _systemUserService.OldDelegateToAgentSystemUser(systemUser, request, userId, cancellationToken);
-        if (delegationResult.IsSuccess)
-        {
-            return Ok(delegationResult.Value);
-        }
-
-        return delegationResult.Problem.ToActionResult();
-    }
-
-    /// <summary>
     /// Assigns the user's own Organisation to the Agent SystemUser, and delegates all Access Packages listed in it to the SystemUser,
     /// in the same way as if it was a standard SystemUser. Not eligible for Access Packages with explicit exclusions.
     /// The endpoint is idempotent.
@@ -647,25 +611,6 @@ public class SystemUserController : ControllerBase
     }
 
     /// <summary>
-    /// Delete a customer from an Agent SystemUser.
-    /// </summary>
-    /// <returns></returns>
-    [Authorize(Policy = AuthzConstants.POLICY_CLIENT_ADMINISTRATION_WRITE)]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
-    [HttpDelete("agent/{party}/delegation/{delegationId}")]
-    public async Task<ActionResult> DeleteCustomerFromAgentSystemUser(string party, Guid delegationId, [FromQuery] Guid facilitatorId, CancellationToken cancellationToken = default)
-    {
-        Result<bool> result = await _systemUserService.DeleteClientDelegationToAgentSystemUser(party, delegationId, facilitatorId, cancellationToken);
-        if (result.IsSuccess)
-        {
-            return Ok();
-        }
-
-        return result.Problem.ToActionResult();
-    }
-
-    /// <summary>
     /// Delete an Agent SystemUser.
     /// </summary>
     /// <returns></returns>
@@ -694,7 +639,7 @@ public class SystemUserController : ControllerBase
     [HttpGet("agent/{party}/clients")]
     public async Task<ActionResult<List<Customer>>> GetClientsForFacilitator([FromQuery] Guid facilitator, [FromQuery] List<string> packages = null, CancellationToken cancellationToken = default)
     {
-        var result = await _systemUserService.OldGetClientsForFacilitator(facilitator, packages, _featureManager, cancellationToken);
+        var result = await _systemUserService.GetClientsForFacilitator(facilitator, packages, _featureManager, cancellationToken);
 
         if (result.IsSuccess)
         {

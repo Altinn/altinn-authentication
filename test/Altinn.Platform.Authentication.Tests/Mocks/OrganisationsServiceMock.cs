@@ -18,7 +18,7 @@ namespace Altinn.Platform.Authentication.Tests.Mocks
                     return "dibk";
                 default:
                     await Task.CompletedTask;
-                    return null;
+                    return null!; // interface is declared non-nullable but production service also returns null for unknown orgs
             }
         }
     }

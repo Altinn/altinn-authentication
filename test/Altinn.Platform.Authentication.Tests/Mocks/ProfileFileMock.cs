@@ -26,28 +26,23 @@ namespace Altinn.Platform.Authentication.Tests.Mocks
 
             if (profileLookup.Ssn != null)
             {
-                userProfile = profileList.Find(p => p.Party.SSN == profileLookup.Ssn);
-                if (userProfile == null)
+                userProfile = profileList.Find(p => p.Party?.SSN == profileLookup.Ssn) ?? new UserProfile
                 {
-                    userProfile.Party = new Party() { SSN = profileLookup.Ssn };    
-                    userProfile.UserId = profileLookup.UserId;
-                    userProfile.UserUuid = Guid.NewGuid();
-                }
+                    Party = new Party() { SSN = profileLookup.Ssn },
+                    UserId = profileLookup.UserId,
+                    UserUuid = Guid.NewGuid()
+                };
 
                 return Task.FromResult(userProfile);
             }
             else if (profileLookup.UserId != 0)
             {
-                userProfile = profileList.Find(p => p.UserId == profileLookup.UserId);
-                if (userProfile == null)
+                userProfile = profileList.Find(p => p.UserId == profileLookup.UserId) ?? new UserProfile
                 {
-                    userProfile = new UserProfile
-                    {
-                        Party = new Party() { PartyId = profileLookup.UserId },
-                        UserId = profileLookup.UserId,
-                        UserUuid = Guid.NewGuid()
-                    };
-                }
+                    Party = new Party() { PartyId = profileLookup.UserId },
+                    UserId = profileLookup.UserId,
+                    UserUuid = Guid.NewGuid()
+                };
 
                 return Task.FromResult(userProfile);
             }
@@ -57,7 +52,7 @@ namespace Altinn.Platform.Authentication.Tests.Mocks
 
         private static string GetUserProfilePath()
         {
-            string unitTestFolder = Path.GetDirectoryName(new Uri(typeof(PartiesClientMock).Assembly.Location).LocalPath);
+            string unitTestFolder = Path.GetDirectoryName(new Uri(typeof(PartiesClientMock).Assembly.Location).LocalPath)!; // assembly location always has a directory
             return Path.Combine(unitTestFolder, "Data", "UserProfile", "UserProfiles.json");
         }
     }

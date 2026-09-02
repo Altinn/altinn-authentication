@@ -32,7 +32,7 @@ internal static class Singleton
         {
             if (Interlocked.Exchange(ref _disposed, 1) == 0)
             {
-                //ThrowHelper.ThrowInvalidOperationException($"Singleton.Ref<{typeof(T).Name}> was not disposed");
+                // ThrowHelper.ThrowInvalidOperationException($"Singleton.Ref<{typeof(T).Name}> was not disposed");
                 throw new InvalidOperationException($"Singleton.Ref<{typeof(T).Name}> was not disposed");
             }
         }

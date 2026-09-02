@@ -1,4 +1,4 @@
-﻿using System.Diagnostics.CodeAnalysis;
+using System.Diagnostics.CodeAnalysis;
 
 namespace Altinn.Platform.Authentication.Core.Extensions;
 
@@ -8,63 +8,75 @@ namespace Altinn.Platform.Authentication.Core.Extensions;
 [ExcludeFromCodeCoverage]
 public static class HttpClientExtension
 {
-/// <summary>
-/// Extension that add authorization header to request.
-/// </summary>
-/// <param name="httpClient">The HttpClient.</param>
-/// <param name="authorizationToken">the authorization token (jwt).</param>
-/// <param name="requestUri">The request Uri.</param>
-/// <param name="content">The http content.</param>
-/// <param name="platformAccessToken">The platformAccess tokens.</param>
-/// <returns>A HttpResponseMessage.</returns>
-public static Task<HttpResponseMessage> PostAsync(this HttpClient httpClient, string authorizationToken, string requestUri, HttpContent content, string platformAccessToken = null)
-{
-    HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Post, requestUri);
-    request.Headers.Add("Authorization", "Bearer " + authorizationToken);
-    request.Content = content;
-    if (!string.IsNullOrEmpty(platformAccessToken))
+    /// <summary>
+    /// Extension that add authorization header to request.
+    /// </summary>
+    /// <param name="httpClient">The HttpClient.</param>
+    /// <param name="authorizationToken">the authorization token (jwt). When null or empty, no Authorization header is added (the endpoint is authenticated via the platform access token).</param>
+    /// <param name="requestUri">The request Uri.</param>
+    /// <param name="content">The http content.</param>
+    /// <param name="platformAccessToken">The platformAccess tokens.</param>
+    /// <returns>A HttpResponseMessage.</returns>
+    public static Task<HttpResponseMessage> PostAsync(this HttpClient httpClient, string? authorizationToken, string requestUri, HttpContent? content, string? platformAccessToken = null)
     {
-        request.Headers.Add("PlatformAccessToken", platformAccessToken);
+        HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Post, requestUri);
+        if (!string.IsNullOrEmpty(authorizationToken))
+        {
+            request.Headers.Add("Authorization", "Bearer " + authorizationToken);
+        }
+
+        request.Content = content;
+        if (!string.IsNullOrEmpty(platformAccessToken))
+        {
+            request.Headers.Add("PlatformAccessToken", platformAccessToken);
+        }
+
+        return httpClient.SendAsync(request, CancellationToken.None);
     }
 
-    return httpClient.SendAsync(request, CancellationToken.None);
-}
-
-/// <summary>
-/// Extension that add authorization header to request.
-/// </summary>
-/// <param name="httpClient">The HttpClient.</param>
-/// <param name="authorizationToken">the authorization token (jwt).</param>
-/// <param name="requestUri">The request Uri.</param>
-/// <param name="content">The http content.</param>
-/// <param name="platformAccessToken">The platformAccess tokens.</param>
-/// <returns>A HttpResponseMessage.</returns>
-public static Task<HttpResponseMessage> PutAsync(this HttpClient httpClient, string authorizationToken, string requestUri, HttpContent content, string platformAccessToken = null)
-{
-    HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Put, requestUri);
-    request.Headers.Add("Authorization", "Bearer " + authorizationToken);
-    request.Content = content;
-    if (!string.IsNullOrEmpty(platformAccessToken))
+    /// <summary>
+    /// Extension that add authorization header to request.
+    /// </summary>
+    /// <param name="httpClient">The HttpClient.</param>
+    /// <param name="authorizationToken">the authorization token (jwt). When null or empty, no Authorization header is added (the endpoint is authenticated via the platform access token).</param>
+    /// <param name="requestUri">The request Uri.</param>
+    /// <param name="content">The http content.</param>
+    /// <param name="platformAccessToken">The platformAccess tokens.</param>
+    /// <returns>A HttpResponseMessage.</returns>
+    public static Task<HttpResponseMessage> PutAsync(this HttpClient httpClient, string? authorizationToken, string requestUri, HttpContent? content, string? platformAccessToken = null)
     {
-        request.Headers.Add("PlatformAccessToken", platformAccessToken);
-    }
+        HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Put, requestUri);
+        if (!string.IsNullOrEmpty(authorizationToken))
+        {
+            request.Headers.Add("Authorization", "Bearer " + authorizationToken);
+        }
 
-    return httpClient.SendAsync(request, CancellationToken.None);
-}
+        request.Content = content;
+        if (!string.IsNullOrEmpty(platformAccessToken))
+        {
+            request.Headers.Add("PlatformAccessToken", platformAccessToken);
+        }
+
+        return httpClient.SendAsync(request, CancellationToken.None);
+    }
 
     /// <summary>
     /// Extension that add authorization header to request
     /// </summary>
     /// <param name="httpClient">The HttpClient</param>
-    /// <param name="authorizationToken">the authorization token (jwt)</param>
+    /// <param name="authorizationToken">the authorization token (jwt). When null or empty, no Authorization header is added (the endpoint is authenticated via the platform access token).</param>
     /// <param name="requestUri">The request Uri</param>
     /// <param name="platformAccessToken">The platformAccess tokens</param>
     /// <param name="cancellationToken">The <see cref="CancellationToken"/></param>
     /// <returns>A HttpResponseMessage</returns>
-    public static Task<HttpResponseMessage> GetAsync(this HttpClient httpClient, string authorizationToken, string requestUri, string? platformAccessToken = null, CancellationToken cancellationToken = default)
+    public static Task<HttpResponseMessage> GetAsync(this HttpClient httpClient, string? authorizationToken, string requestUri, string? platformAccessToken = null, CancellationToken cancellationToken = default)
     {
         HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Get, requestUri);
-        request.Headers.Add("Authorization", "Bearer " + authorizationToken);
+        if (!string.IsNullOrEmpty(authorizationToken))
+        {
+            request.Headers.Add("Authorization", "Bearer " + authorizationToken);
+        }
+
         if (!string.IsNullOrEmpty(platformAccessToken))
         {
             request.Headers.Add("PlatformAccessToken", platformAccessToken);
@@ -77,34 +89,43 @@ public static Task<HttpResponseMessage> PutAsync(this HttpClient httpClient, str
     /// Extension that add authorization header to request.
     /// </summary>
     /// <param name="httpClient">The HttpClient.</param>
-    /// <param name="authorizationToken">the authorization token (jwt).</param>
+    /// <param name="authorizationToken">the authorization token (jwt). When null or empty, no Authorization header is added (the endpoint is authenticated via the platform access token).</param>
     /// <param name="requestUri">The request Uri.</param>
     /// <param name="platformAccessToken">The platformAccess tokens.</param>
     /// <returns>A HttpResponseMessage.</returns>
-    public static Task<HttpResponseMessage> DeleteAsync(this HttpClient httpClient, string authorizationToken, string requestUri, string platformAccessToken = null)
-{
-    HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Delete, requestUri);
-    request.Headers.Add("Authorization", "Bearer " + authorizationToken);
-    if (!string.IsNullOrEmpty(platformAccessToken))
+    public static Task<HttpResponseMessage> DeleteAsync(this HttpClient httpClient, string? authorizationToken, string requestUri, string? platformAccessToken = null)
     {
-        request.Headers.Add("PlatformAccessToken", platformAccessToken);
-    }
+        HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Delete, requestUri);
+        if (!string.IsNullOrEmpty(authorizationToken))
+        {
+            request.Headers.Add("Authorization", "Bearer " + authorizationToken);
+        }
 
-    return httpClient.SendAsync(request, CancellationToken.None);
+        if (!string.IsNullOrEmpty(platformAccessToken))
+        {
+            request.Headers.Add("PlatformAccessToken", platformAccessToken);
+        }
+
+        return httpClient.SendAsync(request, CancellationToken.None);
     }
 
     /// <summary>
     /// Extension that add authorization header to request.
     /// </summary>
     /// <param name="httpClient">The HttpClient.</param>
-    /// <param name="authorizationToken">the authorization token (jwt).</param>
+    /// <param name="authorizationToken">the authorization token (jwt). When null or empty, no Authorization header is added (the endpoint is authenticated via the platform access token).</param>
     /// <param name="requestUri">The request Uri.</param>
+    /// <param name="content">The http content.</param>
     /// <param name="platformAccessToken">The platformAccess tokens.</param>
     /// <returns>A HttpResponseMessage.</returns>
-    public static Task<HttpResponseMessage> DeleteAsync(this HttpClient httpClient, string authorizationToken, string requestUri, HttpContent content, string platformAccessToken = null)
+    public static Task<HttpResponseMessage> DeleteAsync(this HttpClient httpClient, string? authorizationToken, string requestUri, HttpContent? content, string? platformAccessToken = null)
     {
         HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Delete, requestUri);
-        request.Headers.Add("Authorization", "Bearer " + authorizationToken);
+        if (!string.IsNullOrEmpty(authorizationToken))
+        {
+            request.Headers.Add("Authorization", "Bearer " + authorizationToken);
+        }
+
         request.Content = content;
         if (!string.IsNullOrEmpty(platformAccessToken))
         {

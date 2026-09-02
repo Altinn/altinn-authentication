@@ -1,7 +1,7 @@
 {
   "ScenarioId": "NewUidd_UidpUser",
   "Title": "",
-  "Description": "En selvidentifisert bruker som først logger på via Altinn 2",
+  "Description": "En selvidentifisert bruker som logger på",
   "Ssn": null,
   "UserId": null,
   "PartyId": null,

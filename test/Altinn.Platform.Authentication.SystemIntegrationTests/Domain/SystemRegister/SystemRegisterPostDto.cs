@@ -25,4 +25,9 @@ public class AccessPackageDto
     {
         return obj is AccessPackageDto other && Urn == other.Urn;
     }
+
+    public override int GetHashCode()
+    {
+        return Urn?.GetHashCode() ?? 0;
+    }
 }

@@ -34,7 +34,7 @@ namespace Altinn.Platform.Authentication.Tests.Mocks
                 ClientId: clientId,
                 RedirectUri: redirectUri,
                 CodeVerifier: codeVerifier,
-                Handler: (_, _, _, _, _) => Task.FromResult(response),
+                Handler: (_, _, _, _, _) => Task.FromResult<OidcCodeResponse?>(response),
                 Name: "success"));
         }
 
@@ -81,6 +81,7 @@ namespace Altinn.Platform.Authentication.Tests.Mocks
                     $"FakeOidcProvider: no rule matched (code='{authorizationCode}', clientId='{provider?.ClientId}', redirect_uri='{redirect_uri}', verifier='{codeVerifier ?? "<null>"}').");
             }
 
+            // Failure rules deliberately return null, matching the real provider's contract.
             return await match.Handler(authorizationCode, provider, redirect_uri, codeVerifier, cancellationToken);
         }
 

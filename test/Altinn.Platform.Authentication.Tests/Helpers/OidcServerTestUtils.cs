@@ -13,7 +13,7 @@ namespace Altinn.Platform.Authentication.Tests.Helpers
                 ["grant_type"] = "refresh_token",
                 ["refresh_token"] = refreshToken,
                 ["client_id"] = create.ClientId,
-                ["client_secret"] = testScenario.ClientSecret // assuming your test client has this
+                ["client_secret"] = testScenario.ClientSecret! // always set by OidcScenarioHelper.GetScenario
             };
             return refreshForm;
         }
@@ -21,7 +21,7 @@ namespace Altinn.Platform.Authentication.Tests.Helpers
         public static OidcClientCreate NewClientCreate(OidcTestScenario testScenario) =>
             new()
             {
-                ClientId = testScenario.DownstreamClientId,
+                ClientId = testScenario.DownstreamClientId!, // always set by OidcScenarioHelper.GetScenario
                 ClientName = "Test Client",
                 ClientType = ClientType.Confidential,
                 TokenEndpointAuthMethod = TokenEndpointAuthMethod.ClientSecretBasic,
@@ -43,7 +43,7 @@ namespace Altinn.Platform.Authentication.Tests.Helpers
                 ["grant_type"] = "authorization_code",
                 ["code"] = code,
                 ["redirect_uri"] = testScenario.DownstreamClientCallbackUrl,
-                ["client_id"] = testScenario.DownstreamClientId,
+                ["client_id"] = testScenario.DownstreamClientId!, // always set by OidcScenarioHelper.GetScenario
                 ["client_secret"] = testScenario.ClientSecret!,
                 ["code_verifier"] = testScenario.GetDownstreamCodeVerifier(),
             };

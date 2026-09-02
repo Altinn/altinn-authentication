@@ -38,7 +38,7 @@ namespace Altinn.Platform.Authentication.Tests.Filters
                 ExternalRef = "  ext  ",
                 SystemId = "  sys  ",
                 PartyOrgNo = "\t123456789\t",
-                Rights = new List<string> { "Read", "Write" },
+                Rights = new List<string?> { "Read", "Write" },
                 RedirectUrl = "  https://example.com/  ",
                 FreeText = "  do not trim  "
             };
@@ -66,7 +66,7 @@ namespace Altinn.Platform.Authentication.Tests.Filters
                 ExternalRef = null,
                 SystemId = null,
                 PartyOrgNo = null,
-                Rights = new List<string>(),
+                Rights = new List<string?>(),
                 RedirectUrl = null,
                 FreeText = null
             };
@@ -110,7 +110,7 @@ namespace Altinn.Platform.Authentication.Tests.Filters
             // Arrange
             var model = new CreateRequestSystemUser
             {
-                Rights = new List<string> { "  Read  ", " Write ", null, "  " }
+                Rights = new List<string?> { "  Read  ", " Write ", null, "  " }
             };
 
             var context = CreateContext(model);
@@ -120,7 +120,7 @@ namespace Altinn.Platform.Authentication.Tests.Filters
             filter.OnActionExecuting(context);
 
             // Assert
-            Assert.Equal(new List<string> { "  Read  ", " Write ", null, "  " }, model.Rights);
+            Assert.Equal(new List<string?> { "  Read  ", " Write ", null, "  " }, model.Rights);
         }
 
         [Fact]
@@ -150,15 +150,15 @@ namespace Altinn.Platform.Authentication.Tests.Filters
 
         [Required]
         [JsonPropertyName("systemId")]
-        public string SystemId { get; set; }
+        public string? SystemId { get; set; }
 
         [Required]
         [JsonPropertyName("partyOrgNo")]
-        public string PartyOrgNo { get; set; }
+        public string? PartyOrgNo { get; set; }
 
         [Required]
         [JsonPropertyName("rights")]
-        public List<string> Rights { get; set; }
+        public List<string?>? Rights { get; set; }
 
         [JsonPropertyName("redirectUrl")]
         public string? RedirectUrl { get; set; }
@@ -169,6 +169,6 @@ namespace Altinn.Platform.Authentication.Tests.Filters
 
     public class ModelWithArray
     {
-        public string[] Tags { get; set; }
+        public string?[]? Tags { get; set; }
     }
 }

@@ -1,24 +1,17 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Text.Json.Serialization;
-using System.Threading.Tasks;
+﻿using System.Text.Json.Serialization;
 
 namespace Altinn.Platform.Authentication.Core.Models
 {
-    /// summary
+    /// <summary>
     /// Organization claim matching structure from maskinporten
-    /// /summary
+    /// </summary>
     public class VendorInfo
     {
-        /// summary
-        /// The authority that defines organization numbers. 
-        /// /summary
-        [JsonPropertyName("authority")]
-        public string Authority;
-
+        /// <summary>
+        /// The organisation number of the vendor, prefixed with its ISO 6523 authority
+        /// (for instance <c>0192:991825827</c> for a Norwegian organisation number).
+        /// </summary>
         [JsonPropertyName("ID")]
-        public string ID { get; set; }
+        public required string ID { get; set; }
     }
 }

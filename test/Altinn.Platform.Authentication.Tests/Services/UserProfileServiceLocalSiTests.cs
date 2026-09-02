@@ -11,7 +11,6 @@ using Altinn.Platform.Authentication.Services;
 using Altinn.Platform.Authentication.Services.Interfaces;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
-using Microsoft.FeatureManagement;
 using Moq;
 using Xunit;
 
@@ -19,8 +18,8 @@ namespace Altinn.Platform.Authentication.Tests.Services;
 
 /// <summary>
 /// Unit tests for the local self-identified credential validation path in
-/// <see cref="UserProfileService"/> (feature flag
-/// <see cref="FeatureFlags.LocalSelfIdentifiedCredentialValidation"/> enabled). These tests do not
+/// <see cref="UserProfileService"/> (the local path is permanent since the
+/// LocalSelfIdentifiedCredentialValidation flag was removed, see ADR-0004). These tests do not
 /// require Docker - they exercise the service directly with mocks and a throwing HTTP handler that
 /// guarantees the SBL Bridge is never contacted on the local path.
 /// </summary>
@@ -34,14 +33,6 @@ public class UserProfileServiceLocalSiTests
     private static readonly Guid PartyUuid = Guid.Parse("2c3bb12a-5e41-4cc9-9a36-7b5ac6f9f102");
 
     private readonly Mock<ISelfIdentifiedUserCredentialRepository> _repo = new();
-    private readonly Mock<IFeatureManager> _featureManager = new();
-
-    public UserProfileServiceLocalSiTests()
-    {
-        _featureManager
-            .Setup(f => f.IsEnabledAsync(FeatureFlags.LocalSelfIdentifiedCredentialValidation))
-            .ReturnsAsync(true);
-    }
 
     [Fact]
     public async Task ValidateCredentials_Local_ValidCredentials_ReturnsProfileWithPartyUuid()
@@ -223,22 +214,8 @@ public class UserProfileServiceLocalSiTests
 
     private UserProfileService CreateService()
     {
-        // A handler that throws if invoked - the local path must never call SBL Bridge.
-        HttpClient client = new(new ThrowingHandler());
-        IOptions<GeneralSettings> settings = Options.Create(new GeneralSettings { OidcRefreshTokenPepper = "unit-test-pepper" });
-
         return new UserProfileService(
-            client,
-            settings,
-            NullLogger<IUserProfileService>.Instance,
-            _featureManager.Object,
             _repo.Object,
             TimeProvider.System);
-    }
-
-    private sealed class ThrowingHandler : HttpMessageHandler
-    {
-        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
-            => throw new InvalidOperationException("HTTP call should not happen on the local validation path.");
     }
 }

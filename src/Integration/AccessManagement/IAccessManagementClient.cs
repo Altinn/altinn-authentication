@@ -19,13 +19,6 @@ public interface IAccessManagementClient
     Task<AuthorizedPartyExternal?> GetPartyFromReporteeListIfExists(int partyId, string token);
 
     /// <summary>
-    /// Gets the Party as a PartyExternal object from the partyid
-    /// </summary>
-    /// <param name="partyId">The party id</param>
-    /// <param name="token">The authorization header bearer token</param>
-    Task<PartyExternal> GetParty(int partyId, string token);
-
-    /// <summary>
     /// Delegates the rights to the systemuser
     /// </summary>
     /// <param name="partyUuid">The party id</param>
@@ -40,16 +33,6 @@ public interface IAccessManagementClient
     /// <param name="rights">The Rights to be revoked for the systemuser on behalf of the Party</param>
     /// <param name="systemUser">The SystemUser that misses the rights</param>
     Task<Result<bool>> RevokeDelegatedRightToSystemUser(Guid partyUuid, SystemUserInternalDTO systemUser, List<Right> rights);
-
-    /// <summary>
-    /// Delegate a customer to the Agent SystemUser
-    /// </summary>    
-    /// <param name="systemUser">The Agent SystemUser</param>
-    /// <param name="request">Post Body from BFF containing customerId</param>
-    /// <param name="userId">Logged in user</param>
-    /// <param name="cancellationToken">The cancellation token</param>
-    /// <returns>Success or Failure</returns>    
-    Task<Result<List<AgentDelegationResponse>>> OldDelegateCustomerToAgentSystemUser(SystemUserInternalDTO systemUser, AgentDelegationInputDto request, int userId, CancellationToken cancellationToken);
 
     /// <summary>
     /// Delegate a customer to the Agent SystemUser
@@ -72,30 +55,13 @@ public interface IAccessManagementClient
     /// </summary>
     /// <returns></returns>
     Task<Result<bool>> RevokeClientFromAgentSystemUser(Guid provider, Guid client, Guid systemuser, CancellationToken cancellationToken);
-
-    /// <summary>
-    /// Retrieves the list of all delegationIds 
-    /// </summary>
-    /// <param name="systemUserId">The Guid Id for the Agent SystemUser</param>
-    /// <param name="facilitator">The Guid Id for the Facilitator</param>
-    /// <param name="client">The Guid Id for the Client</param>
-    /// <param name="cancellationToken">The cancellation token</param>
-    /// <returns></returns>
-    Task<Result<List<ConnectionDto>>> OldGetDelegationsForAgent(Guid systemUserId, Guid facilitator, Guid? client = null, CancellationToken cancellationToken = default);
-
+   
     /// <summary>
     /// Retrieves the access package for the given urn value
     /// </summary>
     /// <param name="urnValue">the urn for the package</param>
-    /// <returns>package</returns>
-    Task<Package> GetAccessPackage(string urnValue);
-
-    /// <summary>
-    /// Deletes the customer delegation to the agent systemuser
-    /// </summary>
-    /// <param name="facilitatorId">The party id of the  user that represents the facilitator for delegation</param>
-    /// <param name="delegationId">The delegation id</param>
-    Task<Result<bool>> OldDeleteCustomerDelegationToAgent(Guid facilitatorId, Guid delegationId, CancellationToken cancellationToken = default);
+    /// <returns>the package, or <see langword="null"/> if no package matches the urn</returns>
+    Task<Package?> GetAccessPackage(string urnValue);
 
     /// <summary>
     /// Revokes the assignment of
@@ -107,16 +73,23 @@ public interface IAccessManagementClient
     /// <summary>
     /// Get clients for a facilitator
     /// </summary>
-    /// <param name="facilitatorId">The party id of the  user that represents the facilitator for delegation</param>
+    /// <param name="provider">The partyUuid of the VIA organisastion</param>
     /// <param name="packages">Access package URNs</param>
-    Task<Result<List<ClientDto>>> OldGetClientsForFacilitator(Guid facilitatorId, List<string> packages, CancellationToken cancellationToken = default);
+    /// <returns>List of clients FROM which the VIA provider can delegate packages TO an entity</returns>
+    Task<Result<List<ClientDelegationDto>>> GetClientsForFacilitator(Guid provider, List<string> packages, CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Get clients for a facilitator
+    /// Get clients for a facilitator via the Access Management internal API.
+    /// TEMPORARY: the enduser clientdelegations API (v1 and v2) filters clients with OR when several
+    /// packages are supplied, whereas the internal API requires the client to hold ALL requested
+    /// packages (AND). This method is used for the client list until the enduser/v2 API supports AND
+    /// package filtering, after which it should be removed in favour of <see cref="GetClientsForFacilitator"/>.
     /// </summary>
-    /// <param name="provider">The partyUuid of the VIA organisastion</param>
-    /// <returns>List of clients FROM which the VIA provider can delegate packages TO an entity</returns>
-    Task<Result<List<ClientDelegationDto>>> GetClientsForFacilitator(Guid provider, CancellationToken cancellationToken = default);
+    /// <param name="provider">The partyUuid of the VIA organisation (facilitator)</param>
+    /// <param name="packages">Access package identifiers to filter by (AND)</param>
+    /// <param name="cancellationToken">The cancellation token</param>
+    /// <returns>List of clients that hold ALL of the requested packages</returns>
+    Task<Result<List<ClientDelegationDto>>> GetClientsForFacilitatorFromInternalApi(Guid provider, List<string> packages, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Gets all packages that are delegated to the agent system user, via the provider from the client 

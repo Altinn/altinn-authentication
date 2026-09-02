@@ -63,6 +63,11 @@ public class RequestSystemUserService(
             return Problem.SystemIdNotFound;
         }
 
+        if (systemInfo.IsDeleted)
+        {
+            return Problem.SystemIsDeleted;
+        }
+
         Result<bool> valRef = await ValidateExternalRequestId(externalRequestId);
         if (valRef.IsProblem)
         {
@@ -177,6 +182,11 @@ public class RequestSystemUserService(
         if (systemInfo is null)
         {
             return Problem.SystemIdNotFound;
+        }
+
+        if (systemInfo.IsDeleted)
+        {
+            return Problem.SystemIsDeleted;
         }
 
         Result<bool> valRef = await ValidateExternalRequestId(externalRequestId);
@@ -450,7 +460,7 @@ public class RequestSystemUserService(
     /// <inheritdoc/>
     public async Task<Result<RequestSystemResponse>> GetRequestByPartyAndRequestId(int partyId, Guid requestId)
     {
-        Party party = await partiesClient.GetPartyAsync(partyId);
+        Party? party = await partiesClient.GetPartyAsync(partyId);
         if (party is null)
         {
             return Problem.Reportee_Orgno_NotFound;
@@ -487,7 +497,7 @@ public class RequestSystemUserService(
     /// <inheritdoc/>
     public async Task<Result<AgentRequestSystemResponse>> GetAgentRequestByPartyAndRequestId(int partyId, Guid requestId)
     {
-        Party party = await partiesClient.GetPartyAsync(partyId);
+        Party? party = await partiesClient.GetPartyAsync(partyId);
         if (party is null)
         {
             return Problem.Reportee_Orgno_NotFound;
@@ -914,9 +924,9 @@ public class RequestSystemUserService(
 
         IEnumerable<Claim> claims = context.User.Claims;
 
-        Party party = await partiesClient.GetPartyByOrgNo(orgNo);
+        Party? party = await partiesClient.GetPartyByOrgNo(orgNo);
 
-        if (!party.PartyUuid.HasValue)
+        if (party?.PartyUuid is null)
         {
             return Problem.Reportee_Orgno_NotFound;
         }
@@ -988,7 +998,7 @@ public class RequestSystemUserService(
 
     private async Task<Result<bool>> ValidatePartyRequest(int partyId, Guid requestId, SystemUserType userType, CancellationToken cancellationToken)
     {
-        Party party = await partiesClient.GetPartyAsync(partyId, cancellationToken);
+        Party? party = await partiesClient.GetPartyAsync(partyId, cancellationToken);
         if (party is null)
         {
             return Problem.Reportee_Orgno_NotFound;

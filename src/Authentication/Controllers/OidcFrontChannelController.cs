@@ -43,16 +43,6 @@ namespace Altinn.Platform.Authentication.Controllers
             string? userAgentHash = string.IsNullOrEmpty(ua) ? null : Hashing.Sha256Base64Url(ua);
             Guid corr = HttpContext.TraceIdentifier is { Length: > 0 } id && Guid.TryParse(id, out var g) ? g : Guid.CreateVersion7();
             string? sessionHandle = Request.Cookies.TryGetValue(_generalSettings.AltinnSessionCookieName, out var sh) ? sh : null;
-            string? encryptedTicket = null;
-            if (!string.IsNullOrEmpty(_generalSettings.SblAuthCookieEnvSpecificName) &&
-                Request.Cookies.TryGetValue(_generalSettings.SblAuthCookieEnvSpecificName, out string? envCookieValue))
-            {
-                encryptedTicket = envCookieValue;
-            }
-            else if (Request.Cookies.TryGetValue(_generalSettings.SblAuthCookieName, out string? defaultCookieValue))
-            {
-                encryptedTicket = defaultCookieValue;
-            }
 
             AuthorizeRequest req;
             try
@@ -68,8 +58,7 @@ namespace Altinn.Platform.Authentication.Controllers
 
             ClaimsPrincipal claimsPrincipal = HttpContext.User;
 
-            // in OidcFrontChannelController
-            AuthorizeResult result = await _oidcServerService.Authorize(req, claimsPrincipal, sessionHandle, encryptedTicket, cancellationToken);
+            AuthorizeResult result = await _oidcServerService.Authorize(req, claimsPrincipal, sessionHandle, cancellationToken);
 
             SetCookies(result.Cookies);
 

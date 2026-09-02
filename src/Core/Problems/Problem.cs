@@ -484,4 +484,22 @@ public static class Problem
     /// </summary>
     public static ProblemDescriptor SelfIdentifiedLink_ConnectionFailed { get; }
         = _factory.Create(78, HttpStatusCode.BadGateway, "Failed to create the self-identified user connection.");
+
+    /// <summary>
+    /// Agent system user flow: the specified client was not found.
+    /// </summary>
+    public static ProblemDescriptor AgentSystemUser_ClientNotFound { get; }
+        = _factory.Create(79, HttpStatusCode.BadRequest, "Client not found.");
+
+    /// <summary>
+    /// Agent system user flow: the specified client does not have the required access packages.
+    /// </summary>
+    public static ProblemDescriptor AgentSystemUser_ClientMissingAccessPackages { get; }
+        = _factory.Create(80, HttpStatusCode.BadRequest, "Client does not have the accesspackages the agent system user requires");
+
+    /// <summary>
+    /// Gets a <see cref="ProblemDescriptor"/>.
+    /// </summary>
+    public static ProblemDescriptor SystemIsDeleted { get; }
+        = _factory.Create(81, HttpStatusCode.BadRequest, "The Registered System is deleted and cannot be used to create new requests.");
 }

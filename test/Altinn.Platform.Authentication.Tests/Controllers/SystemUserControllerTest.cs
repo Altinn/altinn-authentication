@@ -21,6 +21,7 @@ using Altinn.Platform.Authentication.Configuration;
 using Altinn.Platform.Authentication.Core.Models;
 using Altinn.Platform.Authentication.Core.Models.AccessPackages;
 using Altinn.Platform.Authentication.Core.Models.Rights;
+using Altinn.Platform.Authentication.Core.Models.Rights.ConnectionsDtos;
 using Altinn.Platform.Authentication.Core.Models.SystemUsers;
 using Altinn.Platform.Authentication.Integration.AccessManagement;
 using Altinn.Platform.Authentication.Integration.ResourceRegister;
@@ -53,7 +54,6 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
     {
         private static readonly DateTimeOffset TestTime = new(2025, 05, 15, 02, 05, 00, TimeSpan.Zero);
         private readonly Mock<IUserProfileService> _userProfileService = new Mock<IUserProfileService>();
-        private readonly Mock<ISblCookieDecryptionService> _sblCookieDecryptionService = new Mock<ISblCookieDecryptionService>();
         private static readonly JsonSerializerOptions _options = new(JsonSerializerDefaults.Web);
 
         private readonly FakeTimeProvider timeProviderMock = new();
@@ -66,8 +66,6 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
         protected override void ConfigureServices(IServiceCollection services)
         {
             base.ConfigureServices(services);
-            bool enableOidc = false;
-            bool forceOidc = false;
             string defaultOidc = "altinn";
 
             string configPath = GetConfigPath();
@@ -76,8 +74,6 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
               .AddJsonFile(configPath)
               .Build();
 
-            configuration.GetSection("GeneralSettings:EnableOidc").Value = enableOidc.ToString();
-            configuration.GetSection("GeneralSettings:ForceOidc").Value = forceOidc.ToString();
             configuration.GetSection("GeneralSettings:DefaultOidcProvider").Value = defaultOidc;
 
             IConfigurationSection generalSettingSection = configuration.GetSection("GeneralSettings");
@@ -88,7 +84,6 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             services.AddSingleton<IJwtSigningCertificateProvider, JwtSigningCertificateProviderStub>();
             services.AddSingleton<IPostConfigureOptions<JwtCookieOptions>, JwtCookiePostConfigureOptionsStub>();
             services.AddSingleton<IPublicSigningKeyProvider, SigningKeyResolverStub>();
-            services.AddSingleton<IEnterpriseUserAuthenticationService, EnterpriseUserAuthenticationServiceMock>();
             services.AddSingleton<IOidcProvider, OidcProviderServiceMock>();
 
             // _paginationSize = configuration.GetValue<int>("PaginationOptions:Size");
@@ -97,7 +92,6 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             services.AddSingleton(guidService.Object);
             services.AddSingleton<IAccessManagementClient, AccessManagementClientMock>();
             services.AddSingleton<IUserProfileService>(_userProfileService.Object);
-            services.AddSingleton<ISblCookieDecryptionService>(_sblCookieDecryptionService.Object);
             services.AddSingleton<IPDP, PepWithPDPAuthorizationMock>();
             services.AddSingleton<IPartiesClient, PartiesClientMock>();
             services.AddSingleton<IResourceRegistryClient, ResourceRegistryClientMock>();
@@ -661,7 +655,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             HttpResponseMessage response2 = await client.SendAsync(request2, HttpCompletionOption.ResponseContentRead);
             Assert.Equal(HttpStatusCode.BadRequest, response2.StatusCode);
             var problemDetails = JsonSerializer.Deserialize<ProblemDetails>(await response2.Content.ReadAsStringAsync(), _options);
-            Assert.Equal(Problem.SystemUser_FailedToRemoveRightHolder.Detail, problemDetails?.Detail);
+            Assert.Equal(Problem.SystemUser_FailedToRemoveRightHolder.Title, problemDetails?.Title);
         }
 
         [Fact]
@@ -742,7 +736,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             var problemDetails = JsonSerializer.Deserialize<ProblemDetails>(await createSystemUserResponse.Content.ReadAsStringAsync(), _options);
             
             Assert.Equal(HttpStatusCode.Forbidden, createSystemUserResponse.StatusCode);
-            Assert.Equal(Problem.UnableToDoDelegationCheck.Detail, problemDetails?.Detail);
+            Assert.Equal(Problem.UnableToDoDelegationCheck.Title, problemDetails?.Title);
         }
 
         [Fact]
@@ -903,7 +897,6 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             HttpClient client = CreateClient();
             client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3, now: TestTime));
 
-            int partyId = 500000;
             string partyOrgno = "910493353"; 
 
             SystemUserRequestDto newSystemUser = new()
@@ -1146,7 +1139,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             HttpResponseMessage createSystemUserResponse = await client.SendAsync(createSystemUserRequest, HttpCompletionOption.ResponseContentRead);
             Assert.Equal(HttpStatusCode.BadRequest, createSystemUserResponse.StatusCode);  
             var problemDetails = await createSystemUserResponse.Content.ReadFromJsonAsync<ProblemDetails>();
-            Assert.Equal(Problem.Reportee_Orgno_NotFound.Detail, problemDetails?.Detail);
+            Assert.Equal(Problem.Reportee_Orgno_NotFound.Title, problemDetails?.Title);
         }
 
         [Fact]
@@ -1395,27 +1388,10 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
 
             // Delegation of a Customer to the empty Agent System User
             string systemUserId = list[0].Id;
-            string delegationEndpoint = $"/authentication/api/v1/systemuser/agent/{partyId}/{systemUserId}/delegation/";
-
-            var delegationRequest = new AgentDelegationInputDto 
-            { 
-                CustomerId = Guid.NewGuid().ToString(), FacilitatorId = Guid.NewGuid().ToString(), Access = [
-                new ClientRoleAccessPackages()
-                {
-                    Role = "REGN",
-                    Packages = ["urn:altinn:accesspackage:skatt-naering"]
-                },
-                                new ClientRoleAccessPackages()
-                {
-                    Role = "forretningsforer",
-                    Packages = ["urn:altinn:accesspackage:forretningsforer-eiendom"]
-                }
-                ]
-            };
+            string delegationEndpoint = $"/authentication/api/v1/systemuser/agent/{partyId}/{systemUserId}/?provider={Guid.NewGuid().ToString()}&client=431a181a-135c-4a27-9184-2f4b5fb109e3";
 
             HttpRequestMessage delegateMessage = new(HttpMethod.Post, delegationEndpoint);
             delegateMessage.Headers.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3, true, now: TestTime));
-            delegateMessage.Content = JsonContent.Create(delegationRequest);
             HttpResponseMessage delegationResponse = await client2.SendAsync(delegateMessage, HttpCompletionOption.ResponseContentRead);
             List<DelegationResponse>? delegations = await delegationResponse.Content.ReadFromJsonAsync<List<DelegationResponse>>();
             Assert.Equal(HttpStatusCode.OK, delegationResponse.StatusCode);
@@ -1438,7 +1414,6 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             AccessPackage accessPackage = new()
             {
                 Urn = "urn:altinn:accesspackage:skatt-naering"
-
             };
 
             // Arrange
@@ -1478,7 +1453,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
 
             // Delegation of a Customer to the empty Agent System User
             string systemUserId = Guid.NewGuid().ToString();
-            string delegationEndpoint = $"/authentication/api/v1/systemuser/agent/{partyId}/{systemUserId}/delegation/";
+            string delegationEndpoint = $"/authentication/api/v1/systemuser/agent/{partyId}/{systemUserId}/?provider={Guid.NewGuid().ToString()}&client=431a181a-135c-4a27-9184-2f4b5fb109e3";
 
             var delegationRequest = new AgentDelegationInputDto { CustomerId = Guid.NewGuid().ToString(), FacilitatorId = Guid.NewGuid().ToString() };
 
@@ -1505,7 +1480,6 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             AccessPackage accessPackage = new()
             {
                 Urn = "urn:altinn:accesspackage:skatt-naering"
-
             };
 
             // Arrange
@@ -1551,7 +1525,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
 
             // Delegation of a Customer to the empty Agent System User
             string systemUserId = list[0].Id;
-            string delegationEndpoint = $"/authentication/api/v1/systemuser/agent/{partyId}/{systemUserId}/delegation/";
+            string delegationEndpoint = $"/authentication/api/v1/systemuser/agent/{partyId}/{systemUserId}/?provider={Guid.NewGuid().ToString()}&client=431a181a-135c-4a27-9184-2f4b5fb109e3";
 
             var delegationRequest = new AgentDelegationInputDto { CustomerId = Guid.NewGuid().ToString(), FacilitatorId = Guid.NewGuid().ToString() };
 
@@ -1579,7 +1553,6 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             AccessPackage accessPackage = new()
             {
                 Urn = "urn:altinn:accesspackage:skattnaerin" // Missing g
-
             };
 
             // Arrange
@@ -1670,139 +1643,6 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             Assert.NotEqual(HttpStatusCode.Unauthorized, response.StatusCode);
             Assert.True(list is not null);
             Assert.True(list.Count == 1);
-        }
-
-        [Fact]
-        public async Task AgentSystemUser_DeleteCustomer_ReturnsOk()
-        {
-            // Create System used for test
-            string dataFileName = "Data/SystemRegister/Json/SystemRegisterWithAccessPackage.json";
-            HttpResponseMessage response = await CreateSystemRegister(dataFileName);
-
-            HttpClient client = CreateClient();
-            string token = AddSystemUserRequestWriteTestTokenToClient(client);
-            string endpoint = $"/authentication/api/v1/systemuser/request/vendor/agent";
-
-            AccessPackage accessPackage = new()
-            {
-                Urn = "urn:altinn:accesspackage:skatt-naering"
-            };
-
-            // Arrange
-            CreateAgentRequestSystemUser req = new()
-            {
-                ExternalRef = "external",
-                SystemId = "991825827_the_matrix",
-                PartyOrgNo = "910493353",
-                AccessPackages = [accessPackage]
-            };
-
-            HttpRequestMessage request = new(HttpMethod.Post, endpoint)
-            {
-                Content = JsonContent.Create(req)
-            };
-            HttpResponseMessage message = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead);
-
-            Assert.Equal(HttpStatusCode.Created, message.StatusCode);
-
-            AgentRequestSystemResponse? res = await message.Content.ReadFromJsonAsync<AgentRequestSystemResponse>();
-            Assert.NotNull(res);
-            Assert.Equal(req.ExternalRef, res.ExternalRef);
-
-            //// Party Get Request
-            HttpClient client2 = CreateClient();
-
-            int partyId = 500000;
-
-            string approveEndpoint = $"/authentication/api/v1/systemuser/request/agent/{partyId}/{res.Id}/approve";
-            HttpRequestMessage approveRequestMessage = new(HttpMethod.Post, approveEndpoint);
-            approveRequestMessage.Headers.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3, true, now: TestTime));
-            HttpResponseMessage approveResponseMessage = await client2.SendAsync(approveRequestMessage, HttpCompletionOption.ResponseHeadersRead);
-            Assert.Equal(HttpStatusCode.OK, approveResponseMessage.StatusCode);
-
-            string getEndpoint = $"/authentication/api/v1/systemuser/agent/{partyId}";
-
-            HttpRequestMessage getAgent = new(HttpMethod.Get, getEndpoint);
-            getAgent.Headers.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3, now: TestTime));
-            HttpResponseMessage getResponse = await client2.SendAsync(getAgent, HttpCompletionOption.ResponseHeadersRead);
-
-            var systemUserApproveResponse = await getResponse.Content.ReadFromJsonAsync<List<SystemUserInternalDTO>>();
-            Assert.NotNull(systemUserApproveResponse);
-
-            Guid systemUserId = Guid.Parse(systemUserApproveResponse[0].Id);
-
-            Guid facilitatorId = new Guid("0af0688f-4743-4697-acdd-8b2c13884f65");
-            Guid delegationId = Guid.NewGuid();
-
-            HttpClient client3 = CreateClient();
-            client3.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3, now: TestTime));
-            HttpRequestMessage request3 = new(HttpMethod.Delete, $"/authentication/api/v1/systemuser/agent/{partyId}/delegation/{delegationId}?facilitatorId={facilitatorId}");
-            HttpResponseMessage response3 = await client3.SendAsync(request3, HttpCompletionOption.ResponseContentRead);
-            Assert.Equal(HttpStatusCode.OK, response3.StatusCode);
-        }
-
-        [Fact]
-        public async Task AgentSystemUser_DeleteCustomer_ReturnsBadRequest()
-        {
-            int partyId = 500005;
-            Guid facilitatorId = new Guid("02ba44dc-d80b-4493-a942-9b355d491da0");
-            Guid delegationId = Guid.NewGuid();
-
-            HttpClient client = CreateClient();
-            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3, now: TestTime));
-            HttpRequestMessage request = new(HttpMethod.Delete, $"/authentication/api/v1/systemuser/agent/{partyId}/delegation/{delegationId}?facilitatorId={facilitatorId}");
-            HttpResponseMessage response = await client.SendAsync(request, HttpCompletionOption.ResponseContentRead);
-            Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
-            var problemDetails = await response.Content.ReadFromJsonAsync<ProblemDetails>();
-            Assert.Equal(Problem.CustomerDelegation_FailedToRevoke.Detail, problemDetails?.Detail);
-        }
-
-        [Fact]
-        public async Task AgentSystemUser_DeleteCustomer_ReturnsBadRequest_DelegationNotFound()
-        {
-            int partyId = 500005;
-            Guid facilitatorId = new Guid("199912a2-86e1-4c8e-b010-c8c3956535a7");
-            Guid delegationId = Guid.NewGuid();
-
-            HttpClient client = CreateClient();
-            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3, now: TestTime));
-            HttpRequestMessage request = new(HttpMethod.Delete, $"/authentication/api/v1/systemuser/agent/{partyId}/delegation/{delegationId}?facilitatorId={facilitatorId}");
-            HttpResponseMessage response = await client.SendAsync(request, HttpCompletionOption.ResponseContentRead);
-            Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
-            var problemDetails = await response.Content.ReadFromJsonAsync<ProblemDetails>();
-            Assert.Equal(Problem.AgentSystemUser_DelegationNotFound.Detail, problemDetails?.Detail);
-        }
-
-        [Fact]
-        public async Task AgentSystemUser_DeleteCustomer_ReturnsBadRequest_PartyMismatch()
-        {
-            int partyId = 500005;
-            Guid facilitatorId = new Guid("1765cf28-2554-4f3c-90c6-a269a01f46c8");
-            Guid delegationId = Guid.NewGuid();
-
-            HttpClient client = CreateClient();
-            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3, now: TestTime));
-            HttpRequestMessage request = new(HttpMethod.Delete, $"/authentication/api/v1/systemuser/agent/{partyId}/delegation/{delegationId}?facilitatorId={facilitatorId}");
-            HttpResponseMessage response = await client.SendAsync(request, HttpCompletionOption.ResponseContentRead);
-            Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
-            var problemDetails = await response.Content.ReadFromJsonAsync<ProblemDetails>();
-            Assert.Equal(Problem.AgentSystemUser_DeleteDelegation_PartyMismatch.Detail, problemDetails?.Detail);
-        }
-
-        [Fact]
-        public async Task AgentSystemUser_DeleteCustomer_ReturnsBadRequest_InvalidDelegationFacilitator()
-        {
-            int partyId = 500005;
-            Guid facilitatorId = new Guid("cf814a90-1a14-4323-ae8b-72738abaab49");
-            Guid delegationId = Guid.NewGuid();
-
-            HttpClient client = CreateClient();
-            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3, now: TestTime));
-            HttpRequestMessage request = new(HttpMethod.Delete, $"/authentication/api/v1/systemuser/agent/{partyId}/delegation/{delegationId}?facilitatorId={facilitatorId}");
-            HttpResponseMessage response = await client.SendAsync(request, HttpCompletionOption.ResponseContentRead);
-            Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
-            var problemDetails = await response.Content.ReadFromJsonAsync<ProblemDetails>();
-            Assert.Equal(Problem.AgentSystemUser_InvalidDelegationFacilitator.Detail, problemDetails?.Detail);
         }
 
         [Fact]
@@ -1940,7 +1780,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             HttpResponseMessage response3 = await client3.SendAsync(request3, HttpCompletionOption.ResponseContentRead);
             Assert.Equal(HttpStatusCode.BadRequest, response3.StatusCode);
             var problemDetails = await response3.Content.ReadFromJsonAsync<ProblemDetails>();
-            Assert.Equal(Problem.AgentSystemUser_FailedToDeleteAgent.Detail, problemDetails?.Detail);
+            Assert.Equal(Problem.AgentSystemUser_FailedToDeleteAgent.Title, problemDetails?.Title);
         }
 
         [Fact]
@@ -2078,7 +1918,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             HttpResponseMessage response3 = await client3.SendAsync(request3, HttpCompletionOption.ResponseContentRead);
             Assert.Equal(HttpStatusCode.BadRequest, response3.StatusCode);
             var problemDetails = await response3.Content.ReadFromJsonAsync<ProblemDetails>();
-            Assert.Equal(Problem.AgentSystemUser_TooManyAssignments.Detail, problemDetails?.Detail);
+            Assert.Equal(Problem.AgentSystemUser_TooManyAssignments.Title, problemDetails?.Title);
         }
 
         [Fact]
@@ -2095,7 +1935,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             HttpRequestMessage clientListRequest = new(HttpMethod.Get, $"/authentication/api/v1/systemuser/agent/{partyId}/clients?facilitator={facilitator}");
             clientListRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3, now: TestTime));
             HttpResponseMessage clientListResponse = await client2.SendAsync(clientListRequest, HttpCompletionOption.ResponseContentRead);
-            List<ConnectionDto>? list = JsonSerializer.Deserialize<List<ConnectionDto>>(await clientListResponse.Content.ReadAsStringAsync(), _options);
+            List<ExternalClientDto>? list = JsonSerializer.Deserialize<List<ExternalClientDto>>(await clientListResponse.Content.ReadAsStringAsync(), _options);
 
             Assert.Equal(HttpStatusCode.OK, clientListResponse.StatusCode);
             Assert.True(list is not null);
@@ -2119,7 +1959,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             HttpRequestMessage clientListRequest = new(HttpMethod.Get, $"/authentication/api/v1/systemuser/agent/{partyId}/clients?facilitator={facilitator}&packages={accessPackage1}&packages={accessPackage2}");
             clientListRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3, now: TestTime));
             HttpResponseMessage clientListResponse = await client2.SendAsync(clientListRequest, HttpCompletionOption.ResponseContentRead);
-            List<ConnectionDto>? list = JsonSerializer.Deserialize<List<ConnectionDto>>(await clientListResponse.Content.ReadAsStringAsync(), _options);
+            List<ExternalClientDto>? list = JsonSerializer.Deserialize<List<ExternalClientDto>>(await clientListResponse.Content.ReadAsStringAsync(), _options);
 
             Assert.Equal(HttpStatusCode.OK, clientListResponse.StatusCode);
             Assert.True(list is not null);
@@ -2207,11 +2047,11 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
 
             // Assert
             Assert.Equal(HttpStatusCode.OK, clientListResponse.StatusCode);
-            StandardSystemUserDelegations standardSystemUserDelegations = JsonSerializer.Deserialize<StandardSystemUserDelegations>(await clientListResponse.Content.ReadAsStringAsync(), _options);
+            StandardSystemUserDelegations? standardSystemUserDelegations = JsonSerializer.Deserialize<StandardSystemUserDelegations>(await clientListResponse.Content.ReadAsStringAsync(), _options);
             Assert.NotNull(standardSystemUserDelegations);
             Assert.True(standardSystemUserDelegations.AccessPackages.Count == 1);
             Assert.True(standardSystemUserDelegations.Rights.Count == 3);
-            Assert.True(standardSystemUserDelegations.Rights.Any(r => r.Resource != null && r.Resource.Any(a => a.Value == "app_ttd_endring-av-navn-v2")));
+            Assert.Contains(standardSystemUserDelegations.Rights, r => r.Resource != null && r.Resource.Any(a => a.Value == "app_ttd_endring-av-navn-v2"));
         }
 
         /// <summary>
@@ -2275,7 +2115,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
 
             // Act - Delegate customer to agent system user (this internally calls ValidateClientForAgentSystemUser)
             string systemUserId = list[0].Id;
-            Guid clientId = Guid.Parse("024a0fdd-294c-45ce-9a12-262b11983f2d"); // Client from the JSON dataset
+            Guid clientId = Guid.Parse("431a181a-135c-4a27-9184-2f4b5fb109e3"); // Client from the JSON dataset
             Guid facilitatorId = Guid.NewGuid();
 
             string delegationEndpoint = $"/authentication/api/v1/systemuser/agent/{partyId}/{systemUserId}?provider={facilitatorId}&client={clientId}";
@@ -2395,7 +2235,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
 
             // Act - Delegate customer to agent system user (this internally calls ValidateClientForAgentSystemUser)
             string systemUserId = list[0].Id;
-            Guid clientId = Guid.Parse("024a0fdd-294c-45ce-9a12-262b11983f2d"); // Client from the JSON dataset
+            Guid clientId = Guid.Parse("431a181a-135c-4a27-9184-2f4b5fb109e3"); // Client from the JSON dataset
             Guid facilitatorId = Guid.NewGuid();
 
             string delegationEndpoint = $"/authentication/api/v1/systemuser/agent/{partyId}/{systemUserId}?provider={facilitatorId}&client={clientId}";
@@ -2497,7 +2337,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             // Assert
             Assert.Equal(HttpStatusCode.InternalServerError, clientListResponse.StatusCode);
             var problemDetails = JsonSerializer.Deserialize<ProblemDetails>(await clientListResponse.Content.ReadAsStringAsync(), _options);
-            Assert.Equal(Problem.SystemUser_FailedToGetDelegatedRights.Detail, problemDetails?.Detail);
+            Assert.Equal(Problem.SystemUser_FailedToGetDelegatedRights.Title, problemDetails?.Title);
         }
 
         [Fact]
@@ -2536,7 +2376,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             // Assert
             Assert.Equal(HttpStatusCode.InternalServerError, clientListResponse.StatusCode);
             var problemDetails = JsonSerializer.Deserialize<ProblemDetails>(await clientListResponse.Content.ReadAsStringAsync(), _options);
-            Assert.Equal(Problem.AccessPackage_FailedToGetDelegatedPackages.Detail, problemDetails?.Detail);
+            Assert.Equal(Problem.AccessPackage_FailedToGetDelegatedPackages.Title, problemDetails?.Title);
         }
 
         private async Task CreateSeveralSystemUsers(HttpClient client, int paginationSize, string systemId)
@@ -3265,14 +3105,13 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
         // =====================================================================
         // GET /byExternalId — missing required parameters → BadRequest
         // =====================================================================
-
         [Fact]
         public async Task SystemUser_Get_byExternalId_MissingClientId_ReturnsBadRequest()
         {
             HttpClient client = CreateClient();
             client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetOrgToken("digdir", "991825827", "altinn:maskinporten/systemuser.read", null, now: TestTime));
 
-            HttpRequestMessage request = new(HttpMethod.Get,"/authentication/api/v1/systemuser/byExternalId?systemProviderOrgNo=991825827&systemUserOwnerOrgNo=910493353");
+            HttpRequestMessage request = new(HttpMethod.Get, "/authentication/api/v1/systemuser/byExternalId?systemProviderOrgNo=991825827&systemUserOwnerOrgNo=910493353");
             HttpResponseMessage response = await client.SendAsync(request, HttpCompletionOption.ResponseContentRead);
 
             Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
@@ -3284,7 +3123,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             HttpClient client = CreateClient();
             client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetOrgToken("digdir", "991825827", "altinn:maskinporten/systemuser.read", null, now: TestTime));
 
-            HttpRequestMessage request = new(HttpMethod.Get,"/authentication/api/v1/systemuser/byExternalId?clientId=32ef65ac-6e62-498d-880f-76c85c2052ae&systemUserOwnerOrgNo=910493353");
+            HttpRequestMessage request = new(HttpMethod.Get, "/authentication/api/v1/systemuser/byExternalId?clientId=32ef65ac-6e62-498d-880f-76c85c2052ae&systemUserOwnerOrgNo=910493353");
             HttpResponseMessage response = await client.SendAsync(request, HttpCompletionOption.ResponseContentRead);
 
             Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
@@ -3296,7 +3135,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             HttpClient client = CreateClient();
             client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetOrgToken("digdir", "991825827", "altinn:maskinporten/systemuser.read", null, now: TestTime));
 
-            HttpRequestMessage request = new(HttpMethod.Get,"/authentication/api/v1/systemuser/byExternalId?clientId=32ef65ac-6e62-498d-880f-76c85c2052ae&systemProviderOrgNo=991825827");
+            HttpRequestMessage request = new(HttpMethod.Get, "/authentication/api/v1/systemuser/byExternalId?clientId=32ef65ac-6e62-498d-880f-76c85c2052ae&systemProviderOrgNo=991825827");
             HttpResponseMessage response = await client.SendAsync(request, HttpCompletionOption.ResponseContentRead);
 
             Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
@@ -3305,7 +3144,6 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
         // =====================================================================
         // GET /vendor/byquery — Unauthorized and NotFound (wrong vendor)
         // =====================================================================
-
         [Fact]
         public async Task SystemUser_Vendors_Byquery_ReturnsForbidden_WhenNoConsumerClaim()
         {
@@ -3314,7 +3152,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             // Regular user token has no "consumer" claim → RetrieveOrgNoFromToken returns null
             client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3, now: TestTime));
 
-            HttpRequestMessage request = new(HttpMethod.Get,"/authentication/api/v1/systemuser/vendor/byquery?system-id=991825827_the_matrix&orgno=910493353");
+            HttpRequestMessage request = new(HttpMethod.Get, "/authentication/api/v1/systemuser/vendor/byquery?system-id=991825827_the_matrix&orgno=910493353");
             HttpResponseMessage response = await client.SendAsync(request, HttpCompletionOption.ResponseContentRead);
 
             Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
@@ -3337,7 +3175,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             string differentVendorToken = PrincipalUtil.GetOrgToken("digdir", "999999999", "altinn:authentication/systemuser.request.write", prefixes, now: TestTime);
             client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", differentVendorToken);
 
-            HttpRequestMessage request = new(HttpMethod.Get,"/authentication/api/v1/systemuser/vendor/byquery?system-id=991825827_the_matrix&orgno=910493353&external-ref=99");
+            HttpRequestMessage request = new(HttpMethod.Get, "/authentication/api/v1/systemuser/vendor/byquery?system-id=991825827_the_matrix&orgno=910493353&external-ref=99");
             HttpResponseMessage response = await client.SendAsync(request, HttpCompletionOption.ResponseContentRead);
 
             Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
@@ -3346,7 +3184,6 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
         // =====================================================================
         // GET /vendor/bysystem/{systemId} — Forbidden (no consumer claim)
         // =====================================================================
-
         [Fact]
         public async Task SystemUser_ListByVendorsSystem_ReturnsForbidden_WhenNoConsumerClaim()
         {
@@ -3355,16 +3192,15 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             // Regular user token — no "consumer" claim
             client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3, now: TestTime));
 
-            HttpRequestMessage request = new(HttpMethod.Get,"/authentication/api/v1/systemuser/vendor/bysystem/991825827_the_matrix");
+            HttpRequestMessage request = new(HttpMethod.Get, "/authentication/api/v1/systemuser/vendor/bysystem/991825827_the_matrix");
             HttpResponseMessage response = await client.SendAsync(request, HttpCompletionOption.ResponseContentRead);
 
             Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
         }
 
         // =====================================================================
-        // POST /agent/{party}/{systemUserId}/delegation/ — Forbid (party mismatch)
+        // POST /agent/{party}/{systemUserId}/ — Forbid (party mismatch)
         // =====================================================================
-
         [Fact]
         public async Task AgentSystemUser_Delegate_Post_ReturnsForbidden_WhenPartyMismatch()
         {
@@ -3412,7 +3248,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
 
             // Act: delegate using a *different* party in the route — triggers the PartyId != party guard
             int wrongPartyId = 500801;
-            string delegationEndpoint = $"/authentication/api/v1/systemuser/agent/{wrongPartyId}/{systemUserId}/delegation/";
+            string delegationEndpoint = $"/authentication/api/v1/systemuser/agent/{wrongPartyId}/{systemUserId}/?provider={Guid.NewGuid().ToString()}&client=431a181a-135c-4a27-9184-2f4b5fb109e3";
 
             HttpRequestMessage delegateMessage = new(HttpMethod.Post, delegationEndpoint);
             delegateMessage.Headers.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3, true, now: TestTime));
@@ -3566,6 +3402,46 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
 
             // Assert
             Assert.Equal(HttpStatusCode.BadRequest, revokeResponse.StatusCode);
+        }
+
+        // Agent Tests
+        [Fact]
+        public async Task AgentSystemUser_RevokeClient_ReturnsUnauthorized()
+        {
+            int partyId = 500000;
+            Guid systemUserId = Guid.NewGuid();
+            Guid clientGuid = Guid.NewGuid();
+            Guid providerGuid = Guid.NewGuid();
+
+            HttpClient client = CreateClient();
+
+            // No Authorization header is set on the request
+            HttpRequestMessage revokeRequest = new(HttpMethod.Delete, $"/authentication/api/v1/systemuser/agent/{partyId}/{systemUserId}/client?client={clientGuid}&provider={providerGuid}");
+            HttpResponseMessage revokeResponse = await client.SendAsync(revokeRequest, HttpCompletionOption.ResponseContentRead);
+
+            Assert.Equal(HttpStatusCode.Unauthorized, revokeResponse.StatusCode);
+        }
+
+        // Agent Tests
+        [Fact]
+        public async Task AgentSystemUser_RevokeClient_ReturnsProblemDetails_WhenRevokeFails()
+        {
+            int partyId = 500000;
+            Guid systemUserId = Guid.NewGuid();
+
+            // This client id makes the AccessManagement mock return CustomerDelegation_FailedToRevoke
+            Guid clientGuid = Guid.Parse("024a0fdd-294c-45ce-9a12-262b11983f2d");
+            Guid providerGuid = Guid.NewGuid();
+
+            HttpClient client = CreateClient();
+            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3, now: TestTime));
+            HttpRequestMessage revokeRequest = new(HttpMethod.Delete, $"/authentication/api/v1/systemuser/agent/{partyId}/{systemUserId}/client?client={clientGuid}&provider={providerGuid}");
+            HttpResponseMessage revokeResponse = await client.SendAsync(revokeRequest, HttpCompletionOption.ResponseContentRead);
+
+            Assert.Equal(HttpStatusCode.BadRequest, revokeResponse.StatusCode);
+            ProblemDetails? problemDetails = await revokeResponse.Content.ReadFromJsonAsync<ProblemDetails>();
+            Assert.NotNull(problemDetails);
+            Assert.Equal(Problem.CustomerDelegation_FailedToRevoke.Title, problemDetails.Title);
         }
     }
 }

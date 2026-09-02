@@ -74,7 +74,6 @@ public class WebApplicationFixture
                 services.AddSingleton<TimeProvider>(timeProvider);
 
                 // services.AddSingleton<AdvanceableTimeProvider>(timeProvider);
-
                 services.AddSingleton<IPublicSigningKeyProvider, SigningKeyResolverStub>();
             });
 

@@ -1,168 +1,44 @@
 using System;
-using System.Net.Http;
-using System.Net.Http.Json;
 using System.Security.Cryptography;
 using System.Text;
-using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
-using Altinn.Platform.Authentication.Configuration;
 using Altinn.Platform.Authentication.Core.Models.Profile;
 using Altinn.Platform.Authentication.Core.Models.Profile.Enums;
 using Altinn.Platform.Authentication.Core.RepositoryInterfaces;
 using Altinn.Platform.Authentication.Services.Interfaces;
 using Altinn.Register.Contracts.V1;
-using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
-using Microsoft.FeatureManagement;
 
 namespace Altinn.Platform.Authentication.Services
 {
     /// <inheritdoc/>
     public class UserProfileService : IUserProfileService
     {
-        private static readonly JsonSerializerOptions _options = new JsonSerializerOptions(JsonSerializerDefaults.Web);
-
-        private readonly GeneralSettings _settings;
-        private readonly HttpClient _client;
-        private readonly ILogger _logger;
-        private readonly IFeatureManager _featureManager;
         private readonly ISelfIdentifiedUserCredentialRepository _selfIdentifiedUserCredentialRepository;
         private readonly TimeProvider _timeProvider;
 
         /// <summary>
-        /// Initialize a new instance of <see cref="UserProfileService"/> with settings for SBL Bridge endpoints.
+        /// Initialize a new instance of <see cref="UserProfileService"/>.
         /// </summary>
-        /// <param name="httpClient">Httpclient from httpclientfactory</param>
-        /// <param name="settings">General settings for the authentication application</param>
-        /// <param name="logger">A generic logger</param>
-        /// <param name="featureManager">Feature manager used to switch SI credential validation to the local database</param>
         /// <param name="selfIdentifiedUserCredentialRepository">Repository for locally stored SI credentials</param>
         /// <param name="timeProvider">Time provider used for lockout comparison (injectable for testing)</param>
         public UserProfileService(
-            HttpClient httpClient,
-            IOptions<GeneralSettings> settings,
-            ILogger<IUserProfileService> logger,
-            IFeatureManager featureManager,
             ISelfIdentifiedUserCredentialRepository selfIdentifiedUserCredentialRepository,
             TimeProvider timeProvider)
         {
-            _client = httpClient;
-            _settings = settings.Value;
-            _logger = logger;
-            _featureManager = featureManager;
             _selfIdentifiedUserCredentialRepository = selfIdentifiedUserCredentialRepository;
             _timeProvider = timeProvider;
         }
 
-        /// <inheritdoc/>
-        public async Task<UserProfile> GetUser(string ssnOrExternalIdentity)
-        {
-            UserProfile user = null;
-       
-            Uri endpointUrl = new Uri($"{_settings.BridgeProfileApiEndpoint}users/");
-            StringContent requestBody = new StringContent(JsonSerializer.Serialize(ssnOrExternalIdentity), Encoding.UTF8, "application/json");
-
-            HttpResponseMessage response = await _client.PostAsync(endpointUrl, requestBody);
-            if (response.StatusCode == System.Net.HttpStatusCode.OK)
-            {
-                user = await response.Content.ReadFromJsonAsync<UserProfile>(_options);
-            }
-            else
-            {
-                _logger.LogError("Getting user by SSN or external identity failed with statuscode {StatusCode}", response.StatusCode);
-            }
-
-            return user;
-        }
-
         /// <summary>
-        /// Method to create a new user based on identity
-        /// </summary>
-        /// <param name="user">The userprofile</param>
-        /// <returns>The created users with userId and partyID</returns>
-        public async Task<UserProfile> CreateUser(UserProfile user)
-        {
-            UserProfile createdProfile = null;
-
-            Uri endpointUrl = new Uri($"{_settings.BridgeProfileApiEndpoint}users/create/");
-            StringContent requestBody = new StringContent(JsonSerializer.Serialize(user), Encoding.UTF8, "application/json");
-
-            HttpResponseMessage response = await _client.PostAsync(endpointUrl, requestBody);
-            if (response.StatusCode == System.Net.HttpStatusCode.OK)
-            {
-                createdProfile = await response.Content.ReadFromJsonAsync<UserProfile>(_options);
-            }
-            else
-            {
-                _logger.LogError("Creating user failed for externalIdentity {ExternalIdentity}", user.ExternalIdentity);
-            }
-
-            return createdProfile;
-        }
-
-        /// <summary>
-        /// Validates a self identified user's credentials. When the
-        /// <see cref="FeatureFlags.LocalSelfIdentifiedCredentialValidation"/> flag is enabled the
-        /// check is performed locally against <c>oidcserver.selfidentified_user_credential</c>
-        /// (SHA1 + salt); otherwise it is delegated to the SBL Bridge authentication API
-        /// (<c>authentication/api/siuser</c>). On success the user profile is returned.
+        /// Validates a self identified user's credentials locally against
+        /// <c>oidcserver.selfidentified_user_credential</c> (SHA1 + salt). This is the permanent
+        /// path following the SBL Bridge decommission (the legacy <c>authentication/api/siuser</c>
+        /// delegation has been removed). On success the user profile is returned.
         /// </summary>
         public async Task<UserCredentialVerificationResult> ValidateCredentialsAsync(string username, string password)
         {
-            if (await _featureManager.IsEnabledAsync(FeatureFlags.LocalSelfIdentifiedCredentialValidation))
-            {
-                return await ValidateCredentialsLocallyAsync(username, password);
-            }
-
-            UserProfile identifedProfile = null;
-
-            SiUserCredentials credentials = new SiUserCredentials()
-            {
-                UserName = username,
-                Password = password
-            };
-
-            Uri endpointUrl = new Uri($"{_settings.BridgeAuthnApiEndpoint}siuser");
-            using StringContent requestBody = new StringContent(JsonSerializer.Serialize(credentials), Encoding.UTF8, "application/json");
-
-            using HttpResponseMessage response = await _client.PostAsync(endpointUrl, requestBody);
-            if (response.StatusCode == System.Net.HttpStatusCode.OK)
-            {
-                identifedProfile = await response.Content.ReadFromJsonAsync<UserProfile>(_options);
-            }
-            else if (response.StatusCode == System.Net.HttpStatusCode.TooManyRequests)
-            {
-                // Bridge returns 429 when the account is locked out due to too many failed attempts.
-                return new UserCredentialVerificationResult()
-                {
-                    IsLocked = true
-                };
-            }
-            else if (response.StatusCode is System.Net.HttpStatusCode.NotFound or System.Net.HttpStatusCode.BadRequest)
-            {
-                // Bridge returns 404 when the credentials are not authenticated and 400 for empty
-                // username/password. Both are expected outcomes - not errors, and the username must not be logged.
-                return new UserCredentialVerificationResult();
-            }
-            else
-            {
-                _logger.LogError("Validating user credentials failed with statuscode {StatusCode}", response.StatusCode);
-                return new UserCredentialVerificationResult();
-            }
-
-            if (identifedProfile != null && identifedProfile.UserType != Core.Models.Profile.Enums.UserType.SelfIdentified)
-            {
-                return new UserCredentialVerificationResult()
-                {
-                    WrongUserType = true
-                };
-            }
-
-            UserCredentialVerificationResult result = new UserCredentialVerificationResult();
-            result.UserProfile = identifedProfile;
-
-            return result;
+            return await ValidateCredentialsLocallyAsync(username, password);
         }
 
         // Maximum number of consecutive failed attempts before the account is locked.
