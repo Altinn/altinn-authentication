@@ -48,3 +48,4 @@ TestResults
 /.claude/settings.local.json
 *.lscache
 /.claude/worktrees/
+/.claude/settings.json
