@@ -79,6 +79,19 @@ public interface IAccessManagementClient
     Task<Result<List<ClientDelegationDto>>> GetClientsForFacilitator(Guid provider, List<string> packages, CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// Get clients for a facilitator via the Access Management internal API.
+    /// TEMPORARY: the enduser clientdelegations API (v1 and v2) filters clients with OR when several
+    /// packages are supplied, whereas the internal API requires the client to hold ALL requested
+    /// packages (AND). This method is used for the client list until the enduser/v2 API supports AND
+    /// package filtering, after which it should be removed in favour of <see cref="GetClientsForFacilitator"/>.
+    /// </summary>
+    /// <param name="provider">The partyUuid of the VIA organisation (facilitator)</param>
+    /// <param name="packages">Access package identifiers to filter by (AND)</param>
+    /// <param name="cancellationToken">The cancellation token</param>
+    /// <returns>List of clients that hold ALL of the requested packages</returns>
+    Task<Result<List<ClientDelegationDto>>> GetClientsForFacilitatorFromInternalApi(Guid provider, List<string> packages, CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Gets all packages that are delegated to the agent system user, via the provider from the client 
     /// </summary>
     /// <param name="systemUserId">partyUuid TO</param>
