@@ -30,7 +30,7 @@ dotnet test test/Altinn.Platform.Authentication.Tests/Altinn.Platform.Authentica
 - **Integration tests need Docker.** Most controller tests run through a `WebApplicationFixture` backed by a Testcontainers PostgreSQL instance, applying migrations on startup. They are slow but cover real request/DB behaviour.
 - **A green local `dotnet build` is not enough.** Compilation passing does not mean the tests pass. The authoritative signal is the CI **Build and Test** job (it runs the Docker-backed suite). When you can't run Docker locally, push and watch CI.
 - `test/.../PerformanceTests` holds the **opt-in** k6 suites that hit deployed environments / put on load — not part of the normal loop.
-- **End-to-end (system integration) tests are no longer in this repo.** They were rewritten in k6 and moved out; the old `SystemIntegrationTests` xUnit project and its workflows were removed in [#2170](https://github.com/Altinn/altinn-authentication/issues/2170).
+- **End-to-end tests live in [`Altinn/altinn-platform-validation-tests`](https://github.com/Altinn/altinn-platform-validation-tests)** — k6 suites under `K6/api/tests/authentication` and `K6/api/domain-checks/authentication`, run from that repo against deployed environments.
 
 ### Testing patterns
 

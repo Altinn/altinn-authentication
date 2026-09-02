@@ -43,8 +43,8 @@ msbuild.wrn
 
 #Test
 TestResults
-# The SystemIntegrationTests project was removed in #2170, but keep these ignores:
-# developers may still have local copies with real environment credentials / Maskinporten keys.
+# Kept after the SystemIntegrationTests project was deleted: local leftovers may hold
+# real environment credentials / Maskinporten keys, so keep them ignored.
 /test/Altinn.Platform.Authentication.SystemIntegrationTests/Resources/Environment/environment.json
 /test/Altinn.Platform.Authentication.SystemIntegrationTests/Resources/Jwks/jwks.json
 /.claude/settings.local.json
