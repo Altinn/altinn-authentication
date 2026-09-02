@@ -1256,6 +1256,8 @@ namespace Altinn.Platform.Authentication.Services
                     DisplayName = item.Client.Name ?? string.Empty,
                     OrganizationIdentifier = item.Client.OrganizationIdentifier ?? string.Empty,
                     PartyUuid = item.Client.Id,
+                    UnitType = item.Client.Variant,
+                    IsDeleted = item.Client.IsDeleted,
                     Access = ConvertAccessToPrimitive(item.Access)
                 };
                 result.Add(newCustomer);

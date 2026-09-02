@@ -845,7 +845,12 @@ public class AccessManagementClient : IAccessManagementClient
                 {
                     Id = client.Party.Id,
                     Name = client.Party.Name,
-                    OrganizationIdentifier = client.Party.OrganizationNumber
+                    OrganizationIdentifier = client.Party.OrganizationNumber,
+
+                    // The internal API names the organisation unit type "unitType"; the enduser API
+                    // carries the same value on the entity "variant" field.
+                    Variant = client.Party.UnitType,
+                    IsDeleted = client.Party.IsDeleted
                 },
                 Access =
                 [
@@ -1038,17 +1043,28 @@ public class AccessManagementClient : IAccessManagementClient
 
         internal sealed class InternalClientParty
         {
+            [JsonPropertyName("id")]
             public Guid Id { get; set; }
 
+            [JsonPropertyName("name")]
             public string? Name { get; set; }
 
+            [JsonPropertyName("organizationNumber")]
             public string? OrganizationNumber { get; set; }
+
+            [JsonPropertyName("unitType")]
+            public string? UnitType { get; set; }
+
+            [JsonPropertyName("isDeleted")]
+            public bool IsDeleted { get; set; }
         }
 
         internal sealed class InternalRoleAccessPackages
         {
+            [JsonPropertyName("role")]
             public string? Role { get; set; }
 
+            [JsonPropertyName("packages")]
             public string[] Packages { get; set; } = [];
         }
     }

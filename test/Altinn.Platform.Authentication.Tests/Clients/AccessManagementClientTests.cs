@@ -310,7 +310,7 @@ namespace Altinn.Platform.Authentication.Tests.Clients
             string body = $$"""
             [
               {
-                "party": { "id": "{{clientId}}", "name": "Acme AS", "organizationNumber": "310000000" },
+                "party": { "id": "{{clientId}}", "name": "Acme AS", "organizationNumber": "310000000", "unitType": "AS", "isDeleted": true },
                 "access": [ { "role": "regnskapsforer", "packages": [ "regnskapsforer-lonn", "regnskapsforer-med-signeringsrettighet" ] } ]
               }
             ]
@@ -332,6 +332,8 @@ namespace Altinn.Platform.Authentication.Tests.Clients
             Assert.Equal(clientId, single.Client.Id);
             Assert.Equal("Acme AS", single.Client.Name);
             Assert.Equal("310000000", single.Client.OrganizationIdentifier);
+            Assert.Equal("AS", single.Client.Variant);
+            Assert.True(single.Client.IsDeleted);
             var access = Assert.Single(single.Access);
             Assert.Equal("regnskapsforer", access.Role.Urn);
             Assert.Equal(2, access.Packages.Length);
