@@ -1152,19 +1152,16 @@ namespace Altinn.Platform.Authentication.Services
         /// <inheritdoc/>
         public async Task<Result<List<ExternalClientDto>>> GetClientsForFacilitator(Guid facilitator, List<string>? packages, IFeatureManager featureManager, CancellationToken cancellationToken)
         {
-            var res = await _accessManagementClient.GetClientsForFacilitator(facilitator, packages!, cancellationToken);
-            if (res.IsSuccess)
+            // Temporary: use the Access Management internal API, which requires the client to hold ALL
+            // requested packages (AND). The enduser clientdelegations API (v1/v2) filters with OR, which
+            // lists partially-matching clients. Revert to GetClientsForFacilitator once v2 supports AND.
+            var res = await _accessManagementClient.GetClientsForFacilitatorFromInternalApi(facilitator, packages!, cancellationToken);
+            if (!res.IsSuccess)
             {
-                if (packages is not null && packages.Count > 0)
-                {
-                    // If a list of packages to filter on is provided, filter the clients based on those packages before converting to DTOs
-                    var filtered = res.Value.Where(client => client.Access.Any(access => access.Packages.Any(p => p.Urn is not null && packages.Contains(p.Urn)))).ToList();
-                }
-
-                return ConvertConnectionDTOToClient(res.Value);
+                return res.Problem ?? Problem.AgentSystemUser_FailedToGetClients;
             }
 
-            return res.Problem ?? Problem.AgentSystemUser_FailedToGetClients;
+            return ConvertConnectionDTOToClient(res.Value);
         }
 
         /// <inheritdoc/>
@@ -1259,6 +1256,8 @@ namespace Altinn.Platform.Authentication.Services
                     DisplayName = item.Client.Name ?? string.Empty,
                     OrganizationIdentifier = item.Client.OrganizationIdentifier ?? string.Empty,
                     PartyUuid = item.Client.Id,
+                    UnitType = item.Client.Variant,
+                    IsDeleted = item.Client.IsDeleted,
                     Access = ConvertAccessToPrimitive(item.Access)
                 };
                 result.Add(newCustomer);
