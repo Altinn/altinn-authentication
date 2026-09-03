@@ -212,11 +212,14 @@ public interface ISystemUserService
     /// <summary>
     /// Validate that the Rights is both a subset of the Default Rights registered on the System, and at least one Right is selected.
     /// Also ensure that if any of the new Rights have sub-resources, that the sub-resources are equal to the registered Rights.
+    /// Finally ensure the resources are still usable in the resource registry: present, of a supported resource type
+    /// and delegable.
     /// </summary>
     /// <param name="rights">the Rights chosen for the Request</param>
     /// <param name="systemInfo">The Vendor's Registered System</param>
+    /// <param name="cancellationToken">the cancellation token</param>
     /// <returns>Result or Problem</returns>
-    Result<bool> ValidateRights(List<Right> rights, RegisteredSystemResponse systemInfo);
+    Task<Result<bool>> ValidateRights(List<Right> rights, RegisteredSystemResponse systemInfo, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Validate that the Package is both a subset of the Default Packages registered on the System, and at least one Package is selected.

@@ -11,6 +11,12 @@ namespace Altinn.Platform.Authentication.Tests.Mocks
 {
     public class ResourceRegistryClientMock : IResourceRegistryClient
     {
+        /// <summary>
+        /// Resource ids the mock reports as not delegable, whatever their data file says. Lets a test register a
+        /// system while the resource is still delegable and turn it non-delegable afterwards.
+        /// </summary>
+        public HashSet<string> NotDelegableResourceIds { get; } = [];
+
         public async Task<ServiceResource?> GetResource(string resourceId)
         {
             string dataFileName = string.Empty;
@@ -44,10 +50,21 @@ namespace Altinn.Platform.Authentication.Tests.Mocks
                 dataFileName = "Data/ResourceRegistry/ttd-am-k6.json";
             }
 
+            if (resourceId == "app_ttd_a1-nondelegable")
+            {
+                dataFileName = "Data/ResourceRegistry/app_a1nondelegable.json";
+            }
+
             if (dataFileName != string.Empty)
             {
                 string content = File.ReadAllText(dataFileName);
-                return JsonSerializer.Deserialize<ServiceResource>(content, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+                ServiceResource? resource = JsonSerializer.Deserialize<ServiceResource>(content, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+                if (resource is not null && NotDelegableResourceIds.Contains(resourceId))
+                {
+                    resource.Delegable = false;
+                }
+
+                return resource;
             }
 
             return null;
