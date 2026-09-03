@@ -34,7 +34,7 @@ In-repo documentation lives in **[`docs/`](docs/README.md)**:
 ### Prerequisites
 
 1. [.NET 10 SDK](https://dotnet.microsoft.com/download/dotnet/10.0)
-2. [Docker](https://www.docker.com/get-docker) — required to run the integration tests
+2. A container runtime — required to run the integration tests: [Docker](https://www.docker.com/get-docker) or [Podman](https://podman.io/)
 3. Newest [Git](https://git-scm.com/downloads)
 4. A code editor / IDE of your choice
 
@@ -53,10 +53,10 @@ Swagger UI is then available under `http://localhost:<port>/authentication/swagg
 
 ```bash
 dotnet build Altinn.Platform.Authentication.sln
-dotnet test test/Altinn.Platform.Authentication.Tests/Altinn.Platform.Authentication.Tests.csproj   # needs Docker
+dotnet test test/Altinn.Platform.Authentication.Tests/Altinn.Platform.Authentication.Tests.csproj   # needs a container runtime
 ```
 
-See [docs/development.md](docs/development.md) for details — note that a passing local build does **not** substitute for the Docker-backed test suite.
+See [docs/development.md](docs/development.md) for details — note that a passing local build does **not** substitute for the container-backed test suite.
 
 ## Contributing
 

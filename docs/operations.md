@@ -96,4 +96,4 @@ Use **log alerts** (`azurerm_monitor_scheduled_query_rules_alert_v2`) rather tha
 
 ## CI/CD
 
-GitHub Actions: **Build and Test** (Docker-backed integration tests), **Analyze**/**Analyze (csharp)** (CodeQL), **SonarCloud**, **CodeRabbit**, and **scan** (container scan). The Docker-backed *Build and Test* job is the authoritative gate — a green local `dotnet build` is **not** sufficient (see [development.md](development.md)).
+GitHub Actions: **Build and Test** (container-backed integration tests), **Analyze**/**Analyze (csharp)** (CodeQL), **SonarCloud**, **CodeRabbit**, and **scan** (container scan). The container-backed *Build and Test* job is the authoritative gate — a green local `dotnet build` is **not** sufficient (see [development.md](development.md)).
