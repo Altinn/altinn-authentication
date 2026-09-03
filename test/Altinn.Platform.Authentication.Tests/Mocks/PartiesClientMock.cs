@@ -75,6 +75,7 @@ public class PartiesClientMock : IPartiesClient
         Party? party = new Party();
         party.PartyId = 500000;
         party.PartyUuid = new Guid("00000000-0000-0000-0005-000000000000");
+        party.OrgNumber = orgNo;
 
         if (!string.IsNullOrEmpty(orgNo) && orgNo == "987654321")
         {

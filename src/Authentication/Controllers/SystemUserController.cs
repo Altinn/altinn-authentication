@@ -26,6 +26,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 using Microsoft.FeatureManagement;
 using Microsoft.FeatureManagement.Mvc;
+using AuthProblem = Altinn.Authentication.Core.Problems.Problem;
 
 namespace Altinn.Platform.Authentication.Controllers;
 
@@ -423,7 +424,47 @@ public class SystemUserController : ControllerBase
     }
 
     /// <summary>
-    /// Creates a new delegation from a Client/Customer to an Agent SystemUser via the Reportee/Provider. 
+    /// Creates a new Standalone SystemUser together with its own Registered System, for an
+    /// organisation building a system for its own use. The calling organisation is both vendor
+    /// and customer: no Rights/AccessPackages are declared here, they are delegated afterwards
+    /// through the Access Management UI. The vendor org number and Maskinporten ClientId are taken
+    /// from the caller's own token, not the request body.
+    /// </summary>
+    /// <returns>SystemUser response model</returns>
+    [Authorize(Policy = AuthzConstants.POLICY_SCOPE_SYSTEMREGISTER_WRITE)]
+    [Produces("application/json")]
+    [ProducesResponseType(typeof(SystemUserInternalDTO), StatusCodes.Status201Created)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status409Conflict)]
+    [HttpPost("own")]
+    public async Task<ActionResult<SystemUserInternalDTO>> CreateOwnSystemUser([FromBody] CreateOwnSystemUserRequest request, CancellationToken cancellationToken)
+    {
+        string? orgClaim = User.Claims.Where(c => c.Type.Equals("consumer")).Select(c => c.Value).FirstOrDefault();
+        string? vendorOrgNumber = orgClaim is null ? null : AuthenticationHelper.GetOrganizationNumberFromClaim(orgClaim);
+        if (string.IsNullOrEmpty(vendorOrgNumber))
+        {
+            return AuthProblem.Vendor_Orgno_NotFound.ToActionResult();
+        }
+
+        string? clientId = User.Claims.Where(c => c.Type.Equals("client_id")).Select(c => c.Value).FirstOrDefault();
+        if (string.IsNullOrEmpty(clientId))
+        {
+            return AuthProblem.Vendor_ClientId_NotFound.ToActionResult();
+        }
+
+        var userId = AuthenticationHelper.GetUserId(HttpContext);
+
+        Result<SystemUserInternalDTO> createdSystemUser = await _systemUserService.CreateOwnSystemUser(request, vendorOrgNumber, clientId, userId, cancellationToken);
+        if (createdSystemUser.IsSuccess)
+        {
+            return StatusCode(StatusCodes.Status201Created, createdSystemUser.Value);
+        }
+
+        return createdSystemUser.Problem.ToActionResult();
+    }
+
+    /// <summary>
+    /// Creates a new delegation from a Client/Customer to an Agent SystemUser via the Reportee/Provider.
     /// All the required AccessPackages in the SystemUser will be delegated.
     /// <param name="party">The party Id of the reportee.</param>
     /// <param name="systemUserId">The partyUuid of the Agent SystemUser to delegete TO.</param> 
@@ -715,7 +756,7 @@ public class SystemUserController : ControllerBase
         SystemUserDetailInternalDTO systemUserDetailDTO = new SystemUserDetailInternalDTO();
         systemUserDetailDTO = _mapper.Map<SystemUserDetailInternalDTO>(systemUser);
 
-        if (systemUser.UserType == SystemUserType.Standard)
+        if (systemUser.UserType == SystemUserType.Standard || systemUser.UserType == SystemUserType.Standalone)
         {
             var restult = await _systemUserService.GetListOfDelegationsForStandardSystemUser(party, systemUserId, cancellationToken);
             if (restult.IsSuccess)
