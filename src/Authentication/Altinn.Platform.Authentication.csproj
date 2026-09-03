@@ -12,8 +12,8 @@
   </PropertyGroup>
 
   <ItemGroup>
-	<PackageReference Include="Altinn.Authorization.ServiceDefaults" Version="5.5.0" />
-	<PackageReference Include="Altinn.Authorization.ServiceDefaults.Npgsql" Version="5.5.0" />
+	<PackageReference Include="Altinn.Authorization.ServiceDefaults" Version="6.0.0" />
+	<PackageReference Include="Altinn.Authorization.ServiceDefaults.Npgsql" Version="6.0.0" />
     <PackageReference Include="Altinn.Common.AccessToken" Version="5.1.9" />
     <PackageReference Include="Altinn.Common.PEP" Version="4.2.3" />
     <PackageReference Include="Altinn.Register.Contracts" Version="1.7.0" />
