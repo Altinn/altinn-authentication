@@ -1,4 +1,5 @@
 using Altinn.Platform.Authentication;
+using Altinn.Platform.Authentication.Filters;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Hosting;
@@ -24,7 +25,8 @@ app.UseSwagger(o => o.RouteTemplate = "authentication/swagger/{documentName}/swa
 
 app.UseSwaggerUI(c =>
 {
-    c.SwaggerEndpoint("/authentication/swagger/v1/swagger.json", "Altinn Platform Authentication API");
+    c.SwaggerEndpoint($"/authentication/swagger/{ApiDocuments.External}/swagger.json", "Altinn Platform Authentication API");
+    c.SwaggerEndpoint($"/authentication/swagger/{ApiDocuments.Internal}/swagger.json", "Altinn Platform Authentication API (internal)");
     c.RoutePrefix = "authentication/swagger";
 });
 

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.IdentityModel.Tokens.Jwt;
 using System.Linq;
 using System.Security.Claims;
@@ -79,6 +79,7 @@ public class ChangeRequestSystemUserController(
     /// <param name="cancellationToken">The cancellation token</param>
     /// <returns>Response model for a ChangeRequest</returns>
     [Authorize(Policy = AuthzConstants.POLICY_SCOPE_SYSTEMUSERREQUEST_WRITE)]    
+    [Produces("text/plain", "application/json")]
     [HttpPost("vendor")]
     [ServiceFilter(typeof(TrimStringsActionFilter))]
     public async Task<ActionResult<ChangeRequestResponse>> CreateChangeRequest(
@@ -203,6 +204,7 @@ public class ChangeRequestSystemUserController(
     /// <param name="cancellationToken">The cancellation token</param>
     /// <returns>Status response model CreateRequestSystemUserResponse</returns>
     [Authorize(Policy = AuthzConstants.POLICY_SCOPE_SYSTEMUSERREQUEST_READ)]
+    [Produces("application/json")]
     [HttpGet("vendor/{requestId}")]
     public async Task<ActionResult<ChangeRequestResponse>> GetChangeRequestByGuid(Guid requestId, CancellationToken cancellationToken = default)
     {
@@ -238,6 +240,7 @@ public class ChangeRequestSystemUserController(
     /// <param name="cancellationToken">The cancellation token</param>
     /// <returns>Status response model CreateRequestSystemUserResponse</returns>
     [Authorize(Policy = AuthzConstants.POLICY_SCOPE_SYSTEMUSERREQUEST_READ)]
+    [Produces("application/json")]
     [HttpGet("vendor/byexternalref/{systemId}/{orgNo}/{externalRef}")]
     public async Task<ActionResult<ChangeRequestResponse>> GetChangeRequestByExternalRef(string systemId, string externalRef, string orgNo, CancellationToken cancellationToken = default)
     {
@@ -275,6 +278,7 @@ public class ChangeRequestSystemUserController(
     /// </summary>
     /// <returns></returns>
     [Authorize(Policy = AuthzConstants.POLICY_ACCESS_MANAGEMENT_READ)]
+    [Produces("application/json")]
     [HttpGet("{party}/{requestId}")]
     public async Task<ActionResult<ChangeRequestResponse>> GetRequestByPartyIdAndRequestId(int party, Guid requestId)
     {
@@ -292,6 +296,7 @@ public class ChangeRequestSystemUserController(
     /// </summary>
     /// <returns></returns>
     [Authorize]
+    [Produces("application/json")]
     [HttpGet("{requestId}")]
     public async Task<ActionResult<ChangeRequestResponseInternal>> GetChangeRequestById(Guid requestId)
     {
@@ -312,6 +317,7 @@ public class ChangeRequestSystemUserController(
     /// <param name="cancellationToken">The cancellation token</param>
     /// <returns>Status response model CreateRequestSystemUserResponse</returns>
     [Authorize(Policy = AuthzConstants.POLICY_ACCESS_MANAGEMENT_WRITE)]
+    [Produces("application/json")]
     [HttpPost("{party}/{requestId}/approve")]
     public async Task<ActionResult<ChangeRequestResponse>> ApproveSystemUserChangeRequest(int party, Guid requestId, CancellationToken cancellationToken = default)
     {
@@ -338,6 +344,7 @@ public class ChangeRequestSystemUserController(
     /// <param name="cancellationToken">The cancellation token</param>
     /// <returns>Status response model CreateRequestSystemUserResponse</returns>
     [Authorize(Policy = AuthzConstants.POLICY_SCOPE_SYSTEMUSERREQUEST_READ)]
+    [Produces("application/json")]
     [HttpGet("vendor/bysystem/{systemId}", Name = ROUTE_VENDOR_GET_REQUESTS_BY_SYSTEM)]
     public async Task<ActionResult<Paginated<ChangeRequestResponse>>> GetAllChangeRequestsForVendor(
         string systemId,
@@ -388,6 +395,7 @@ public class ChangeRequestSystemUserController(
     /// <param name="cancellationToken">The cancellation token</param>
     /// <returns>Status response model CreateRequestSystemUserResponse</returns>
     [Authorize(Policy = AuthzConstants.POLICY_ACCESS_MANAGEMENT_WRITE)]
+    [Produces("application/json")]
     [HttpPost("{party}/{requestId}/reject")]
     public async Task<ActionResult<ChangeRequestResponse>> RejectSystemUserChangeRequest(int party, Guid requestId, CancellationToken cancellationToken = default)
     {
@@ -411,6 +419,7 @@ public class ChangeRequestSystemUserController(
     /// </summary>
     /// <returns></returns>
     [Authorize(Policy = AuthzConstants.POLICY_SCOPE_SYSTEMUSERREQUEST_WRITE)]
+    [Produces("application/json")]
     [HttpDelete("vendor/{requestId}")]
     public async Task<ActionResult<ChangeRequestResponse>> DeleteChangeRequestByRequestId(Guid requestId)
     {

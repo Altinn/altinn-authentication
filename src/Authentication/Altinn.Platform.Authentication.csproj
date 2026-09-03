@@ -14,6 +14,9 @@
   <ItemGroup>
 	<PackageReference Include="Altinn.Authorization.ServiceDefaults" Version="5.5.0" />
 	<PackageReference Include="Altinn.Authorization.ServiceDefaults.Npgsql" Version="5.5.0" />
+	<!-- Supplies the shared Altinn OpenAPI conventions: standard servers and the security schemes
+	     derived from the authorization policies. Pulls ServiceDefaults.Authorization up to 6.0.0. -->
+	<PackageReference Include="Altinn.Authorization.ServiceDefaults.Swashbuckle" Version="6.0.0" />
     <PackageReference Include="Altinn.Common.AccessToken" Version="5.1.9" />
     <PackageReference Include="Altinn.Common.PEP" Version="4.2.3" />
     <PackageReference Include="Altinn.Register.Contracts" Version="1.7.0" />
@@ -30,12 +33,13 @@
     <PackageReference Include="Microsoft.Extensions.Configuration.AzureKeyVault" Version="3.1.24" />
     <PackageReference Include="Microsoft.FeatureManagement" Version="4.5.0" />
     <PackageReference Include="Microsoft.FeatureManagement.AspNetCore" Version="4.5.0" />
-    <PackageReference Include="Microsoft.IdentityModel.Protocols.OpenIdConnect" Version="8.19.1" />
+    <!-- 8.22.0 is the floor required by Altinn.Authorization.ServiceDefaults.Swashbuckle. -->
+    <PackageReference Include="Microsoft.IdentityModel.Protocols.OpenIdConnect" Version="8.22.0" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="10.2.3" />
     <PackageReference Include="Swashbuckle.AspNetCore.Annotations" Version="10.2.3" />
     <PackageReference Include="Npgsql" Version="10.0.3" />
-    <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="8.19.1" />
+    <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="8.22.0" />
     <!-- Transitive security pins: override vulnerable versions pulled in by dependencies.
          OpenTelemetry.* (via Altinn.Authorization.ServiceDefaults): GHSA-q834-8qmm-v933, GHSA-mr8r-92fq-pj8p, GHSA-4625-4j76-fww9, GHSA-g94r-2vxg-569j.
          Microsoft.Rest.ClientRuntime (via Microsoft.Extensions.Configuration.AzureKeyVault): GHSA-whph-446h-6m9v / CVE-2022-26907. -->
@@ -56,6 +60,10 @@
   <PropertyGroup Condition="'$(Configuration)'=='Debug'">
     <CodeAnalysisRuleSet>..\..\Altinn3.ruleset</CodeAnalysisRuleSet>
   </PropertyGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Altinn.Platform.Authentication.Tests" />
+  </ItemGroup>
 
   <PropertyGroup>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>

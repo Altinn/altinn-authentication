@@ -1,11 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Reflection;
 using System.Text.Json.Serialization;
 using Altinn.Authentication.Core.Clients.Interfaces;
 using Altinn.Authentication.Integration.Clients;
 using Altinn.Authorization.ServiceDefaults;
+using Altinn.Authorization.ServiceDefaults.Swashbuckle.Servers;
 using Altinn.Common.AccessToken;
 using Altinn.Common.AccessToken.Configuration;
 using Altinn.Common.AccessToken.Services;
@@ -34,8 +36,8 @@ using Altinn.Platform.Authentication.Persistance.Extensions;
 using Altinn.Platform.Authentication.Persistance.RepositoryImplementations;
 using Altinn.Platform.Authentication.Services;
 using Altinn.Platform.Authentication.Services.Interfaces;
+using Altinn.Swashbuckle.Security;
 using AltinnCore.Authentication.JwtCookie;
-using Azure.Monitor.OpenTelemetry.AspNetCore;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
@@ -48,7 +50,6 @@ using Microsoft.Extensions.Logging;
 using Microsoft.FeatureManagement;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi;
-using OpenTelemetry.Metrics;
 using OpenTelemetry.Trace;
 
 namespace Altinn.Platform.Authentication;
@@ -234,20 +235,61 @@ internal static class AuthenticationHost
             options.HeaderName = "X-XSRF-TOKEN";
         });
 
-        // Add Swagger support (Swashbuckle)
+        // OpenAPI. Servers, security schemes and the per-operation scopes come from the shared
+        // Altinn conventions rather than being configured here - see Altinn.Swashbuckle and
+        // Altinn.Authorization.ServiceDefaults.Swashbuckle. Only what those do not cover
+        // (documents, operationIds, error responses) is configured below.
+        services.AddSwaggerAutoXmlDoc();
+        services.AddSwaggerFilterAttributeSupport();
+        services.AddSwaggeAltinnSecuritySupport();
+
+        // Covers the one requirement type the shared providers do not recognise.
+        services.AddSingleton<IOpenApiAuthorizationRequirementConditionProvider, PlatformScopeSecurityConditionProvider>();
+        services.AddSwaggerAltinnServers(o =>
+        {
+            // Put the shared API base path in the server URLs; ApiBasePathDocumentFilter strips
+            // it from the paths so the two concatenate to the real endpoint.
+            o.EnvironmentServerPathSuffix = ApiDocuments.BasePath;
+            o.IncludePerformanceTestServer = false;
+
+            // The shared filter reads IServerAddressesFeature.Addresses[0] for this one, which
+            // throws when no addresses are registered - as is the case under the in-memory test
+            // server. Leaving it on makes every test that reads the document fail, so
+            // LocalhostServerDocumentFilter adds the local server instead.
+            o.IncludeLocalhostServer = false;
+        });
+
+        // Vendors only ever call the two environments they have access to. The acceptance-test
+        // servers stay on the internal document, which inherits the defaults configured above.
+        services.Configure<AltinnServerOptions>(ApiDocuments.External, o => o.IncludeAcceptanceTestServers = false);
+
         services.AddSwaggerGen(c =>
         {
-            c.SwaggerDoc("v1", new OpenApiInfo { Title = "Altinn Platform Authentication", Version = "v1" });
+            c.SwaggerDoc(ApiDocuments.External, new OpenApiInfo
+            {
+                Title = "Altinn Platform Authentication",
+                Version = "v1",
+                Description = "Endpoints for vendors and end users integrating with Altinn Authentication.",
+            });
 
-            try
+            c.SwaggerDoc(ApiDocuments.Internal, new OpenApiInfo
             {
-                string filePath = GetXmlCommentsPathForControllers();
-                c.IncludeXmlComments(filePath);
-            }
-            catch
-            {
-                // catch swashbuckle exception if it doesn't find the generated xml documentation file
-            }
+                Title = "Altinn Platform Authentication (internal)",
+                Version = "v1",
+                Description =
+                    "The full endpoint surface, including browser sign-in, the OIDC front channel and "
+                    + "service-to-service endpoints. For developers working on this service - not a "
+                    + "supported integration surface.",
+            });
+
+            c.DocInclusionPredicate(ApiDocuments.Includes);
+
+            c.CustomOperationIds(ApiDocuments.GetOperationId);
+
+            c.OperationFilter<ErrorResponsesOperationFilter>();
+
+            c.DocumentFilter<ApiBasePathDocumentFilter>();
+            c.DocumentFilter<LocalhostServerDocumentFilter>();
         });
 
         services.AddAuthorizationBuilder()
@@ -285,15 +327,6 @@ internal static class AuthenticationHost
         builder.AddPersistanceLayer();
 
         return builder.Build();
-    }
-
-    private static string GetXmlCommentsPathForControllers()
-    {
-        // locate the xml file being generated by .NET
-        string xmlFile = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
-        string xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
-
-        return xmlPath;
     }
 
     // Note: eventually we can rename the configuration values and remove this mapping
