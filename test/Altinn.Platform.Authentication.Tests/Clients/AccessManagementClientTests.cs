@@ -299,6 +299,47 @@ namespace Altinn.Platform.Authentication.Tests.Clients
             Assert.Equal("urn:altinn:accesspackage:skattnaering", Assert.Single(access.Packages).Urn);
         }
 
+        [Fact]
+        public async Task GetClientsForFacilitatorFromInternalApi_UsesInternalRoute_AndMapsResponse()
+        {
+            // The temporary internal route filters with AND. It always targets api/v1/internal and is not
+            // affected by the client-delegation v2 feature flag.
+            Guid facilitator = Guid.NewGuid();
+            Guid clientId = Guid.NewGuid();
+            HttpRequestMessage? captured = null;
+            string body = $$"""
+            [
+              {
+                "party": { "id": "{{clientId}}", "name": "Acme AS", "organizationNumber": "310000000", "unitType": "AS", "isDeleted": true },
+                "access": [ { "role": "regnskapsforer", "packages": [ "regnskapsforer-lonn", "regnskapsforer-med-signeringsrettighet" ] } ]
+              }
+            ]
+            """;
+            var client = CreateClient(CreateHttpClient(HttpStatusCode.OK, body, capture: r => captured = r));
+
+            var result = await client.GetClientsForFacilitatorFromInternalApi(facilitator, ["regnskapsforer-lonn", "regnskapsforer-med-signeringsrettighet"], CancellationToken.None);
+
+            // Route
+            string url = captured!.RequestUri!.ToString();
+            Assert.Contains($"/accessmanagement/api/v1/internal/systemuserclientdelegation/clients?party={facilitator}", url);
+            Assert.Contains("packages=regnskapsforer-lonn", url);
+            Assert.Contains("packages=regnskapsforer-med-signeringsrettighet", url);
+            Assert.DoesNotContain("enduser/clientdelegations", url);
+
+            // Mapping of the internal (party/role/packages-as-strings) shape onto ClientDelegationDto
+            Assert.False(result.IsProblem);
+            var single = Assert.Single(result.Value);
+            Assert.Equal(clientId, single.Client.Id);
+            Assert.Equal("Acme AS", single.Client.Name);
+            Assert.Equal("310000000", single.Client.OrganizationIdentifier);
+            Assert.Equal("AS", single.Client.Variant);
+            Assert.True(single.Client.IsDeleted);
+            var access = Assert.Single(single.Access);
+            Assert.Equal("regnskapsforer", access.Role.Urn);
+            Assert.Equal(2, access.Packages.Length);
+            Assert.Contains(access.Packages, p => p.Urn == "regnskapsforer-lonn");
+        }
+
         private static HttpClient CreateHttpClient(HttpStatusCode statusCode, string responseBody, string mediaType = "application/json", Action<HttpRequestMessage>? capture = null)
         {
             Mock<HttpMessageHandler> handlerMock = new();

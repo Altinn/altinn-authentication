@@ -140,30 +140,6 @@ public class AccessManagementClient : IAccessManagementClient
         }
     }
 
-    /// <inheritdoc/>
-    public async Task<PartyExternal> GetParty(int partyId, string token)
-    {
-        try
-        {
-            string endpointUrl = $"authorizedparty/{partyId}?includeAltinn2=true";
-
-            HttpResponseMessage response = await _client.GetAsync(token, endpointUrl);
-
-            if (response.StatusCode == System.Net.HttpStatusCode.OK)
-            {
-                string responseContent = await response.Content.ReadAsStringAsync();
-                return JsonSerializer.Deserialize<PartyExternal>(responseContent, _serializerOptions)!;
-            }
-
-            return null!;
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Authentication // AccessManagementClient // GetParty // Exception");
-            throw;
-        }
-    }
-
     public async Task<ResourceCheckDto?> CheckDelegationAccess(Guid partyUuid, string resource, CancellationToken cancellationToken) 
     {
         try
@@ -713,9 +689,9 @@ public class AccessManagementClient : IAccessManagementClient
             List<AttributeMatchExternal> toList = [];
             List<AttributeMatchExternal> resourceList = [];
 
-            if (r.Resource == null || r.Permissions == null)
+            if (r.Resource?.RefId == null || r.Permissions == null)
             {
-                throw new InvalidOperationException("Received invalid data from Access Management API: Resource or Permissions is null.");
+                throw new InvalidOperationException("Received invalid data from Access Management API: Resource, Resource.RefId or Permissions is null.");
             }
 
             // there is only one resource per resource, the old DTO needs a list though
@@ -797,6 +773,97 @@ public class AccessManagementClient : IAccessManagementClient
             throw;
 
         }
+    }
+
+    /// <inheritdoc />
+    public async Task<Result<List<ClientDelegationDto>>> GetClientsForFacilitatorFromInternalApi(Guid facilitatorId, List<string> packages, CancellationToken cancellationToken = default)
+    {
+        string token = JwtTokenUtil.GetTokenFromContext(_httpContextAccessor.HttpContext!, _platformSettings.JwtCookieName!)!;
+        if (facilitatorId == Guid.Empty)
+        {
+            return Problem.Reportee_Orgno_NotFound;
+        }
+
+        // The internal API filters clients with AND (a client must hold ALL requested packages), unlike
+        // the enduser clientdelegations API which uses OR. Kept on the v1 internal route until the
+        // enduser/v2 API supports AND package filtering.
+        string endpointUrl = $"internal/systemuserclientdelegation/clients?party={facilitatorId}";
+        if (packages != null && packages.Count > 0)
+        {
+            foreach (var package in packages)
+            {
+                endpointUrl = $"{endpointUrl}&packages={package}";
+            }
+        }
+
+        try
+        {
+            HttpResponseMessage response = await _client.GetAsync(token, endpointUrl, null, cancellationToken);
+            if (response.IsSuccessStatusCode)
+            {
+                List<InternalSystemUserClientDto> internalClients =
+                    await response.Content.ReadFromJsonAsync<List<InternalSystemUserClientDto>>(_serializerOptions, cancellationToken) ?? [];
+                return MapInternalClientsToClientDelegationDtos(internalClients);
+            }
+
+            if (response.StatusCode == HttpStatusCode.Unauthorized)
+            {
+                return Problem.AgentSystemUser_FailedToGetClients_Unauthorized;
+            }
+
+            if (response.StatusCode == HttpStatusCode.Forbidden)
+            {
+                return Problem.AgentSystemUser_FailedToGetClients_Forbidden;
+            }
+
+            var problemDetails = await response.Content.ReadFromJsonAsync<ProblemDetails>(_serializerOptions, cancellationToken);
+            _logger.LogError($"Authentication // AccessManagementClient // GetClientsForFacilitatorFromInternalApi // Title: {problemDetails?.Title ?? ""}, Problem: {problemDetails?.Detail ?? "na"}");
+            var problemExtensionData = ProblemExtensionData.Create(
+            [
+                new KeyValuePair<string, string>("Problem Detail : ", problemDetails?.Detail ?? "")
+            ]);
+            return ProblemInstance.Create(Problem.AgentSystemUser_FailedToGetClients, problemExtensionData);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Authentication // AccessManagementClient // GetClientsForFacilitatorFromInternalApi // Exception");
+            throw;
+        }
+    }
+
+    // Maps the internal systemuserclientdelegation/clients payload onto the ClientDelegationDto shape the
+    // callers already consume. The internal API returns the role and package identifiers as plain strings,
+    // which are carried through on the Urn fields (matching the pre-v2-migration behaviour).
+    private static List<ClientDelegationDto> MapInternalClientsToClientDelegationDtos(List<InternalSystemUserClientDto> internalClients)
+    {
+        List<ClientDelegationDto> mapped = new(internalClients.Count);
+        foreach (InternalSystemUserClientDto client in internalClients)
+        {
+            mapped.Add(new ClientDelegationDto
+            {
+                Client = new CompactEntityDto
+                {
+                    Id = client.Party.Id,
+                    Name = client.Party.Name,
+                    OrganizationIdentifier = client.Party.OrganizationNumber,
+
+                    // The internal API names the organisation unit type "unitType"; the enduser API
+                    // carries the same value on the entity "variant" field.
+                    Variant = client.Party.UnitType,
+                    IsDeleted = client.Party.IsDeleted
+                },
+                Access =
+                [
+                    .. client.Access.Select(access => new RoleAccessPackages
+                    {
+                        Role = new CompactRoleDto { Urn = access.Role },
+                        Packages = [.. access.Packages.Select(package => new CompactPackageDto { Urn = package })]
+                    })
+                ]
+            });
+        }
+
+        return mapped;
     }
 
     /// <inheritdoc />
@@ -963,5 +1030,42 @@ public class AccessManagementClient : IAccessManagementClient
             ProblemInstance problemInstance = ProblemInstance.Create(logContextProblem, problemExtensionData);
             return new Result<bool>(problemInstance);
         }
-    }   
+    }
+
+    // Deserialization shape for the Access Management internal systemuserclientdelegation/clients payload.
+    // Temporary - remove together with GetClientsForFacilitatorFromInternalApi once the enduser/v2 API
+    // filters packages with AND.
+    private sealed class InternalSystemUserClientDto
+    {
+        public InternalClientParty Party { get; set; } = new();
+
+        public List<InternalRoleAccessPackages> Access { get; set; } = [];
+
+        internal sealed class InternalClientParty
+        {
+            [JsonPropertyName("id")]
+            public Guid Id { get; set; }
+
+            [JsonPropertyName("name")]
+            public string? Name { get; set; }
+
+            [JsonPropertyName("organizationNumber")]
+            public string? OrganizationNumber { get; set; }
+
+            [JsonPropertyName("unitType")]
+            public string? UnitType { get; set; }
+
+            [JsonPropertyName("isDeleted")]
+            public bool IsDeleted { get; set; }
+        }
+
+        internal sealed class InternalRoleAccessPackages
+        {
+            [JsonPropertyName("role")]
+            public string? Role { get; set; }
+
+            [JsonPropertyName("packages")]
+            public string[] Packages { get; set; } = [];
+        }
+    }
 }

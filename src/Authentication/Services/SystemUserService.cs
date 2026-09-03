@@ -931,7 +931,7 @@ namespace Altinn.Platform.Authentication.Services
                         List<string> clientAccessPackages = [];
                         foreach (var package in access.Packages)
                         {
-                            if (packageUrns.Contains(package.Urn))
+                            if (package.Urn is not null && packageUrns.Contains(package.Urn))
                             {
                                 clientAccessPackages.Add(package.Urn);
                                 outerValidationSet[packages.FindIndex(p => p.Urn == package.Urn)] = true;
@@ -942,7 +942,7 @@ namespace Altinn.Platform.Authentication.Services
                         {
                             var roleAccess = new RoleAccessPackagesPrimitive()
                             {
-                                Role = access.Role.Urn,
+                                Role = access.Role.Urn ?? string.Empty,
                                 Packages = clientAccessPackages
                             };
                             clientAccessPrimitive.Add(roleAccess);
@@ -1152,19 +1152,16 @@ namespace Altinn.Platform.Authentication.Services
         /// <inheritdoc/>
         public async Task<Result<List<ExternalClientDto>>> GetClientsForFacilitator(Guid facilitator, List<string>? packages, IFeatureManager featureManager, CancellationToken cancellationToken)
         {
-            var res = await _accessManagementClient.GetClientsForFacilitator(facilitator, packages!, cancellationToken);
-            if (res.IsSuccess)
+            // Temporary: use the Access Management internal API, which requires the client to hold ALL
+            // requested packages (AND). The enduser clientdelegations API (v1/v2) filters with OR, which
+            // lists partially-matching clients. Revert to GetClientsForFacilitator once v2 supports AND.
+            var res = await _accessManagementClient.GetClientsForFacilitatorFromInternalApi(facilitator, packages!, cancellationToken);
+            if (!res.IsSuccess)
             {
-                if (packages is not null && packages.Count > 0)
-                {
-                    // If a list of packages to filter on is provided, filter the clients based on those packages before converting to DTOs
-                    var filtered = res.Value.Where(client => client.Access.Any(access => access.Packages.Any(p => packages.Contains(p.Urn)))).ToList();
-                }
-
-                return ConvertConnectionDTOToClient(res.Value);
+                return res.Problem ?? Problem.AgentSystemUser_FailedToGetClients;
             }
 
-            return res.Problem ?? Problem.AgentSystemUser_FailedToGetClients;
+            return ConvertConnectionDTOToClient(res.Value);
         }
 
         /// <inheritdoc/>
@@ -1249,24 +1246,6 @@ namespace Altinn.Platform.Authentication.Services
             return rights;
         }
 
-        private static Result<List<Customer>> OldConvertConnectionDTOToClient(List<ClientDto> value)
-        {
-            List<Customer> result = [];
-            foreach (var item in value)
-            {
-                var newCustomer = new Customer()
-                {
-                    DisplayName = item.Party.Name,
-                    OrganizationIdentifier = item.Party.OrganizationNumber,
-                    PartyUuid = item.Party.Id,
-                    Access = item.Access
-                };
-                result.Add(newCustomer);
-            }
-
-            return result;
-        }
-
         private static Result<List<ExternalClientDto>> ConvertConnectionDTOToClient(List<ClientDelegationDto> value)
         {
             List<ExternalClientDto> result = [];
@@ -1274,9 +1253,11 @@ namespace Altinn.Platform.Authentication.Services
             {
                 var newCustomer = new ExternalClientDto()
                 {
-                    DisplayName = item.Client.Name,
+                    DisplayName = item.Client.Name ?? string.Empty,
                     OrganizationIdentifier = item.Client.OrganizationIdentifier ?? string.Empty,
                     PartyUuid = item.Client.Id,
+                    UnitType = item.Client.Variant,
+                    IsDeleted = item.Client.IsDeleted,
                     Access = ConvertAccessToPrimitive(item.Access)
                 };
                 result.Add(newCustomer);
@@ -1311,8 +1292,8 @@ namespace Altinn.Platform.Authentication.Services
             {
                 RoleAccessPackagesPrimitive primitive = new()
                 {
-                    Role = item.Role.Urn,
-                    Packages = [.. item.Packages.Select(p => p.Urn!)]
+                    Role = item.Role.Urn ?? string.Empty,
+                    Packages = [.. item.Packages.Select(p => p.Urn ?? string.Empty)]
                 };
                 primitiveList.Add(primitive);
             }

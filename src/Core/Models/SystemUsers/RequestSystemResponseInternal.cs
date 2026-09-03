@@ -38,7 +38,7 @@ public class RequestSystemResponseInternal()
     /// </summary>
     [Required]
     [JsonPropertyName("systemId")]
-    public string SystemId { get; set; }
+    public required string SystemId { get; set; }
 
     /// <summary>
     /// The organisation number for the SystemUser's Party ( the customer that delegates rights to the systemuser).
@@ -46,7 +46,7 @@ public class RequestSystemResponseInternal()
     /// </summary>
     [Required]
     [JsonPropertyName("partyOrgNo")]
-    public string PartyOrgNo { get; set; }
+    public required string PartyOrgNo { get; set; }
 
     /// <summary>
     /// The old int partyId, used internally
@@ -66,7 +66,7 @@ public class RequestSystemResponseInternal()
     /// </summary>
     [Required]
     [JsonPropertyName("rights")]
-    public List<Right> Rights { get; set; }
+    public List<Right> Rights { get; set; } = [];
 
     /// <summary>
     /// The set of Accesspackages requested for this system user. Must be equal to or less than the set defined in the Registered System.
@@ -74,7 +74,7 @@ public class RequestSystemResponseInternal()
     /// </summary>
     [Required]
     [JsonPropertyName("accessPackages")]
-    public List<AccessPackage> AccessPackages { get; set; }
+    public List<AccessPackage> AccessPackages { get; set; } = [];
 
     /// <summary>
     /// Initially the request is "new", 
@@ -82,7 +82,7 @@ public class RequestSystemResponseInternal()
     /// </summary>
     [Required]
     [JsonPropertyName("status")]
-    public string Status { get; set; }
+    public required string Status { get; set; }
 
     /// <summary>
     /// Optional redirect URL to navigate to after the customer has accepted/denied the Request
@@ -122,8 +122,11 @@ public class RequestSystemResponseInternal()
     public DateTime Created { get; set; }
 
     /// <summary>
-    /// Either Agent or Default
+    /// Either Agent or Default.
+    /// Null on the standard-request path: CheckUserAuthorizationAndGetRequest builds this
+    /// response from a RequestSystemResponse, which carries no user type, while the agent
+    /// variant sets it from the request. See the note in the PR for #488, Core iteration 3.
     /// </summary>
     [JsonPropertyName("systemUserType")]
-    public string SystemUserType { get; set; }
+    public string? SystemUserType { get; set; }
 }

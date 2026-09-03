@@ -14,13 +14,13 @@ namespace Altinn.Platform.Authentication.Core.Models
         /// </summary>
         [Required]
         [JsonPropertyName("id")]
-        public string Id { get; set; }
+        public required string Id { get; set; }
 
         /// <summary>
         /// Gets or sets the attribute value for the match
         /// </summary>
         [Required]
         [JsonPropertyName("value")]
-        public string Value { get; set; }
+        public required string Value { get; set; }
     }
 }

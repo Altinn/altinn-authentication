@@ -86,7 +86,7 @@ public class AccessManagementClientMock: IAccessManagementClient
 
         string packagesData = File.ReadAllText("Data/Packages/packages.json");
         List<Package>? packages = JsonSerializer.Deserialize<List<Package>>(packagesData, options);
-        package = packages?.FirstOrDefault(p => p.Urn.Contains(urnValue, StringComparison.OrdinalIgnoreCase));
+        package = packages?.FirstOrDefault(p => p.Urn is not null && p.Urn.Contains(urnValue, StringComparison.OrdinalIgnoreCase));
         return Task.FromResult(package);
     }
 
@@ -100,13 +100,8 @@ public class AccessManagementClientMock: IAccessManagementClient
 
         string packagesData = File.ReadAllText("Data/Packages/packages.json");
         List<Package>? packages = JsonSerializer.Deserialize<List<Package>>(packagesData, options);
-        package = packages?.FirstOrDefault(p => p.Urn.Contains(packageId, StringComparison.OrdinalIgnoreCase));
+        package = packages?.FirstOrDefault(p => p.Urn is not null && p.Urn.Contains(packageId, StringComparison.OrdinalIgnoreCase));
         return Task.FromResult(package);
-    }
-
-    public Task<PartyExternal> GetParty(int partyId, string token)
-    {
-        throw new NotImplementedException();
     }
 
     public Task<bool> CreateSelfIdentifiedUserConnection(Guid from, Guid to, CancellationToken cancellationToken = default)
@@ -345,6 +340,49 @@ public class AccessManagementClientMock: IAccessManagementClient
                         a.Packages.Any(p =>
                             p.Urn != null &&
                             (packageSet.Contains(p.Urn) || packageSet.Contains(p.Urn.Split(':').Last())))))
+                .ToList();
+        }
+
+        return Task.FromResult<Result<List<ClientDelegationDto>>>(clients);
+    }
+
+    public Task<Result<List<ClientDelegationDto>>> GetClientsForFacilitatorFromInternalApi(Guid facilitatorId, List<string> packages, CancellationToken cancellationToken = default)
+    {
+        if (facilitatorId.ToString() == "6bb78d06-70b2-45f6-85bc-19ca7b4d34d8")
+        {
+            return Task.FromResult<Result<List<ClientDelegationDto>>>(new List<ClientDelegationDto>());
+        }
+
+        if (facilitatorId.ToString() == "ca00ce4a-c30c-4cf7-9523-a65cd3a40232"
+            || facilitatorId.ToString() == "7bb78d06-70b2-45f6-85bc-19ca7b4d34d8")
+        {
+            return Task.FromResult<Result<List<ClientDelegationDto>>>(Problem.AgentSystemUser_FailedToGetClients_Forbidden);
+        }
+
+        JsonSerializerOptions options = new JsonSerializerOptions
+        {
+            PropertyNameCaseInsensitive = true,
+        };
+
+        string clientData = File.ReadAllText("Data/Customers/systemusercustomerlist.json");
+        PaginatedResult<List<ClientDelegationDto>>? paginated = JsonSerializer.Deserialize<PaginatedResult<List<ClientDelegationDto>>>(clientData, options);
+        List<ClientDelegationDto> clients = paginated?.Data ?? [];
+
+        if (packages != null && packages.Count > 0)
+        {
+            // The internal API requires the client to hold ALL requested packages (AND). Match a package
+            // against both the full URN and the short identifier form.
+            var packageSet = new HashSet<string>(packages, StringComparer.OrdinalIgnoreCase);
+            clients = clients
+                .Where(c =>
+                {
+                    HashSet<string> held = (c.Access ?? [])
+                        .SelectMany(a => a.Packages ?? [])
+                        .Where(p => p.Urn is not null)
+                        .SelectMany(p => new[] { p.Urn!, p.Urn!.Split(':').Last() })
+                        .ToHashSet(StringComparer.OrdinalIgnoreCase);
+                    return packageSet.All(held.Contains);
+                })
                 .ToList();
         }
 

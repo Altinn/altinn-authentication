@@ -5,6 +5,7 @@ using System.Configuration;
 using System.Diagnostics;
 using System.IdentityModel.Tokens.Jwt;
 using System.Linq;
+using System.Net.Http;
 using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
@@ -33,6 +34,7 @@ using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Microsoft.FeatureManagement;
+using Microsoft.IdentityModel.Tokens;
 
 namespace Altinn.Platform.Authentication.Services
 {
@@ -254,7 +256,13 @@ namespace Altinn.Platform.Authentication.Services
 
             // ===== 2) Exchange upstream code for upstream tokens =====
             OidcProvider provider = ChooseProviderByKey(upstreamTx.Provider);
-            UserAuthenticationModel userIdenity = await ExtractUserIdentityFromUpstream(input, upstreamTx, provider, cancellationToken);
+            UserAuthenticationModel? userIdenity = await ExtractUserIdentityFromUpstream(input, upstreamTx, provider, cancellationToken);
+            if (userIdenity is null)
+            {
+                // The upstream token call was refused/unreachable, or its tokens did not validate.
+                return await BuildUpstreamIdentityFailedResult(upstreamTx, cancellationToken);
+            }
+
             UserAuthenticationModel? identifiedUser = await IdentifyOrCreateAltinnUser(userIdenity, provider, cancellationToken);
             if (identifiedUser is null)
             {
@@ -736,13 +744,72 @@ namespace Altinn.Platform.Authentication.Services
                 cancellationToken: cancellationToken);
         }
 
-        private async Task<UserAuthenticationModel> ExtractUserIdentityFromUpstream(UpstreamCallbackInput input, UpstreamLoginTransaction upstreamTx, OidcProvider provider, CancellationToken cancellationToken)
+        /// <summary>
+        /// Redeems the upstream authorization code and turns the resulting tokens into an identity.
+        /// Returns <c>null</c> when the upstream refused or could not serve the token request, or when
+        /// the tokens it returned did not validate. Both causes are logged and counted further down
+        /// (<c>altinn.authentication.oidc.upstream_token_exchange</c> and
+        /// <c>…upstream_token_validation</c>); the caller only decides what the user sees.
+        /// </summary>
+        private async Task<UserAuthenticationModel?> ExtractUserIdentityFromUpstream(UpstreamCallbackInput input, UpstreamLoginTransaction upstreamTx, OidcProvider provider, CancellationToken cancellationToken)
         {
-            OidcCodeResponse codeReponse = await _oidcProvider.GetTokens(input.Code!, provider, upstreamTx.UpstreamRedirectUri.ToString(), upstreamTx.CodeVerifier, cancellationToken);
-            JwtSecurityToken idToken = await _upstreamTokenValidator.ValidateTokenAsync(codeReponse.IdToken, provider, upstreamTx.Nonce, cancellationToken);
-            JwtSecurityToken accesstoken = await _upstreamTokenValidator.ValidateTokenAsync(codeReponse.AccessToken, provider, null, cancellationToken);
-            UserAuthenticationModel userIdenity = AuthenticationHelper.GetUserFromToken(idToken, provider, accesstoken);
-            return userIdenity;
+            OidcCodeResponse? codeReponse = await _oidcProvider.GetTokens(input.Code!, provider, upstreamTx.UpstreamRedirectUri.ToString(), upstreamTx.CodeVerifier, cancellationToken);
+            if (codeReponse is null)
+            {
+                return null;
+            }
+
+            try
+            {
+                JwtSecurityToken idToken = await _upstreamTokenValidator.ValidateTokenAsync(codeReponse.IdToken, provider, upstreamTx.Nonce, cancellationToken);
+                JwtSecurityToken accesstoken = await _upstreamTokenValidator.ValidateTokenAsync(codeReponse.AccessToken, provider, null, cancellationToken);
+                UserAuthenticationModel userIdenity = AuthenticationHelper.GetUserFromToken(idToken, provider, accesstoken);
+                return userIdenity;
+            }
+            catch (Exception ex) when (ex is SecurityTokenException or ArgumentException or InvalidOperationException or HttpRequestException)
+            {
+                // Fail closed: no session is created. Surfacing this as an OIDC error beats letting it
+                // escape as an unhandled 500, which is what used to happen.
+                _logger.LogError(ex, "Validation of upstream tokens from {Provider} failed", provider.IssuerKey ?? provider.Issuer);
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// Builds the callback result for a sign-in that could not be completed because the upstream
+        /// token exchange or the upstream token validation failed. Prefers an OIDC error redirect back
+        /// to the downstream client, so the user lands on a real error page rather than an unhandled 500.
+        /// </summary>
+        private async Task<UpstreamCallbackResult> BuildUpstreamIdentityFailedResult(UpstreamLoginTransaction upstreamTx, CancellationToken cancellationToken)
+        {
+            const string ErrorDescription = "Could not complete sign-in with the upstream identity provider.";
+
+            if (upstreamTx.RequestId is not null)
+            {
+                LoginTransaction? loginTx = await _loginTxRepo.GetByRequestIdAsync(upstreamTx.RequestId.Value, cancellationToken);
+
+                // Safety: we only ever redirect to the redirect_uri we validated on /authorize.
+                if (loginTx?.RedirectUri is not null && loginTx.RedirectUri.IsAbsoluteUri)
+                {
+                    return new UpstreamCallbackResult
+                    {
+                        Kind = UpstreamCallbackResultKind.ErrorRedirectToClient,
+                        ClientRedirectUri = loginTx.RedirectUri,
+                        ClientState = loginTx.State,
+                        Error = "temporarily_unavailable",
+                        ErrorDescription = ErrorDescription
+                    };
+                }
+            }
+
+            // Unregistered-client (goto) flow, or no usable redirect_uri. Bouncing the user back to the
+            // goto URL without a session would send them straight into another login attempt, so stop here.
+            return new UpstreamCallbackResult
+            {
+                Kind = UpstreamCallbackResultKind.LocalError,
+                StatusCode = 502,
+                LocalErrorMessage = ErrorDescription
+            };
         }
 
         /// <summary>
