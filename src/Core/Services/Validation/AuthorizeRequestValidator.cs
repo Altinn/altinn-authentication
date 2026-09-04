@@ -8,12 +8,25 @@ namespace Altinn.Platform.Authentication.Core.Services.Validation
     /// </summary>
     public sealed class AuthorizeRequestValidator : IAuthorizeRequestValidator
     {
-        private static readonly HashSet<string> AllowedAcrValues = new(
-            new[] { "selfregistered-email", "idporten-loa-substantial", "idporten-loa-high", "level0", "level1", "level2" },
-            StringComparer.Ordinal);
-
         private static readonly HashSet<string> AllowedUiLocales = new(
             new[] { "nb", "nn", "en" }, StringComparer.Ordinal);
+
+        private readonly IAcrValueCatalog _acrValueCatalog;
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="AuthorizeRequestValidator"/> class.
+        /// </summary>
+        /// <param name="acrValueCatalog">
+        /// Supplies the accepted acr values. Previously this was a hardcoded set duplicated here
+        /// and in <c>AuthenticationHelper</c>; deriving it from the configured providers is what
+        /// lets a new ID-provider be reachable without a code change. It also removes a real
+        /// inconsistency: the old <c>"uidp"</c> provider mapping was unreachable because
+        /// <c>"uidp"</c> was in neither copy of the list.
+        /// </param>
+        public AuthorizeRequestValidator(IAcrValueCatalog acrValueCatalog)
+        {
+            _acrValueCatalog = acrValueCatalog;
+        }
 
         public AuthorizeValidationError? ValidateBasics(AuthorizeRequest request)
         {
@@ -83,7 +96,7 @@ namespace Altinn.Platform.Authentication.Core.Services.Validation
                 foreach (var v in request.AcrValues)
                 {
                     if (string.IsNullOrWhiteSpace(v)) continue;
-                    if (!AllowedAcrValues.Contains(v))
+                    if (!_acrValueCatalog.AllowedAcrValues.Contains(v))
                     {
                         return Err("invalid_request", $"acr_values contains unsupported value: '{v}'.");
                     }

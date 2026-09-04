@@ -1,3 +1,5 @@
+using System.Collections.Generic;
+
 namespace Altinn.Platform.Authentication.Model
 {
     /// <summary>
@@ -95,5 +97,40 @@ namespace Altinn.Platform.Authentication.Model
         /// Default false. See issue #1409 / #1983.
         /// </summary>
         public bool RequireSyntheticPid { get; set; } = false;
+
+        /// <summary>
+        /// Which claim in this provider's id_token carries which piece of meaning. Optional —
+        /// when omitted, ID-porten's claim names are assumed (<c>pid</c>, <c>acr</c>, <c>amr</c>).
+        /// Set this for providers outside that convention, e.g. HelseID.
+        /// </summary>
+        public OidcClaimMappings? ClaimMappings { get; set; }
+
+        /// <summary>
+        /// The authentication levels this provider offers. Optional — when omitted, the provider
+        /// is assumed to use ID-porten's acr vocabulary and the built-in level table applies.
+        /// <para>
+        /// Declaring levels here is what makes a provider reachable: the union of every
+        /// configured <see cref="OidcAuthLevel.Acr"/> forms the allow-list for the
+        /// <c>acr_values</c> request parameter, and decides which provider a requested acr
+        /// routes to.
+        /// </para>
+        /// </summary>
+        public List<OidcAuthLevel>? AuthLevels { get; set; }
+
+        /// <summary>
+        /// Maps the values of this provider's authentication-method claim onto Altinn's
+        /// <c>AuthenticationMethod</c> enum, e.g. HelseID's <c>idp</c> value
+        /// <c>bankid-oidc</c> to <c>BankID</c>. Optional — when omitted, ID-porten's amr values
+        /// are assumed. Matched case-insensitively. Unmatched values fall back to
+        /// <see cref="DefaultAuthenticationMethod"/>.
+        /// </summary>
+        public Dictionary<string, string>? AuthMethodMappings { get; set; }
+
+        /// <summary>
+        /// The <c>acr_values</c> to send to this provider's authorize endpoint when the client
+        /// requested no level. Optional. Replaces the hardcoded ID-porten default, which is not
+        /// meaningful for other providers.
+        /// </summary>
+        public string? DefaultUpstreamAcrValues { get; set; }
     }
 }

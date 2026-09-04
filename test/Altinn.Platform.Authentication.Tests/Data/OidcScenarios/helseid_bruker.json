@@ -1,0 +1,23 @@
+{
+  "ScenarioId": "HelseId_Bruker",
+  "Title": "HelseID - innlogging fra Altinn App",
+  "Description": "Bruker med eksisterende Altinn-profil logger på via HelseID med BankID. HelseID sender ingen acr; nivaaet ligger i helseid://claims/identity/security_level, fodselsnummeret i helseid://claims/identity/pid, og amr er Duende-defaulten pwd. Acr og Amr under er derfor de Altinn-vendte verdiene vi forventer ut, ikke det HelseID sendte inn.",
+  "Ssn": "01039012345",
+  "UserId": 2516356,
+  "PartyId": 5780927,
+  "UserName": "sophie",
+  "DownstreamClientCallbackUrl": "https://af.altinn.no/api/cb",
+  "Acr": [ "helseid-loa-high" ],
+  "Amr": [ "BankID" ],
+  "Scopes": [
+    "openid",
+    "altinn:portal/enduser"
+  ],
+  "AllowedScopes": [
+    "openid",
+    "altinn:portal/enduser"
+  ],
+  "RedirectUris": [
+    "https://af.altinn.no/api/cb"
+  ]
+}

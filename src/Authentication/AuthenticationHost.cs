@@ -204,6 +204,7 @@ internal static class AuthenticationHost
         services.AddTransient<IAuthorizationHandler, ResourceAccessHandler>();
         services.AddTransient<DelegationHelper, DelegationHelper>();
         services.AddScoped<IOidcServerService, OidcServerService>();
+        services.AddSingleton<IAcrValueCatalog, OidcAcrValueCatalog>();
         services.AddSingleton<IAuthorizeRequestValidator, AuthorizeRequestValidator>();
         services.AddSingleton<IAuthorizeClientPolicyValidator, AuthorizeClientPolicyValidator>();
         services.AddSingleton<IUpstreamTokenValidator, UpstreamTokenValidator>();
