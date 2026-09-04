@@ -1320,7 +1320,12 @@ namespace Altinn.Platform.Authentication.Services
             if (!hasExistingSession && !string.IsNullOrEmpty(upstreamAcr))
             {
                 string? selfRegistered = _acrValueCatalog.GetUpstreamAcrValues(p.IssuerKey, [AuthzConstants.CLAIM_ACR_IDPORTEN_EMAIL]);
-                if (!string.IsNullOrEmpty(selfRegistered) && !upstreamAcr.Contains(selfRegistered, StringComparison.Ordinal))
+
+                // Compare token by token rather than by substring: acr_values is a space-separated
+                // list, and a substring test would report a false match for any value that is a
+                // prefix of another.
+                string[] alreadyRequested = upstreamAcr.Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+                if (!string.IsNullOrEmpty(selfRegistered) && !alreadyRequested.Contains(selfRegistered, StringComparer.Ordinal))
                 {
                     upstreamAcr = selfRegistered + " " + upstreamAcr;
                 }
@@ -1506,7 +1511,14 @@ namespace Altinn.Platform.Authentication.Services
             // or the pid scope not granted) and which has no ExternalIdentityClaim and is not on
             // the self-registered-email path. The self-identified and email branches return
             // earlier and are unaffected, including for first-time users.
-            if (userAuthenticationModel.PartyUuid is null)
+            // Checks every identifier that can carry an identity, not just PartyUuid. The SSN
+            // branch assigns PartyUuid from userProfile.UserUuid and only overwrites it when
+            // Party.PartyUuid is non-null, so a profile-resolved user whose records carry no uuid
+            // would have failed a PartyUuid-only guard — someone who signed in yesterday. The
+            // condition now matches the stated intent: abort only when nothing at all was found.
+            if (userAuthenticationModel.PartyUuid is null
+                && userAuthenticationModel.UserID is null or 0
+                && userAuthenticationModel.PartyID is null or 0)
             {
                 _logger.LogError(
                     "No Altinn identity could be established for provider {Provider}. The token carried no usable identifier: pid claim '{PidClaim}' was absent and the provider has no ExternalIdentityClaim configured. Sign-in cannot complete.",

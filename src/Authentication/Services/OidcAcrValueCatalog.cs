@@ -36,7 +36,7 @@ namespace Altinn.Platform.Authentication.Services
         /// </summary>
         public OidcAcrValueCatalog(IOptions<OidcProviderSettings> providerSettings)
         {
-            _byAcr = new Dictionary<string, Entry>(StringComparer.OrdinalIgnoreCase);
+            _byAcr = new Dictionary<string, Entry>(StringComparer.Ordinal);
 
             // Only providers that explicitly declare AuthLevels take part in routing. Falling back
             // to the ID-porten table here instead would make every provider that has not opted in

@@ -26,12 +26,14 @@ namespace Altinn.Platform.Authentication.Core.Helpers
         /// back to ID-porten's built-in table.
         /// </summary>
         /// <remarks>
-        /// The fallback matters for sessions written before providers became configurable, and
-        /// for the callers that do not have a catalogue to hand.
+        /// The fallback matters for sessions written before providers became configurable, whose
+        /// stored acr may not be in the catalogue. The catalogue itself is a required argument:
+        /// a call site that omitted it would silently produce level 0 for every provider outside
+        /// ID-porten's vocabulary, which is the exact defect this change exists to fix.
         /// </remarks>
-        private static SecurityLevel ResolveLevel(string acr, IAcrValueCatalog? acrCatalog)
+        private static SecurityLevel ResolveLevel(string acr, IAcrValueCatalog acrCatalog)
         {
-            if (acrCatalog is not null && acrCatalog.TryGetLevel(acr, out int level))
+            if (acrCatalog.TryGetLevel(acr, out int level))
             {
                 return (SecurityLevel)level;
             }
@@ -42,7 +44,7 @@ namespace Altinn.Platform.Authentication.Core.Helpers
         /// <summary>
         /// Based on OidcBindingContextBase, creates a ClaimsPrincipal with relevant claims.
         /// </summary>
-        public static ClaimsPrincipal GetClaimsPrincipal(OidcBindingContextBase oidcBindingContext, string iss, bool isIDToken = false, IAcrValueCatalog? acrCatalog = null)
+        public static ClaimsPrincipal GetClaimsPrincipal(OidcBindingContextBase oidcBindingContext, string iss, IAcrValueCatalog acrCatalog, bool isIDToken = false)
         {
             List<Claim> claims = new()
             {
@@ -123,15 +125,14 @@ namespace Altinn.Platform.Authentication.Core.Helpers
                     string amrJson = JsonSerializer.Serialize(amr); // e.g. ["TestID","pwd"]
                     claims.Add(new Claim("amr", amrJson, JsonClaimValueTypes.JsonArray));
 
-                    // Emit the method claim only when the amr value actually resolves. Emitting the
-                    // literal string "NotDefined" — which is what an unrecognised value used to
-                    // produce — is worse than emitting nothing, since consumers cannot tell it
-                    // apart from a real method.
+                    // Always emitted when there is an amr, including as "NotDefined". Omitting it
+                    // for an unresolved value would be a contract change for every consumer of the
+                    // claim, and it would reach ID-porten too: MinIDTOTP is in the enum but in
+                    // neither lookup table. NotDefined is a real, self-describing member, so there
+                    // is nothing to gain by leaving the claim out. The configured mapping reaches
+                    // this point through the Amr normalisation in GetUserFromToken.
                     AuthenticationMethod method = AuthenticationHelper.GetAuthenticationMethod(amr[0]);
-                    if (method != AuthenticationMethod.NotDefined)
-                    {
-                        claims.Add(new Claim(AltinnCoreClaimTypes.AuthenticateMethod, method.ToString()));
-                    }
+                    claims.Add(new Claim(AltinnCoreClaimTypes.AuthenticateMethod, method.ToString()));
                 }
             }
 
@@ -165,7 +166,7 @@ namespace Altinn.Platform.Authentication.Core.Helpers
         /// <summary>
         /// Create a ClaimsPrincipal based on an OidcSession for AltinnStudio runtime cookie
         /// </summary>
-        public static ClaimsPrincipal GetClaimsPrincipal(OidcSession oidcSession, string iss, bool isIDToken = false, bool isAuthCookie = false, IAcrValueCatalog? acrCatalog = null)
+        public static ClaimsPrincipal GetClaimsPrincipal(OidcSession oidcSession, string iss, IAcrValueCatalog acrCatalog, bool isIDToken = false, bool isAuthCookie = false)
         {
             List<Claim> claims = new()
             {
@@ -252,15 +253,14 @@ namespace Altinn.Platform.Authentication.Core.Helpers
                     string amrJson = JsonSerializer.Serialize(amr); // e.g. ["TestID","pwd"]
                     claims.Add(new Claim("amr", amrJson, JsonClaimValueTypes.JsonArray));
 
-                    // Emit the method claim only when the amr value actually resolves. Emitting the
-                    // literal string "NotDefined" — which is what an unrecognised value used to
-                    // produce — is worse than emitting nothing, since consumers cannot tell it
-                    // apart from a real method.
+                    // Always emitted when there is an amr, including as "NotDefined". Omitting it
+                    // for an unresolved value would be a contract change for every consumer of the
+                    // claim, and it would reach ID-porten too: MinIDTOTP is in the enum but in
+                    // neither lookup table. NotDefined is a real, self-describing member, so there
+                    // is nothing to gain by leaving the claim out. The configured mapping reaches
+                    // this point through the Amr normalisation in GetUserFromToken.
                     AuthenticationMethod method = AuthenticationHelper.GetAuthenticationMethod(amr[0]);
-                    if (method != AuthenticationMethod.NotDefined)
-                    {
-                        claims.Add(new Claim(AltinnCoreClaimTypes.AuthenticateMethod, method.ToString()));
-                    }
+                    claims.Add(new Claim(AltinnCoreClaimTypes.AuthenticateMethod, method.ToString()));
                 }
             }
            

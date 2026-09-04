@@ -64,8 +64,8 @@ namespace Altinn.Platform.Authentication.Services
             // 2) Issue tokens (ID + Access) + refresh token
             DateTimeOffset exchangeTime = time.GetUtcNow();
             DateTimeOffset tokenExpiration = exchangeTime.AddMinutes(_generalSettings.OidcTokenValidityMinutes);
-            ClaimsPrincipal idTokenPrincipal = ClaimsPrincipalBuilder.GetClaimsPrincipal(row, _generalSettings.AltinnOidcIssuerUrl, true, _acrValueCatalog);
-            ClaimsPrincipal accessTokenPrincipal = ClaimsPrincipalBuilder.GetClaimsPrincipal(row, _generalSettings.AltinnOidcIssuerUrl, false, _acrValueCatalog);
+            ClaimsPrincipal idTokenPrincipal = ClaimsPrincipalBuilder.GetClaimsPrincipal(row, _generalSettings.AltinnOidcIssuerUrl, _acrValueCatalog, isIDToken: true);
+            ClaimsPrincipal accessTokenPrincipal = ClaimsPrincipalBuilder.GetClaimsPrincipal(row, _generalSettings.AltinnOidcIssuerUrl, _acrValueCatalog, isIDToken: false);
 
             // Now atomically consume
             if (!await _authorizationCodeRepository.TryConsumeAsync(row.Code, row.ClientId, row.RedirectUri, time.GetUtcNow(), ct))
@@ -147,7 +147,7 @@ namespace Altinn.Platform.Authentication.Services
             await _oidcSessionRepository.SlideExpiryToAsync(row.SessionId, sessionExpiration, ct);
             DateTimeOffset tokenExpiration = now.AddMinutes(_generalSettings.OidcTokenValidityMinutes);
 
-            ClaimsPrincipal accessPrincipal = ClaimsPrincipalBuilder.GetClaimsPrincipal(row, _generalSettings.AltinnOidcIssuerUrl, isIDToken: false, acrCatalog: _acrValueCatalog);
+            ClaimsPrincipal accessPrincipal = ClaimsPrincipalBuilder.GetClaimsPrincipal(row, _generalSettings.AltinnOidcIssuerUrl, _acrValueCatalog, isIDToken: false);
 
             // Preferred: use issuer overloads that take the pieces directly (clean)
             string accessToken = await tokenIssuer.CreateAccessTokenAsync(
@@ -158,7 +158,7 @@ namespace Altinn.Platform.Authentication.Services
             string? idToken = null;
             if (resultingScopes.Contains("openid"))
             {
-                ClaimsPrincipal idtokenPrincipal = ClaimsPrincipalBuilder.GetClaimsPrincipal(row, _generalSettings.AltinnOidcIssuerUrl, isIDToken: true, acrCatalog: _acrValueCatalog);
+                ClaimsPrincipal idtokenPrincipal = ClaimsPrincipalBuilder.GetClaimsPrincipal(row, _generalSettings.AltinnOidcIssuerUrl, _acrValueCatalog, isIDToken: true);
                 idToken = await tokenIssuer.CreateIdTokenAsync(
                     idtokenPrincipal,
                     client,
@@ -179,7 +179,7 @@ namespace Altinn.Platform.Authentication.Services
         /// <inheritdoc/>
         public Task<string> CreateCookieToken(OidcSession oidcSession, CancellationToken ct)
         {
-           ClaimsPrincipal principal = ClaimsPrincipalBuilder.GetClaimsPrincipal(oidcSession, _generalSettings.AltinnOidcIssuerUrl, isIDToken: false, isAuthCookie: true, acrCatalog: _acrValueCatalog);
+           ClaimsPrincipal principal = ClaimsPrincipalBuilder.GetClaimsPrincipal(oidcSession, _generalSettings.AltinnOidcIssuerUrl, _acrValueCatalog, isIDToken: false, isAuthCookie: true);
            return tokenIssuer.CreateAccessTokenAsync(principal, time.GetUtcNow().AddMinutes(_generalSettings.JwtValidityMinutes),  cancellationToken: ct);
         }
 
