@@ -767,7 +767,7 @@ namespace Altinn.Platform.Authentication.Services
             {
                 JwtSecurityToken idToken = await _upstreamTokenValidator.ValidateTokenAsync(codeReponse.IdToken, provider, upstreamTx.Nonce, cancellationToken);
                 JwtSecurityToken accesstoken = await _upstreamTokenValidator.ValidateTokenAsync(codeReponse.AccessToken, provider, null, cancellationToken);
-                UserAuthenticationModel userIdenity = AuthenticationHelper.GetUserFromToken(idToken, provider, accesstoken);
+                UserAuthenticationModel userIdenity = AuthenticationHelper.GetUserFromToken(idToken, provider, accesstoken, _logger);
                 return userIdenity;
             }
             catch (Exception ex) when (ex is SecurityTokenException or ArgumentException or InvalidOperationException or HttpRequestException)

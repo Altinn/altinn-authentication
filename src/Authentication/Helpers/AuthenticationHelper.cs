@@ -17,6 +17,7 @@ using Altinn.Platform.Authentication.Enum;
 using Altinn.Platform.Authentication.Model;
 using AltinnCore.Authentication.Constants;
 using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 
 #nullable enable
@@ -49,7 +50,11 @@ namespace Altinn.Platform.Authentication.Helpers
         /// set and the token does not carry a well-formed synthetic (Tenor)
         /// fødselsnummer (including when no pid is present).
         /// </exception>
-        public static UserAuthenticationModel GetUserFromToken(JwtSecurityToken jwtSecurityToken, OidcProvider provider, JwtSecurityToken? accessToken = null)
+        /// <param name="logger">
+        /// Optional. Used only to report claim values the provider's configuration does not cover,
+        /// which otherwise degrade silently and look like a broken mapping.
+        /// </param>
+        public static UserAuthenticationModel GetUserFromToken(JwtSecurityToken jwtSecurityToken, OidcProvider provider, JwtSecurityToken? accessToken = null, ILogger? logger = null)
         {
             UserAuthenticationModel userAuthenticationModel = new UserAuthenticationModel()
             {
@@ -130,11 +135,26 @@ namespace Altinn.Platform.Authentication.Helpers
 
                 if (claim.Type.Equals(claimMappings.AuthLevel))
                 {
+                    OidcAuthLevel? matchedLevel = MatchLevel(provider, claim.Value);
+
+                    if (matchedLevel is null)
+                    {
+                        // Silence here is what makes this look like a broken mapping rather than
+                        // an unmapped value: the sign-in succeeds, but at the lowest level, and
+                        // the user simply cannot reach anything. Say so once, with the value.
+                        logger?.LogWarning(
+                            "Authentication level claim '{LevelClaim}' from provider '{Provider}' carried value '{Value}', which matches no configured AuthLevels entry. The session falls back to the lowest level (SelfIdentifed = 0). Add the value to the ClaimValues of the appropriate level if this provider is expected to emit it.",
+                            claimMappings.AuthLevel,
+                            provider.IssuerKey,
+                            claim.Value);
+                    }
+
                     // Store the Altinn-facing acr rather than the raw upstream value, so that
                     // everything downstream (session, step-up, the emitted acr claim) speaks one
-                    // vocabulary regardless of which IdP authenticated the user.
-                    userAuthenticationModel.Acr = ResolveAcr(provider, claim.Value);
-                    userAuthenticationModel.AuthenticationLevel = ResolveAuthenticationLevel(provider, claim.Value);
+                    // vocabulary regardless of which IdP authenticated the user. An unmatched
+                    // value is kept verbatim so it stays visible in the session and in audit.
+                    userAuthenticationModel.Acr = matchedLevel?.Acr ?? claim.Value;
+                    userAuthenticationModel.AuthenticationLevel = matchedLevel?.Level ?? SecurityLevel.SelfIdentifed;
                     continue;
                 }
 
@@ -190,6 +210,20 @@ namespace Altinn.Platform.Authentication.Helpers
                 && System.Enum.TryParse<AuthenticationMethod>(provider.DefaultAuthenticationMethod, ignoreCase: true, out var defaultMethod))
             {
                 userAuthenticationModel.AuthenticationMethod = defaultMethod;
+            }
+
+            // Debug rather than Warning: an unmapped method is often deliberate. HelseID's
+            // 'idporten-oidc' is intentionally left unmapped because the eID behind it is not
+            // knowable, so warning on every such sign-in would be noise. The consequence is only
+            // that urn:altinn:authenticatemethod is omitted; access is governed by the level.
+            if (userAuthenticationModel.AuthenticationMethod == AuthenticationMethod.NotDefined
+                && userAuthenticationModel.Amr is { Length: > 0 } unresolvedAmr)
+            {
+                logger?.LogDebug(
+                    "Authentication method claim '{MethodClaim}' from provider '{Provider}' carried value '{Value}', which resolves to no AuthenticationMethod. The method claim is omitted from the issued tokens.",
+                    claimMappings.AuthMethod,
+                    provider.IssuerKey,
+                    unresolvedAmr[0]);
             }
 
             // Normalise Amr to Altinn's vocabulary so the resolved method survives token issuance.

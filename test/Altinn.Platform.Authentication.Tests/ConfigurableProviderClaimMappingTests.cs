@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Configuration;
 using System.IdentityModel.Tokens.Jwt;
@@ -8,7 +9,9 @@ using Altinn.Platform.Authentication.Enum;
 using Altinn.Platform.Authentication.Helpers;
 using Altinn.Platform.Authentication.Model;
 using Altinn.Platform.Authentication.Services;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Moq;
 using Xunit;
 
 namespace Altinn.Platform.Authentication.Tests
@@ -34,12 +37,13 @@ namespace Altinn.Platform.Authentication.Tests
             AuthLevels =
             [
                 new() { Acr = "helseid-loa-high", Level = SecurityLevel.VerySensitive, UpstreamAcrValues = "Level4", ClaimValues = ["4"] },
-                new() { Acr = "helseid-loa-substantial", Level = SecurityLevel.Sensitive, UpstreamAcrValues = "High", ClaimValues = ["3"] },
+                new() { Acr = "helseid-loa-substantial", Level = SecurityLevel.Sensitive, ClaimValues = ["3"] },
             ],
             AuthMethodMappings = new Dictionary<string, string>
             {
                 ["bankid-oidc"] = "BankID",
-                ["buypass-oidc"] = "BuyPass"
+                ["buypass-oidc"] = "BuyPass",
+                ["commfides-oidc"] = "Commfides"
             },
             DefaultAuthenticationMethod = "NotDefined"
         };
@@ -126,6 +130,48 @@ namespace Altinn.Platform.Authentication.Tests
             var result = AuthenticationHelper.GetUserFromToken(token, HelseId());
 
             Assert.Equal(SecurityLevel.SelfIdentifed, result.AuthenticationLevel);
+
+            // The raw value survives so the mismatch is visible in the session and in audit.
+            Assert.Equal("99", result.Acr);
+        }
+
+        [Fact]
+        public void GetUserFromToken_UnknownLevelValue_WarnsWithTheValue()
+        {
+            // Without this the sign-in succeeds at level 0 and the user simply cannot reach
+            // anything, which reads as a broken mapping rather than an unmapped value. HelseID's
+            // Test IdP is the likely first encounter: NHN does not document its security_level.
+            JwtSecurityToken token = Token(("helseid://claims/identity/security_level", "99"));
+            Mock<ILogger> logger = new();
+
+            AuthenticationHelper.GetUserFromToken(token, HelseId(), accessToken: null, logger: logger.Object);
+
+            logger.Verify(
+                l => l.Log(
+                    LogLevel.Warning,
+                    It.IsAny<EventId>(),
+                    It.Is<It.IsAnyType>((v, _) => v.ToString()!.Contains("'99'") && v.ToString()!.Contains("helseid")),
+                    It.IsAny<Exception>(),
+                    It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
+                Times.Once);
+        }
+
+        [Fact]
+        public void GetUserFromToken_KnownLevelValue_DoesNotWarn()
+        {
+            JwtSecurityToken token = Token(("helseid://claims/identity/security_level", "4"));
+            Mock<ILogger> logger = new();
+
+            AuthenticationHelper.GetUserFromToken(token, HelseId(), accessToken: null, logger: logger.Object);
+
+            logger.Verify(
+                l => l.Log(
+                    LogLevel.Warning,
+                    It.IsAny<EventId>(),
+                    It.IsAny<It.IsAnyType>(),
+                    It.IsAny<Exception>(),
+                    It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
+                Times.Never);
         }
 
         [Fact]
