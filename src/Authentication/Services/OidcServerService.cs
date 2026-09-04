@@ -1511,11 +1511,13 @@ namespace Altinn.Platform.Authentication.Services
             // or the pid scope not granted) and which has no ExternalIdentityClaim and is not on
             // the self-registered-email path. The self-identified and email branches return
             // earlier and are unaffected, including for first-time users.
-            // Checks every identifier that can carry an identity, not just PartyUuid. The SSN
-            // branch assigns PartyUuid from userProfile.UserUuid and only overwrites it when
-            // Party.PartyUuid is non-null, so a profile-resolved user whose records carry no uuid
-            // would have failed a PartyUuid-only guard — someone who signed in yesterday. The
-            // condition now matches the stated intent: abort only when nothing at all was found.
+            // Aborts only when no identifier at all was established, which is what the fall-through
+            // above means. All users are expected to carry a party uuid today, so checking
+            // PartyUuid alone would in practice be equivalent — but the SSN branch assigns it from
+            // userProfile.UserUuid and only overwrites it when Party.PartyUuid is non-null, so a
+            // uuid-less record would be refused sign-in rather than resolved from UserID/PartyID.
+            // Checking all three costs nothing for a normal user and does not rely on that
+            // invariant holding for every record.
             if (userAuthenticationModel.PartyUuid is null
                 && userAuthenticationModel.UserID is null or 0
                 && userAuthenticationModel.PartyID is null or 0)
