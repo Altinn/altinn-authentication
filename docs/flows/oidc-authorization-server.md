@@ -71,7 +71,7 @@ A provider whose token does not follow ID-porten's claim names or values is desc
 |---|---|
 | `ClaimMappings` | Which claim carries pid / level / method / email. Defaults to `pid`, `acr`, `amr`, `email`. |
 | `AuthLevels` | The levels the provider offers: Altinn-facing `Acr`, normalised `Level`, `UpstreamAcrValues` to request it, and the `ClaimValues` that come back for it. |
-| `AuthMethodMappings` | Provider method-claim values to Altinn's `AuthenticationMethod`. |
+| `AuthMethodMappings` | Provider method-claim values to Altinn's `AuthenticationMethod`. Unmatched values fall back to `DefaultAuthenticationMethod`; when that resolves to `NotDefined` the method claim is omitted rather than guessed. |
 | `DefaultUpstreamAcrValues` | What to send when the client requested **no** level at all. Omit it to let the provider apply its own default. |
 
 Declaring `AuthLevels` is what makes a provider reachable via `acr_values`; providers without it do not take part in acr routing and are selected by the `iss` parameter instead.
@@ -83,6 +83,22 @@ For the same reason, do not set `DefaultUpstreamAcrValues` unless there is a dec
 Step-up compares **normalised levels**, not acr strings (`AuthenticationHelper.NeedAcrUpgrade`), so a session from one provider can satisfy a level requested in another's vocabulary. A session whose acr resolves to no level does not satisfy a request above level 0.
 
 Acr values declared by a provider must be unique across the whole configuration, and only `idporten` may declare ID-porten's built-in values. Violations fail at startup rather than being resolved by configuration order, which would silently route existing clients to a different ID-provider.
+
+### A federating provider can hide the actual method
+
+HelseID offers BankID twice: directly (`idp:bankid-oidc`) and through ID-porten (`idp:idporten-oidc` with `amr:bankid`). Only the first tells us which eID was used. Via ID-porten the `idp` claim says `idporten-oidc`, and the eID behind it — BankID, Buypass, Commfides or MinID — is not visible to us. NHN documents neither what the `idp` claim contains for each route nor whether ID-porten's own `amr` is passed through; HelseID's own `amr` is the Duende default `["pwd"]`.
+
+So `idporten-oidc` is deliberately **not** mapped in `AuthMethodMappings`. Mapping it to any single method would assert something we cannot know, and mislabel a MinID user as BankID. It falls through to `DefaultAuthenticationMethod`, and the method claim is omitted.
+
+The level is unaffected: `security_level` is authoritative on both routes. Direct BankID is always 4; via ID-porten it is 3 or 4.
+
+### Testing against HelseID
+
+Use HelseID's Test IdP (`acr_values=idp:testidp-oidc`), which NHN recommends over the other providers in their test environment and which exists **only** there.
+
+Its `security_level` is not documented. If it returns a value outside the configured `ClaimValues`, the level resolves to `SelfIdentifed` (0) — which looks like a broken mapping but is an unmapped value. The raw claim value is preserved verbatim in the session's `acr` column precisely so this is diagnosable: one sign-in shows what Test IdP actually sends, and the value can then be added to the right `AuthLevels` entry. Its `idp` value (`testidp-oidc`) is likewise unmapped, so no method claim is emitted.
+
+HelseID test users carry Tenor synthetic identity numbers (month 81–92). A test-environment HelseID provider should therefore also set `RequireSyntheticPid: true`, which fails the sign-in closed if anything but a synthetic pid arrives.
 
 ### Trust equivalence between providers — open policy question
 
