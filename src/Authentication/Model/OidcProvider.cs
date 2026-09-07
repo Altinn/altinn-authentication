@@ -58,6 +58,39 @@ namespace Altinn.Platform.Authentication.Model
         public string ClientSecret { get; set; }
 
         /// <summary>
+        /// PEM-encoded RSA private key used to sign a <c>private_key_jwt</c> client assertion
+        /// instead of sending <see cref="ClientSecret"/>. Accepts PKCS#8 or PKCS#1.
+        /// <para>
+        /// Set this for providers that do not accept a client secret. HelseID's security profile
+        /// permits no other client authentication mechanism, so a client secret there is refused
+        /// with <c>invalid_client</c>. When set, it takes precedence over <see cref="ClientSecret"/>.
+        /// </para>
+        /// </summary>
+        public string ClientAssertionPrivateKeyPem { get; set; }
+
+        /// <summary>
+        /// The <c>kid</c> to put in the assertion header. Must match the key id of the public JWK
+        /// registered with the provider, so it can pick the right key to verify with.
+        /// </summary>
+        public string ClientAssertionKeyId { get; set; }
+
+        /// <summary>
+        /// Signing algorithm for the client assertion. Defaults to <c>PS256</c>, which is what
+        /// providers mandating private_key_jwt typically require.
+        /// </summary>
+        public string ClientAssertionAlgorithm { get; set; } = "PS256";
+
+        /// <summary>
+        /// The <c>aud</c> of the client assertion. Optional — defaults to <see cref="Issuer"/>.
+        /// <para>
+        /// This is the provider's issuer identifier, <em>not</em> its token endpoint. Some
+        /// providers accepted the endpoint URL historically; HelseID documents explicitly that it
+        /// must not be used.
+        /// </para>
+        /// </summary>
+        public string ClientAssertionAudience { get; set; }
+
+        /// <summary>
         /// The response type
         /// </summary>
         public string ResponseType { get; set; } = "code";

@@ -63,6 +63,25 @@ With ID-porten alone that set is `idporten-loa-substantial`, `idporten-loa-high`
 
 These acr values are **Altinn-facing**. They are what a client requests, what is stored on the session, and what is emitted in the `acr` claim — deliberately not the upstream provider's vocabulary. Each configured level carries its own `UpstreamAcrValues`, which is what gets sent to that provider's authorize endpoint, so one provider's vocabulary is never forwarded to another.
 
+### Client authentication: client secret or private_key_jwt
+
+By default Altinn authenticates to a provider's token endpoint with `ClientSecret`. Some providers do not accept that at all — HelseID's security profile permits **no** mechanism other than `private_key_jwt`, so a client secret there is refused with `invalid_client` regardless of how the provider is otherwise configured.
+
+Setting `ClientAssertionPrivateKeyPem` switches that provider to a signed client assertion (RFC 7523). It takes precedence over `ClientSecret`, which is why a provider that has both configured still sends only the assertion.
+
+| Setting | Purpose |
+|---|---|
+| `ClientAssertionPrivateKeyPem` | PEM private key, PKCS#8 or PKCS#1. Presence of this is what enables assertion-based authentication. |
+| `ClientAssertionKeyId` | `kid` header. Must match the public JWK registered with the provider. |
+| `ClientAssertionAlgorithm` | Defaults to `PS256`. Only asymmetric RSA algorithms are accepted. |
+| `ClientAssertionAudience` | Defaults to `Issuer`. |
+
+The assertion carries `iss` and `sub` set to the client id, a single-use `jti`, and a lifetime of ten seconds — HelseID rejects anything longer. Its `typ` header is `client-authentication+jwt` so it cannot be replayed as another kind of token.
+
+The audience is the provider's **issuer identifier, not its token endpoint**. That distinction matters: several providers accepted the endpoint URL historically, and NHN documents explicitly that it must not be used. Override it only when a provider asks for something other than its issuer.
+
+The key is a secret and belongs wherever the deployment keeps secrets, alongside the client secrets it replaces. A misconfigured or unreadable key throws on the first sign-in with the provider named, rather than producing an `invalid_client` from upstream that says nothing about the cause.
+
 ### Providers outside ID-porten's conventions
 
 A provider whose token does not follow ID-porten's claim names or values is described in configuration, not in code:

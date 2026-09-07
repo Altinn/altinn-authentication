@@ -5,6 +5,7 @@ using System.Diagnostics.Metrics;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
+using System.Security.Cryptography;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -256,6 +257,79 @@ namespace Altinn.Platform.Authentication.Tests.Services
             Assert.Equal(errorType, measurement.Tags["error.type"]);
         }
 
+        /// <summary>
+        /// A provider configured with an assertion key must authenticate with private_key_jwt and
+        /// must not fall back to a client secret. HelseID accepts no other mechanism, so sending
+        /// the secret would be refused with invalid_client.
+        /// </summary>
+        [Fact]
+        public async Task GetTokens_ProviderWithAssertionKey_SendsClientAssertionAndNoSecret()
+        {
+            string body = await CaptureTokenRequestBody(new OidcProvider
+            {
+                IssuerKey = "helseid",
+                Issuer = "https://helseid-sts.test.nhn.no",
+                TokenEndpoint = "https://helseid-sts.test.nhn.no/connect/token",
+                ClientId = "altinn-test-client",
+                ClientAssertionPrivateKeyPem = RSA.Create(2048).ExportPkcs8PrivateKeyPem(),
+                ClientAssertionKeyId = "altinn-key-1",
+
+                // Deliberately also set, to prove the assertion wins.
+                ClientSecret = "must-not-be-sent",
+            });
+
+            Assert.Contains("client_assertion_type=urn%3Aietf%3Aparams%3Aoauth%3Aclient-assertion-type%3Ajwt-bearer", body);
+            Assert.Contains("client_assertion=", body);
+            Assert.DoesNotContain("client_secret", body);
+        }
+
+        /// <summary>
+        /// Providers without an assertion key keep authenticating with the client secret exactly
+        /// as before.
+        /// </summary>
+        [Fact]
+        public async Task GetTokens_ProviderWithoutAssertionKey_StillSendsClientSecret()
+        {
+            string body = await CaptureTokenRequestBody(new OidcProvider
+            {
+                IssuerKey = "idporten",
+                Issuer = "https://idporten.no",
+                TokenEndpoint = "https://idporten.no/token",
+                ClientId = "altinn",
+                ClientSecret = "a-secret",
+            });
+
+            Assert.Contains("client_secret=a-secret", body);
+            Assert.DoesNotContain("client_assertion", body);
+        }
+
+        private async Task<string> CaptureTokenRequestBody(OidcProvider provider)
+        {
+            string? captured = null;
+
+            Mock<HttpMessageHandler> handlerMock = new();
+            handlerMock
+                .Protected()
+                .Setup<Task<HttpResponseMessage>>(
+                    "SendAsync",
+                    ItExpr.IsAny<HttpRequestMessage>(),
+                    ItExpr.IsAny<CancellationToken>())
+                .Returns(async (HttpRequestMessage request, CancellationToken _) =>
+                {
+                    captured = await request.Content!.ReadAsStringAsync();
+                    return new HttpResponseMessage(HttpStatusCode.OK)
+                    {
+                        Content = new StringContent("{\"access_token\":\"a\",\"id_token\":\"b\"}", Encoding.UTF8, "application/json")
+                    };
+                });
+
+            (OidcProviderService sut, _) = CreateSut(handlerMock);
+            await sut.GetTokens("code", provider, "https://localhost/cb", codeVerifier: "verifier");
+
+            Assert.NotNull(captured);
+            return captured!;
+        }
+
         private (OidcProviderService Sut, MetricCollector<int> Collector) CreateSut(HttpStatusCode statusCode, string responseBody, string mediaType = "application/json")
         {
             Mock<HttpMessageHandler> handlerMock = new();
@@ -295,7 +369,8 @@ namespace Altinn.Platform.Authentication.Tests.Services
             OidcProviderService sut = new(
                 new HttpClient(handlerMock.Object),
                 _loggerMock.Object,
-                new TestMetricsProvider(meterFactory));
+                new TestMetricsProvider(meterFactory),
+                TimeProvider.System);
 
             return (sut, collector);
         }
