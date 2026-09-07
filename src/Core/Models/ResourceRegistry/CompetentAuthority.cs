@@ -1,10 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace Altinn.Platform.Authentication.Core.Models.ResourceRegistry
+﻿namespace Altinn.Platform.Authentication.Core.Models.ResourceRegistry
 {
     /// <summary>
     /// Model representation of Competent Authority part of the ServiceResource model
@@ -12,18 +6,19 @@ namespace Altinn.Platform.Authentication.Core.Models.ResourceRegistry
     public class CompetentAuthority
     {
         /// <summary>
-        /// The organization number
+        /// The organization number. Present on every observed competent authority.
         /// </summary>
-        public string Organization { get; set; }
+        public string Organization { get; set; } = null!;
 
         /// <summary>
-        /// The organization code
+        /// The organization code. Present on every observed competent authority.
         /// </summary>
-        public string Orgcode { get; set; }
+        public string Orgcode { get; set; } = null!;
 
         /// <summary>
-        /// The organization name. If not set it will be retrived from register based on Organization number
+        /// The organization name. If not set it will be retrieved from register based on the
+        /// organization number - and it is genuinely absent from some resource payloads.
         /// </summary>
-        public Dictionary<string, string> Name { get; set; }
+        public Dictionary<string, string>? Name { get; set; }
     }
 }
