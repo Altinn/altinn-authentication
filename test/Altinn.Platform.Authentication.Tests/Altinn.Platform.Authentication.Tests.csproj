@@ -66,6 +66,9 @@
     <None Update="Data\OidcScenarios\arbeidsflate_epostbruker_vanskeligepost.json">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
+    <None Update="Data\OidcScenarios\helseid_bruker.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
     <None Update="Data\OidcScenarios\arbeidsflate_happyflow_epostbruker_eksisterende.json">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>

@@ -69,6 +69,7 @@ namespace Altinn.Platform.Authentication.Controllers
         private readonly IEventLog _eventLog;
         private readonly IFeatureManager _featureManager;
         private readonly IGuidService _guidService;
+        private readonly IAcrValueCatalog _acrValueCatalog;
 
         private readonly List<string>? _partnerScopes;
 
@@ -87,8 +88,10 @@ namespace Altinn.Platform.Authentication.Controllers
             IGuidService guidService,
             IOidcServerService oidcServerService,
             TimeProvider timeProvider,
-            IPartiesClient partiesClient)
+            IPartiesClient partiesClient,
+            IAcrValueCatalog acrValueCatalog)
         {
+            _acrValueCatalog = acrValueCatalog;
             _logger = logger;
             _generalSettings = generalSettings.Value;
             _signingKeysRetriever = signingKeysRetriever;
@@ -118,7 +121,8 @@ namespace Altinn.Platform.Authentication.Controllers
         /// <param name="acrValues">Optional requested authentication level as space-separated acr_values. The current values are
         /// <c>idporten-loa-substantial</c>, <c>idporten-loa-high</c> and <c>selfregistered-email</c>; the legacy values
         /// <c>level0</c>, <c>level1</c> and <c>level2</c> are still accepted but deprecated. Any other value yields
-        /// <c>400 Bad Request</c> (validated by <see cref="AuthenticationHelper.TryParseAcrValues"/>). When the current
+        /// <c>400 Bad Request</c>. The accepted set is derived from the configured ID-providers via
+        /// <see cref="IAcrValueCatalog.AllowedAcrValues"/>, so it grows as providers are added. When the current
         /// session does not meet the requested level, the user is re-authenticated upstream (step-up).</param>
         /// <param name="cancellationToken">The cancellation token</param>
         /// <returns>A 302 redirect: to <paramref name="goTo"/> when an existing session already satisfies the request, otherwise to the upstream ID-provider login.</returns>
@@ -133,7 +137,7 @@ namespace Altinn.Platform.Authentication.Controllers
 
             // Optional requested authentication level (acr_values). Lets unregistered clients (e.g. Altinn Apps)
             // ask for a higher level than the user's current session — i.e. trigger a step-up (level 3 -> 4).
-            if (!AuthenticationHelper.TryParseAcrValues(acrValues, out string[] requestedAcrValues))
+            if (!AuthenticationHelper.TryParseAcrValues(acrValues, _acrValueCatalog, out string[] requestedAcrValues))
             {
                 return BadRequest("Invalid acr_values.");
             }
@@ -165,7 +169,7 @@ namespace Altinn.Platform.Authentication.Controllers
 
                     // Only reuse the existing session if it already satisfies the requested level.
                     // Otherwise fall through and re-authenticate upstream at the higher level (step-up).
-                    if (!AuthenticationHelper.NeedAcrUpgrade(refreshedSession?.Acr, requestedAcrValues))
+                    if (!AuthenticationHelper.NeedAcrUpgrade(refreshedSession?.Acr, requestedAcrValues, _acrValueCatalog))
                     {
                         return Redirect(validatedGoToUri.AbsoluteUri);
                     }
@@ -193,7 +197,7 @@ namespace Altinn.Platform.Authentication.Controllers
 
                 // Reuse the session only when it already meets the requested level; otherwise step up.
                 if (authenticateFromSessionResult.Kind.Equals(AuthenticateFromSessionResultKind.Success)
-                    && !AuthenticationHelper.NeedAcrUpgrade(authenticateFromSessionResult.Acr, requestedAcrValues))
+                    && !AuthenticationHelper.NeedAcrUpgrade(authenticateFromSessionResult.Acr, requestedAcrValues, _acrValueCatalog))
                 {
                     foreach (var c in authenticateFromSessionResult.Cookies)
                     {
