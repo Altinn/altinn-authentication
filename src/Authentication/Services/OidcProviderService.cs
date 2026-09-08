@@ -85,7 +85,7 @@ namespace Altinn.Platform.Authentication.Services
             // Client authentication. private_key_jwt takes precedence: a provider configured with
             // an assertion key has one because it does not accept a client secret at all, so
             // falling back to the secret would only produce invalid_client.
-            if (!string.IsNullOrEmpty(provider.ClientAssertionPrivateKeyPem))
+            if (ClientAssertionBuilder.IsConfiguredFor(provider))
             {
                 kvps.Add("client_assertion_type", ClientAssertionBuilder.ClientAssertionType);
                 kvps.Add("client_assertion", ClientAssertionBuilder.Build(provider, _timeProvider.GetUtcNow()));

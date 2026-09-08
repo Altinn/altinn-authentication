@@ -54,6 +54,20 @@ namespace Altinn.Platform.Authentication.Helpers
         private static readonly TimeSpan NotBeforeSkew = TimeSpan.FromSeconds(5);
 
         /// <summary>
+        /// Whether <paramref name="provider"/> is configured to authenticate with a client
+        /// assertion rather than a client secret.
+        /// </summary>
+        /// <remarks>
+        /// The single place that decides this. Callers must not re-derive it from the individual
+        /// key settings: a caller that checked only one of them would leave the other format
+        /// silently inert, sending a client secret — or nothing — where an assertion was intended.
+        /// </remarks>
+        public static bool IsConfiguredFor(OidcProvider provider)
+            => provider is not null
+                && (!string.IsNullOrWhiteSpace(provider.ClientAssertionPrivateKeyPem)
+                    || !string.IsNullOrWhiteSpace(provider.ClientAssertionPrivateKeyJwk));
+
+        /// <summary>
         /// Builds a signed client assertion for <paramref name="provider"/>.
         /// </summary>
         /// <exception cref="InvalidOperationException">
@@ -66,8 +80,7 @@ namespace Altinn.Platform.Authentication.Helpers
         {
             ArgumentNullException.ThrowIfNull(provider);
 
-            if (string.IsNullOrWhiteSpace(provider.ClientAssertionPrivateKeyPem)
-                && string.IsNullOrWhiteSpace(provider.ClientAssertionPrivateKeyJwk))
+            if (!IsConfiguredFor(provider))
             {
                 throw new InvalidOperationException(
                     $"Provider '{provider.IssuerKey}' has neither ClientAssertionPrivateKeyPem nor ClientAssertionPrivateKeyJwk configured.");
