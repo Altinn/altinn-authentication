@@ -1,8 +1,11 @@
 using System;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Cryptography;
+using System.Text;
+using System.Text.Json;
 using Altinn.Platform.Authentication.Model;
 using Microsoft.IdentityModel.Tokens;
+using JwtBase64Url = Microsoft.IdentityModel.Tokens.Base64UrlEncoder;
 
 #nullable enable
 
@@ -51,6 +54,20 @@ namespace Altinn.Platform.Authentication.Helpers
         private static readonly TimeSpan NotBeforeSkew = TimeSpan.FromSeconds(5);
 
         /// <summary>
+        /// Whether <paramref name="provider"/> is configured to authenticate with a client
+        /// assertion rather than a client secret.
+        /// </summary>
+        /// <remarks>
+        /// The single place that decides this. Callers must not re-derive it from the individual
+        /// key settings: a caller that checked only one of them would leave the other format
+        /// silently inert, sending a client secret — or nothing — where an assertion was intended.
+        /// </remarks>
+        public static bool IsConfiguredFor(OidcProvider provider)
+            => provider is not null
+                && (!string.IsNullOrWhiteSpace(provider.ClientAssertionPrivateKeyPem)
+                    || !string.IsNullOrWhiteSpace(provider.ClientAssertionPrivateKeyJwk));
+
+        /// <summary>
         /// Builds a signed client assertion for <paramref name="provider"/>.
         /// </summary>
         /// <exception cref="InvalidOperationException">
@@ -63,10 +80,10 @@ namespace Altinn.Platform.Authentication.Helpers
         {
             ArgumentNullException.ThrowIfNull(provider);
 
-            if (string.IsNullOrWhiteSpace(provider.ClientAssertionPrivateKeyPem))
+            if (!IsConfiguredFor(provider))
             {
                 throw new InvalidOperationException(
-                    $"Provider '{provider.IssuerKey}' has no ClientAssertionPrivateKeyPem configured.");
+                    $"Provider '{provider.IssuerKey}' has neither ClientAssertionPrivateKeyPem nor ClientAssertionPrivateKeyJwk configured.");
             }
 
             if (string.IsNullOrWhiteSpace(provider.ClientId))
@@ -91,9 +108,10 @@ namespace Altinn.Platform.Authentication.Helpers
             // not take ownership of an RSA handed to it, and neither the credentials nor the
             // handler dispose it, so without this every sign-in would leave a native key handle to
             // the finalizer.
-            using RSA rsa = ImportPrivateKey(provider);
+            ImportedKey imported = ImportPrivateKey(provider);
+            using RSA rsa = imported.Rsa;
 
-            SigningCredentials credentials = CreateSigningCredentials(provider, rsa);
+            SigningCredentials credentials = CreateSigningCredentials(provider, imported);
 
             SecurityTokenDescriptor descriptor = new()
             {
@@ -121,7 +139,29 @@ namespace Altinn.Platform.Authentication.Helpers
             return handler.CreateEncodedJwt(descriptor);
         }
 
-        private static RSA ImportPrivateKey(OidcProvider provider)
+        /// <summary>
+        /// The imported key, together with the <c>kid</c> and <c>alg</c> the key material itself
+        /// declared. A JWK carries both; a PEM carries neither.
+        /// </summary>
+        private sealed record ImportedKey(RSA Rsa, string? KeyId, string? Algorithm);
+
+        private static ImportedKey ImportPrivateKey(OidcProvider provider)
+        {
+            bool hasPem = !string.IsNullOrWhiteSpace(provider.ClientAssertionPrivateKeyPem);
+            bool hasJwk = !string.IsNullOrWhiteSpace(provider.ClientAssertionPrivateKeyJwk);
+
+            // Ambiguous configuration, with no sensible precedence to pick. Say so rather than
+            // silently signing with one of them.
+            if (hasPem && hasJwk)
+            {
+                throw new InvalidOperationException(
+                    $"Provider '{provider.IssuerKey}' has both ClientAssertionPrivateKeyPem and ClientAssertionPrivateKeyJwk configured. Set exactly one.");
+            }
+
+            return hasJwk ? ImportFromJwk(provider) : new ImportedKey(ImportFromPem(provider), null, null);
+        }
+
+        private static RSA ImportFromPem(OidcProvider provider)
         {
             RSA rsa = RSA.Create();
             try
@@ -138,11 +178,145 @@ namespace Altinn.Platform.Authentication.Helpers
             }
         }
 
-        private static SigningCredentials CreateSigningCredentials(OidcProvider provider, RSA rsa)
+        /// <summary>
+        /// Imports a private RSA JWK, which is the format providers such as HelseID hand out at
+        /// client registration.
+        /// </summary>
+        /// <remarks>
+        /// Accepts the JWK verbatim or base64-encoded. The distinction is unambiguous — base64 of
+        /// a JWK never begins with '{' — and having both means the value can be pasted as received
+        /// where that is convenient, or encoded where raw JSON is awkward. A bare JSON object in a
+        /// YAML <c>value:</c> is read as a flow mapping rather than a string unless quoted, which
+        /// is a trap that does not fail loudly.
+        /// </remarks>
+        private static ImportedKey ImportFromJwk(OidcProvider provider)
         {
-            string algorithm = string.IsNullOrWhiteSpace(provider.ClientAssertionAlgorithm)
-                ? SecurityAlgorithms.RsaSsaPssSha256
-                : provider.ClientAssertionAlgorithm!;
+            string raw = provider.ClientAssertionPrivateKeyJwk.Trim();
+            string json = raw.StartsWith('{') ? raw : DecodeBase64(raw, provider);
+
+            JsonDocument document;
+            try
+            {
+                document = JsonDocument.Parse(json);
+            }
+            catch (JsonException ex)
+            {
+                throw new InvalidOperationException(
+                    $"ClientAssertionPrivateKeyJwk for provider '{provider.IssuerKey}' is not valid JSON.", ex);
+            }
+
+            // Everything taken out below is copied — strings and byte arrays — so the document is
+            // only needed for the duration of this method.
+            using (document)
+            {
+                return ReadJwk(document.RootElement, provider);
+            }
+        }
+
+        private static ImportedKey ReadJwk(JsonElement jwk, OidcProvider provider)
+        {
+            // Parse accepts a bare scalar too, and TryGetProperty throws on anything but an object.
+            if (jwk.ValueKind != JsonValueKind.Object)
+            {
+                throw new InvalidOperationException(
+                    $"ClientAssertionPrivateKeyJwk for provider '{provider.IssuerKey}' is not a JSON object.");
+            }
+
+            string? keyType = ReadString(jwk, "kty");
+            if (!string.Equals(keyType, "RSA", StringComparison.Ordinal))
+            {
+                throw new InvalidOperationException(
+                    $"ClientAssertionPrivateKeyJwk for provider '{provider.IssuerKey}' has kty '{keyType}'; only RSA is supported.");
+            }
+
+            // 'd' alone is a valid private key in JWK terms, but .NET's RSA implementations want
+            // the CRT parameters as well, so the full set is required. ReadComponent checks
+            // presence, type and encoding together, so every way a component can be wrong produces
+            // a message naming the provider and the field rather than a raw framework exception.
+            RSAParameters parameters = new()
+            {
+                Modulus = ReadComponent(jwk, "n", provider),
+                Exponent = ReadComponent(jwk, "e", provider),
+                D = ReadComponent(jwk, "d", provider),
+                P = ReadComponent(jwk, "p", provider),
+                Q = ReadComponent(jwk, "q", provider),
+                DP = ReadComponent(jwk, "dp", provider),
+                DQ = ReadComponent(jwk, "dq", provider),
+                InverseQ = ReadComponent(jwk, "qi", provider),
+            };
+
+            RSA rsa = RSA.Create();
+            try
+            {
+                rsa.ImportParameters(parameters);
+            }
+            catch (CryptographicException ex)
+            {
+                rsa.Dispose();
+                throw new InvalidOperationException(
+                    $"ClientAssertionPrivateKeyJwk for provider '{provider.IssuerKey}' does not contain a usable RSA private key.", ex);
+            }
+
+            // The JWK states its own kid and alg. Taking them from here removes two settings that
+            // would otherwise duplicate the key material and could drift out of step with it.
+            return new ImportedKey(rsa, ReadString(jwk, "kid"), ReadString(jwk, "alg"));
+        }
+
+        private static string DecodeBase64(string value, OidcProvider provider)
+        {
+            try
+            {
+                // Base64UrlEncoder also passes '+' and '/' through unchanged, so this accepts
+                // standard base64 as well as base64url — a key may have been encoded either way.
+                return JwtBase64Url.Decode(value);
+            }
+            catch (Exception ex) when (ex is FormatException or ArgumentException or DecoderFallbackException)
+            {
+                throw new InvalidOperationException(
+                    $"ClientAssertionPrivateKeyJwk for provider '{provider.IssuerKey}' is neither a JSON object nor valid base64 of one.", ex);
+            }
+        }
+
+        private static string? ReadString(JsonElement element, string name)
+            => element.TryGetProperty(name, out JsonElement value) && value.ValueKind == JsonValueKind.String
+                ? value.GetString()
+                : null;
+
+        /// <summary>
+        /// Reads one base64url-encoded RSA component, failing with a message that names the
+        /// provider and the field whether it is absent, not a string, or not decodable.
+        /// </summary>
+        private static byte[] ReadComponent(JsonElement jwk, string name, OidcProvider provider)
+        {
+            if (!jwk.TryGetProperty(name, out JsonElement element) || element.ValueKind != JsonValueKind.String)
+            {
+                throw new InvalidOperationException(
+                    $"ClientAssertionPrivateKeyJwk for provider '{provider.IssuerKey}' is missing '{name}', or its value is not a string. A complete private RSA JWK is required; a public-only JWK cannot sign.");
+            }
+
+            try
+            {
+                return JwtBase64Url.DecodeBytes(element.GetString());
+            }
+            catch (Exception ex) when (ex is FormatException or ArgumentException)
+            {
+                throw new InvalidOperationException(
+                    $"ClientAssertionPrivateKeyJwk for provider '{provider.IssuerKey}' has a '{name}' value that is not valid base64url.", ex);
+            }
+        }
+
+        private static string? FirstNonEmpty(string? configured, string? fromKey)
+            => !string.IsNullOrWhiteSpace(configured) ? configured
+                : !string.IsNullOrWhiteSpace(fromKey) ? fromKey
+                : null;
+
+        private static SigningCredentials CreateSigningCredentials(OidcProvider provider, ImportedKey imported)
+        {
+            // Explicit configuration wins, then whatever the key material itself declared, then the
+            // default. A JWK states its own alg, so configuring it separately is redundant and only
+            // creates something that can drift out of step with the key.
+            string algorithm =
+                FirstNonEmpty(provider.ClientAssertionAlgorithm, imported.Algorithm) ?? SecurityAlgorithms.RsaSsaPssSha256;
 
             // Only asymmetric algorithms are meaningful here, and providers that mandate
             // private_key_jwt generally mandate PSS as well. Reject anything else outright rather
@@ -158,7 +332,7 @@ namespace Altinn.Platform.Authentication.Helpers
                     $"ClientAssertionAlgorithm '{algorithm}' for provider '{provider.IssuerKey}' is not a supported asymmetric RSA algorithm.");
             }
 
-            RsaSecurityKey key = new(rsa) { KeyId = provider.ClientAssertionKeyId };
+            RsaSecurityKey key = new(imported.Rsa) { KeyId = FirstNonEmpty(provider.ClientAssertionKeyId, imported.KeyId) };
 
             return new SigningCredentials(key, algorithm)
             {

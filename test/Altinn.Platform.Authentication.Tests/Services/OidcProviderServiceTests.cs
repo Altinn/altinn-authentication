@@ -284,6 +284,58 @@ namespace Altinn.Platform.Authentication.Tests.Services
         }
 
         /// <summary>
+        /// The same, for a provider whose key is configured as a JWK rather than a PEM — the shape
+        /// HelseID issues, and the one the configuration guidance recommends.
+        /// </summary>
+        /// <remarks>
+        /// Exercised through the request path rather than the assertion builder. A test that calls
+        /// the builder directly cannot tell whether the caller ever reaches it, which is how the
+        /// JWK format shipped inert: the builder understood it, the token request did not.
+        /// </remarks>
+        [Theory]
+        [InlineData(null)]
+        [InlineData("must-not-be-sent")]
+        public async Task GetTokens_ProviderWithJwkKey_SendsClientAssertionAndNoSecret(string? clientSecret)
+        {
+            string body = await CaptureTokenRequestBody(new OidcProvider
+            {
+                IssuerKey = "helseid",
+                Issuer = "https://helseid-sts.test.nhn.no",
+                TokenEndpoint = "https://helseid-sts.test.nhn.no/connect/token",
+                ClientId = "altinn-test-client",
+                ClientAssertionPrivateKeyJwk = GenerateJwk(),
+                ClientSecret = clientSecret!,
+            });
+
+            Assert.Contains("client_assertion_type=urn%3Aietf%3Aparams%3Aoauth%3Aclient-assertion-type%3Ajwt-bearer", body);
+            Assert.Contains("client_assertion=", body);
+            Assert.DoesNotContain("client_secret", body);
+        }
+
+        private static string GenerateJwk()
+        {
+            using RSA rsa = RSA.Create(2048);
+            RSAParameters p = rsa.ExportParameters(true);
+
+            static string B64(byte[] b) => Convert.ToBase64String(b).TrimEnd('=').Replace('+', '-').Replace('/', '_');
+
+            return System.Text.Json.JsonSerializer.Serialize(new Dictionary<string, object>
+            {
+                ["kty"] = "RSA",
+                ["kid"] = "jwk-key-1",
+                ["alg"] = "PS256",
+                ["n"] = B64(p.Modulus!),
+                ["e"] = B64(p.Exponent!),
+                ["d"] = B64(p.D!),
+                ["p"] = B64(p.P!),
+                ["q"] = B64(p.Q!),
+                ["dp"] = B64(p.DP!),
+                ["dq"] = B64(p.DQ!),
+                ["qi"] = B64(p.InverseQ!),
+            });
+        }
+
+        /// <summary>
         /// Providers without an assertion key keep authenticating with the client secret exactly
         /// as before.
         /// </summary>

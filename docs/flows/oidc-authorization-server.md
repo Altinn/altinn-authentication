@@ -71,10 +71,17 @@ Setting `ClientAssertionPrivateKeyPem` switches that provider to a signed client
 
 | Setting | Purpose |
 |---|---|
-| `ClientAssertionPrivateKeyPem` | PEM private key, PKCS#8 or PKCS#1. Presence of this is what enables assertion-based authentication. |
-| `ClientAssertionKeyId` | `kid` header. Must match the public JWK registered with the provider. |
-| `ClientAssertionAlgorithm` | Defaults to `PS256`. Only asymmetric RSA algorithms are accepted. |
+| `ClientAssertionPrivateKeyJwk` | Private RSA JWK, verbatim or base64-encoded. **Preferred** when the provider issues a JWK. |
+| `ClientAssertionPrivateKeyPem` | Private key as PEM, PKCS#8 or PKCS#1. For providers that issue that format instead. |
+| `ClientAssertionKeyId` | `kid` header. Read from the JWK when one is configured; set this only to override. |
+| `ClientAssertionAlgorithm` | Resolved as: this setting, then the JWK's `alg`, then `PS256`. Only asymmetric RSA algorithms are accepted. |
 | `ClientAssertionAudience` | Defaults to `Issuer`. |
+
+Exactly one of the two key settings may be set; configuring both throws rather than picking one.
+
+Prefer the JWK when the provider hands one out, as HelseID does at client registration. It carries its own `kid` and `alg`, so those need not be configured alongside it — two settings that would otherwise duplicate the key material and could drift out of step with it.
+
+The JWK is accepted both verbatim and base64-encoded; the two are told apart by whether the value begins with `{`. Base64 exists because a bare JSON object in a YAML `value:` is parsed as a flow mapping rather than a string unless quoted, which is a trap that does not fail loudly. It is an encoding convenience, not a protection — base64 is not encryption, and encoding the key only makes it harder to see which `kid` is deployed.
 
 The assertion carries `iss` and `sub` set to the client id, a single-use `jti`, and a lifetime of ten seconds — HelseID rejects anything longer. Its `typ` header is `client-authentication+jwt` so it cannot be replayed as another kind of token.
 
