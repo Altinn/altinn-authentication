@@ -75,10 +75,25 @@ namespace Altinn.Platform.Authentication.Model
         public string ClientAssertionKeyId { get; set; }
 
         /// <summary>
-        /// Signing algorithm for the client assertion. Defaults to <c>PS256</c>, which is what
-        /// providers mandating private_key_jwt typically require.
+        /// PEM-encoded RSA private key in JWK form, which is the format providers such as HelseID
+        /// hand out at client registration. Accepted verbatim or base64-encoded.
+        /// <para>
+        /// Mutually exclusive with <see cref="ClientAssertionPrivateKeyPem"/>. Preferred when the
+        /// provider issues a JWK, since <c>kid</c> and <c>alg</c> are then read from the key itself
+        /// rather than configured separately alongside it.
+        /// </para>
         /// </summary>
-        public string ClientAssertionAlgorithm { get; set; } = "PS256";
+        public string ClientAssertionPrivateKeyJwk { get; set; }
+
+        /// <summary>
+        /// Signing algorithm for the client assertion. Optional.
+        /// <para>
+        /// Resolved as: this setting, then the <c>alg</c> of the configured JWK, then <c>PS256</c>.
+        /// Left unset deliberately rather than defaulted here, so that a JWK stating its own
+        /// algorithm is not silently overridden by a default nobody chose.
+        /// </para>
+        /// </summary>
+        public string ClientAssertionAlgorithm { get; set; }
 
         /// <summary>
         /// The <c>aud</c> of the client assertion. Optional — defaults to <see cref="Issuer"/>.

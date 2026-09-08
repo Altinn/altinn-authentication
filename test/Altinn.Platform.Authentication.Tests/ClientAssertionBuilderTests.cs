@@ -1,7 +1,10 @@
 using System;
+using System.Collections.Generic;
 using System.IdentityModel.Tokens.Jwt;
 using System.Linq;
 using System.Security.Cryptography;
+using System.Text;
+using System.Text.Json;
 using Altinn.Platform.Authentication.Helpers;
 using Altinn.Platform.Authentication.Model;
 using Microsoft.IdentityModel.Tokens;
@@ -190,6 +193,189 @@ namespace Altinn.Platform.Authentication.Tests
             // possession of the private key.
             var ex = Assert.Throws<InvalidOperationException>(() => ClientAssertionBuilder.Build(provider, Now));
             Assert.Contains("not a supported asymmetric", ex.Message);
+        }
+
+        /// <summary>
+        /// Builds a private RSA JWK in the shape providers hand out at client registration.
+        /// </summary>
+        private static string GenerateJwk(string kid = "jwk-key-1", string? alg = "PS256")
+        {
+            using RSA rsa = RSA.Create(2048);
+            RSAParameters p = rsa.ExportParameters(true);
+
+            static string B64(byte[] b) => Convert.ToBase64String(b).TrimEnd('=').Replace('+', '-').Replace('/', '_');
+
+            var jwk = new Dictionary<string, object>
+            {
+                ["kty"] = "RSA",
+                ["kid"] = kid,
+                ["key_ops"] = new[] { "sign" },
+                ["n"] = B64(p.Modulus!),
+                ["e"] = B64(p.Exponent!),
+                ["d"] = B64(p.D!),
+                ["p"] = B64(p.P!),
+                ["q"] = B64(p.Q!),
+                ["dp"] = B64(p.DP!),
+                ["dq"] = B64(p.DQ!),
+                ["qi"] = B64(p.InverseQ!),
+            };
+
+            if (alg is not null)
+            {
+                jwk["alg"] = alg;
+            }
+
+            return JsonSerializer.Serialize(jwk);
+        }
+
+        private static OidcProvider HelseIdWithJwk(string jwk)
+        {
+            OidcProvider provider = HelseId();
+            provider.ClientAssertionPrivateKeyPem = null!;
+            provider.ClientAssertionKeyId = null!;
+            provider.ClientAssertionPrivateKeyJwk = jwk;
+            return provider;
+        }
+
+        [Fact]
+        public void Build_AcceptsRawJwk()
+        {
+            JwtSecurityToken assertion = Parse(ClientAssertionBuilder.Build(HelseIdWithJwk(GenerateJwk()), Now));
+
+            Assert.Equal("altinn-test-client", assertion.Issuer);
+        }
+
+        [Fact]
+        public void Build_AcceptsBase64EncodedJwk()
+        {
+            // A bare JSON object in a YAML value: is read as a flow mapping unless quoted, so a
+            // deployment may reasonably prefer to encode it.
+            string encoded = Convert.ToBase64String(Encoding.UTF8.GetBytes(GenerateJwk()));
+
+            JwtSecurityToken assertion = Parse(ClientAssertionBuilder.Build(HelseIdWithJwk(encoded), Now));
+
+            Assert.Equal("altinn-test-client", assertion.Issuer);
+        }
+
+        [Fact]
+        public void Build_TakesKeyIdAndAlgorithmFromTheJwk()
+        {
+            // The JWK states both, so configuring them separately would only create something that
+            // can drift out of step with the key.
+            JwtSecurityToken assertion = Parse(
+                ClientAssertionBuilder.Build(HelseIdWithJwk(GenerateJwk(kid: "from-jwk", alg: "PS384")), Now));
+
+            Assert.Equal("from-jwk", assertion.Header.Kid);
+            Assert.Equal(SecurityAlgorithms.RsaSsaPssSha384, assertion.Header.Alg);
+        }
+
+        [Fact]
+        public void Build_ExplicitConfigurationOverridesTheJwk()
+        {
+            OidcProvider provider = HelseIdWithJwk(GenerateJwk(kid: "from-jwk", alg: "PS384"));
+            provider.ClientAssertionKeyId = "from-config";
+            provider.ClientAssertionAlgorithm = SecurityAlgorithms.RsaSsaPssSha256;
+
+            JwtSecurityToken assertion = Parse(ClientAssertionBuilder.Build(provider, Now));
+
+            Assert.Equal("from-config", assertion.Header.Kid);
+            Assert.Equal(SecurityAlgorithms.RsaSsaPssSha256, assertion.Header.Alg);
+        }
+
+        [Fact]
+        public void Build_JwkWithoutAlg_FallsBackToPs256()
+        {
+            JwtSecurityToken assertion = Parse(
+                ClientAssertionBuilder.Build(HelseIdWithJwk(GenerateJwk(alg: null)), Now));
+
+            Assert.Equal(SecurityAlgorithms.RsaSsaPssSha256, assertion.Header.Alg);
+        }
+
+        [Fact]
+        public void Build_JwkSignatureVerifiesWithTheMatchingPublicKey()
+        {
+            string jwk = GenerateJwk();
+            string modulus = JsonDocument.Parse(jwk).RootElement.GetProperty("n").GetString()!;
+
+            string encoded = ClientAssertionBuilder.Build(HelseIdWithJwk(jwk), Now);
+            JwtSecurityToken assertion = Parse(encoded);
+
+            // The signature must verify against the public half of the very JWK we configured.
+            RSAParameters publicOnly = new()
+            {
+                Modulus = Base64UrlDecode(modulus),
+                Exponent = Base64UrlDecode(JsonDocument.Parse(jwk).RootElement.GetProperty("e").GetString()!),
+            };
+
+            using RSA rsa = RSA.Create();
+            rsa.ImportParameters(publicOnly);
+
+            new JwtSecurityTokenHandler().ValidateToken(
+                encoded,
+                new TokenValidationParameters
+                {
+                    ValidIssuer = "altinn-test-client",
+                    ValidAudience = "https://helseid-sts.test.nhn.no",
+                    LifetimeValidator = (nbf, exp, _, _) => nbf <= Now.UtcDateTime && exp > Now.UtcDateTime,
+                    IssuerSigningKey = new RsaSecurityKey(rsa.ExportParameters(false)),
+                },
+                out _);
+
+            Assert.Equal("altinn-test-client", assertion.Issuer);
+        }
+
+        private static byte[] Base64UrlDecode(string value)
+        {
+            string s = value.Replace('-', '+').Replace('_', '/');
+            return Convert.FromBase64String(s.PadRight(s.Length + ((4 - (s.Length % 4)) % 4), '='));
+        }
+
+        [Fact]
+        public void Build_PublicOnlyJwk_ThrowsNamingTheMissingComponent()
+        {
+            string publicOnly = JsonSerializer.Serialize(new Dictionary<string, object>
+            {
+                ["kty"] = "RSA",
+                ["kid"] = "public-only",
+                ["n"] = "abc",
+                ["e"] = "AQAB",
+            });
+
+            var ex = Assert.Throws<InvalidOperationException>(
+                () => ClientAssertionBuilder.Build(HelseIdWithJwk(publicOnly), Now));
+
+            Assert.Contains("'d'", ex.Message);
+        }
+
+        [Fact]
+        public void Build_NonRsaJwk_IsRejected()
+        {
+            string ec = JsonSerializer.Serialize(new Dictionary<string, object> { ["kty"] = "EC", ["crv"] = "P-256" });
+
+            var ex = Assert.Throws<InvalidOperationException>(
+                () => ClientAssertionBuilder.Build(HelseIdWithJwk(ec), Now));
+
+            Assert.Contains("only RSA is supported", ex.Message);
+        }
+
+        [Fact]
+        public void Build_JwkThatIsNeitherJsonNorBase64_IsRejected()
+        {
+            var ex = Assert.Throws<InvalidOperationException>(
+                () => ClientAssertionBuilder.Build(HelseIdWithJwk("!!! not a key !!!"), Now));
+
+            Assert.Contains("neither a JSON object nor valid base64", ex.Message);
+        }
+
+        [Fact]
+        public void Build_BothPemAndJwkConfigured_IsRejectedRatherThanPickingOne()
+        {
+            OidcProvider provider = HelseId();
+            provider.ClientAssertionPrivateKeyJwk = GenerateJwk();
+
+            var ex = Assert.Throws<InvalidOperationException>(() => ClientAssertionBuilder.Build(provider, Now));
+
+            Assert.Contains("Set exactly one", ex.Message);
         }
 
         [Fact]
