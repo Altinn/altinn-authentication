@@ -75,8 +75,8 @@ namespace Altinn.Platform.Authentication.Model
         public string ClientAssertionKeyId { get; set; }
 
         /// <summary>
-        /// PEM-encoded RSA private key in JWK form, which is the format providers such as HelseID
-        /// hand out at client registration. Accepted verbatim or base64-encoded.
+        /// Private RSA key as a JWK, which is the format providers such as HelseID hand out at
+        /// client registration. Accepted verbatim or base64-encoded.
         /// <para>
         /// Mutually exclusive with <see cref="ClientAssertionPrivateKeyPem"/>. Preferred when the
         /// provider issues a JWK, since <c>kid</c> and <c>alg</c> are then read from the key itself

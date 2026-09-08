@@ -348,6 +348,57 @@ namespace Altinn.Platform.Authentication.Tests
         }
 
         [Fact]
+        public void Build_JwkComponentWithInvalidBase64_ThrowsNamingTheField()
+        {
+            // A truncated component, or one that picked up a line break in transit, must produce
+            // the same kind of message as the rest — not a raw FormatException from the decoder.
+            string jwk = GenerateJwk();
+            using JsonDocument document = JsonDocument.Parse(jwk);
+            Dictionary<string, object> mutated = [];
+            foreach (JsonProperty property in document.RootElement.EnumerateObject())
+            {
+                mutated[property.Name] = property.Name == "n" ? "not base64 !!" : property.Value.ToString();
+            }
+
+            var ex = Assert.Throws<InvalidOperationException>(
+                () => ClientAssertionBuilder.Build(HelseIdWithJwk(JsonSerializer.Serialize(mutated)), Now));
+
+            Assert.Contains("'n'", ex.Message);
+            Assert.Contains("not valid base64url", ex.Message);
+        }
+
+        [Fact]
+        public void Build_JwkComponentThatIsNotAString_ThrowsNamingTheField()
+        {
+            // A JWK written by hand can end up with "e": 65537 rather than "e": "AQAB".
+            string jwk = JsonSerializer.Serialize(new Dictionary<string, object>
+            {
+                ["kty"] = "RSA",
+                ["n"] = "abc",
+                ["e"] = 65537,
+            });
+
+            var ex = Assert.Throws<InvalidOperationException>(
+                () => ClientAssertionBuilder.Build(HelseIdWithJwk(jwk), Now));
+
+            Assert.Contains("'e'", ex.Message);
+            Assert.Contains("not a string", ex.Message);
+        }
+
+        [Fact]
+        public void Build_JwkThatDecodesToAScalar_IsRejected()
+        {
+            // JsonDocument.Parse accepts a bare scalar, and TryGetProperty throws on anything but
+            // an object.
+            string encoded = Convert.ToBase64String(Encoding.UTF8.GetBytes("123"));
+
+            var ex = Assert.Throws<InvalidOperationException>(
+                () => ClientAssertionBuilder.Build(HelseIdWithJwk(encoded), Now));
+
+            Assert.Contains("not a JSON object", ex.Message);
+        }
+
+        [Fact]
         public void Build_NonRsaJwk_IsRejected()
         {
             string ec = JsonSerializer.Serialize(new Dictionary<string, object> { ["kty"] = "EC", ["crv"] = "P-256" });

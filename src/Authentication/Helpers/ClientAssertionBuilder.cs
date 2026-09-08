@@ -5,6 +5,7 @@ using System.Text;
 using System.Text.Json;
 using Altinn.Platform.Authentication.Model;
 using Microsoft.IdentityModel.Tokens;
+using JwtBase64Url = Microsoft.IdentityModel.Tokens.Base64UrlEncoder;
 
 #nullable enable
 
@@ -180,15 +181,32 @@ namespace Altinn.Platform.Authentication.Helpers
             string raw = provider.ClientAssertionPrivateKeyJwk.Trim();
             string json = raw.StartsWith('{') ? raw : DecodeBase64(raw, provider);
 
-            JsonElement jwk;
+            JsonDocument document;
             try
             {
-                jwk = JsonDocument.Parse(json).RootElement;
+                document = JsonDocument.Parse(json);
             }
             catch (JsonException ex)
             {
                 throw new InvalidOperationException(
                     $"ClientAssertionPrivateKeyJwk for provider '{provider.IssuerKey}' is not valid JSON.", ex);
+            }
+
+            // Everything taken out below is copied — strings and byte arrays — so the document is
+            // only needed for the duration of this method.
+            using (document)
+            {
+                return ReadJwk(document.RootElement, provider);
+            }
+        }
+
+        private static ImportedKey ReadJwk(JsonElement jwk, OidcProvider provider)
+        {
+            // Parse accepts a bare scalar too, and TryGetProperty throws on anything but an object.
+            if (jwk.ValueKind != JsonValueKind.Object)
+            {
+                throw new InvalidOperationException(
+                    $"ClientAssertionPrivateKeyJwk for provider '{provider.IssuerKey}' is not a JSON object.");
             }
 
             string? keyType = ReadString(jwk, "kty");
@@ -199,28 +217,19 @@ namespace Altinn.Platform.Authentication.Helpers
             }
 
             // 'd' alone is a valid private key in JWK terms, but .NET's RSA implementations want
-            // the CRT parameters as well, so require the full set and say which part is missing
-            // rather than fail later inside ImportParameters.
-            string[] required = ["n", "e", "d", "p", "q", "dp", "dq", "qi"];
-            foreach (string name in required)
-            {
-                if (!jwk.TryGetProperty(name, out _))
-                {
-                    throw new InvalidOperationException(
-                        $"ClientAssertionPrivateKeyJwk for provider '{provider.IssuerKey}' is missing '{name}'. A complete private RSA JWK is required; a public-only JWK cannot sign.");
-                }
-            }
-
+            // the CRT parameters as well, so the full set is required. ReadComponent checks
+            // presence, type and encoding together, so every way a component can be wrong produces
+            // a message naming the provider and the field rather than a raw framework exception.
             RSAParameters parameters = new()
             {
-                Modulus = Base64UrlDecode(jwk, "n"),
-                Exponent = Base64UrlDecode(jwk, "e"),
-                D = Base64UrlDecode(jwk, "d"),
-                P = Base64UrlDecode(jwk, "p"),
-                Q = Base64UrlDecode(jwk, "q"),
-                DP = Base64UrlDecode(jwk, "dp"),
-                DQ = Base64UrlDecode(jwk, "dq"),
-                InverseQ = Base64UrlDecode(jwk, "qi"),
+                Modulus = ReadComponent(jwk, "n", provider),
+                Exponent = ReadComponent(jwk, "e", provider),
+                D = ReadComponent(jwk, "d", provider),
+                P = ReadComponent(jwk, "p", provider),
+                Q = ReadComponent(jwk, "q", provider),
+                DP = ReadComponent(jwk, "dp", provider),
+                DQ = ReadComponent(jwk, "dq", provider),
+                InverseQ = ReadComponent(jwk, "qi", provider),
             };
 
             RSA rsa = RSA.Create();
@@ -244,12 +253,11 @@ namespace Altinn.Platform.Authentication.Helpers
         {
             try
             {
-                // Tolerates base64url as well, since a key that arrived through a JWKS-shaped
-                // pipeline may have been encoded either way.
-                string normalised = value.Replace('-', '+').Replace('_', '/');
-                return Encoding.UTF8.GetString(Convert.FromBase64String(normalised.PadRight(normalised.Length + ((4 - (normalised.Length % 4)) % 4), '=')));
+                // Base64UrlEncoder also passes '+' and '/' through unchanged, so this accepts
+                // standard base64 as well as base64url — a key may have been encoded either way.
+                return JwtBase64Url.Decode(value);
             }
-            catch (Exception ex) when (ex is FormatException or DecoderFallbackException)
+            catch (Exception ex) when (ex is FormatException or ArgumentException or DecoderFallbackException)
             {
                 throw new InvalidOperationException(
                     $"ClientAssertionPrivateKeyJwk for provider '{provider.IssuerKey}' is neither a JSON object nor valid base64 of one.", ex);
@@ -261,11 +269,27 @@ namespace Altinn.Platform.Authentication.Helpers
                 ? value.GetString()
                 : null;
 
-        private static byte[] Base64UrlDecode(JsonElement jwk, string name)
+        /// <summary>
+        /// Reads one base64url-encoded RSA component, failing with a message that names the
+        /// provider and the field whether it is absent, not a string, or not decodable.
+        /// </summary>
+        private static byte[] ReadComponent(JsonElement jwk, string name, OidcProvider provider)
         {
-            string value = jwk.GetProperty(name).GetString() ?? string.Empty;
-            string normalised = value.Replace('-', '+').Replace('_', '/');
-            return Convert.FromBase64String(normalised.PadRight(normalised.Length + ((4 - (normalised.Length % 4)) % 4), '='));
+            if (!jwk.TryGetProperty(name, out JsonElement element) || element.ValueKind != JsonValueKind.String)
+            {
+                throw new InvalidOperationException(
+                    $"ClientAssertionPrivateKeyJwk for provider '{provider.IssuerKey}' is missing '{name}', or its value is not a string. A complete private RSA JWK is required; a public-only JWK cannot sign.");
+            }
+
+            try
+            {
+                return JwtBase64Url.DecodeBytes(element.GetString());
+            }
+            catch (Exception ex) when (ex is FormatException or ArgumentException)
+            {
+                throw new InvalidOperationException(
+                    $"ClientAssertionPrivateKeyJwk for provider '{provider.IssuerKey}' has a '{name}' value that is not valid base64url.", ex);
+            }
         }
 
         private static string? FirstNonEmpty(string? configured, string? fromKey)
