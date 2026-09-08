@@ -10,6 +10,7 @@ using System.Text.Json.Serialization;
 using System.Threading;
 using System.Threading.Tasks;
 using Altinn.Authorization.ServiceDefaults.Telemetry;
+using Altinn.Platform.Authentication.Helpers;
 using Altinn.Platform.Authentication.Model;
 using Altinn.Platform.Authentication.Services.Interfaces;
 using Microsoft.Extensions.Logging;
@@ -47,15 +48,17 @@ namespace Altinn.Platform.Authentication.Services
         private readonly HttpClient _httpClient;
         private readonly ILogger _logger;
         private readonly Metrics _metrics;
+        private readonly TimeProvider _timeProvider;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="OidcProviderService"/> class.
         /// </summary>
-        public OidcProviderService(HttpClient httpClient, ILogger<OidcProviderService> logger, IMetricsProvider metricsProvider)
+        public OidcProviderService(HttpClient httpClient, ILogger<OidcProviderService> logger, IMetricsProvider metricsProvider, TimeProvider timeProvider)
         {
             _httpClient = httpClient;
             _logger = logger;
             _metrics = metricsProvider.Get<Metrics>();
+            _timeProvider = timeProvider;
         }
 
         /// <summary>
@@ -79,8 +82,15 @@ namespace Altinn.Platform.Authentication.Services
             // REQUIRED.  Value MUST be set to "client_id".
             kvps.Add("client_id", provider.ClientId);
 
-            // Client secret. Set if configured
-            if (!string.IsNullOrEmpty(provider.ClientSecret))
+            // Client authentication. private_key_jwt takes precedence: a provider configured with
+            // an assertion key has one because it does not accept a client secret at all, so
+            // falling back to the secret would only produce invalid_client.
+            if (!string.IsNullOrEmpty(provider.ClientAssertionPrivateKeyPem))
+            {
+                kvps.Add("client_assertion_type", ClientAssertionBuilder.ClientAssertionType);
+                kvps.Add("client_assertion", ClientAssertionBuilder.Build(provider, _timeProvider.GetUtcNow()));
+            }
+            else if (!string.IsNullOrEmpty(provider.ClientSecret))
             {
                 kvps.Add("client_secret", provider.ClientSecret);
             }
