@@ -68,13 +68,39 @@ namespace Altinn.Platform.Authentication.Tests
         }
 
         [Fact]
-        public void Build_LifetimeIsAtMostTenSeconds()
+        public void Build_LifetimeLeavesMarginUnderTheTenSecondLimit()
         {
             JwtSecurityToken assertion = Parse(ClientAssertionBuilder.Build(HelseId(), Now));
 
-            // HelseID rejects an assertion whose exp is more than 10 seconds ahead.
-            Assert.True(assertion.ValidTo - Now.UtcDateTime <= TimeSpan.FromSeconds(10));
-            Assert.Equal(Now.UtcDateTime, assertion.ValidFrom);
+            // HelseID rejects an assertion whose exp is more than 10 seconds ahead. Sitting exactly
+            // on the limit leaves no room for clock skew: if our clock runs ahead of theirs, an exp
+            // we computed as 10 seconds out looks like more than 10 to them. Asserted as an exact
+            // value rather than an upper bound, so widening it back to the limit fails here.
+            Assert.Equal(TimeSpan.FromSeconds(8), assertion.ValidTo - Now.UtcDateTime);
+        }
+
+        [Fact]
+        public void Build_NotBeforeIsBackdatedForClockSkew()
+        {
+            JwtSecurityToken assertion = Parse(ClientAssertionBuilder.Build(HelseId(), Now));
+
+            // HelseID requires nbf, so it cannot be dropped. Backdating it keeps the assertion
+            // usable when their clock is behind ours, which nbf equal to our own now would not.
+            Assert.Equal(Now.UtcDateTime.AddSeconds(-5), assertion.ValidFrom);
+        }
+
+        [Fact]
+        public void Build_DoesNotLeaveTheSigningKeyToTheFinalizer()
+        {
+            // RsaSecurityKey does not take ownership of an RSA passed to it, and neither the
+            // credentials nor the handler dispose it. Build owns the key and disposes it once the
+            // assertion is signed; repeated calls must therefore not accumulate live handles.
+            OidcProvider provider = HelseId();
+
+            for (int i = 0; i < 50; i++)
+            {
+                Assert.NotEmpty(ClientAssertionBuilder.Build(provider, Now));
+            }
         }
 
         [Fact]

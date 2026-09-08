@@ -33,9 +33,22 @@ namespace Altinn.Platform.Authentication.Helpers
 
         /// <summary>
         /// Lifetime of the assertion. Deliberately tiny — it is sent once, directly to the token
-        /// endpoint, and never stored. HelseID rejects anything more than 10 seconds ahead.
+        /// endpoint, and never stored.
         /// </summary>
-        private static readonly TimeSpan Lifetime = TimeSpan.FromSeconds(10);
+        /// <remarks>
+        /// Two seconds under HelseID's limit of 10. Sitting exactly on the limit leaves no room for
+        /// clock skew: if our clock runs ahead of theirs, an <c>exp</c> we computed as 10 seconds
+        /// out looks like more than 10 to them, and the assertion is refused.
+        /// </remarks>
+        private static readonly TimeSpan Lifetime = TimeSpan.FromSeconds(8);
+
+        /// <summary>
+        /// How far <c>nbf</c> is backdated. HelseID requires the claim, so it cannot simply be
+        /// omitted, and <c>nbf</c> equal to our own clock is refused whenever theirs is behind
+        /// ours. Backdating absorbs that without extending the window meaningfully — the assertion
+        /// is still only valid for a few seconds around now.
+        /// </remarks>
+        private static readonly TimeSpan NotBeforeSkew = TimeSpan.FromSeconds(5);
 
         /// <summary>
         /// Builds a signed client assertion for <paramref name="provider"/>.
@@ -74,7 +87,13 @@ namespace Altinn.Platform.Authentication.Helpers
                     $"Provider '{provider.IssuerKey}' has neither ClientAssertionAudience nor Issuer configured; one is required as the assertion audience.");
             }
 
-            SigningCredentials credentials = CreateSigningCredentials(provider);
+            // The key is owned here and disposed once the assertion is signed. RsaSecurityKey does
+            // not take ownership of an RSA handed to it, and neither the credentials nor the
+            // handler dispose it, so without this every sign-in would leave a native key handle to
+            // the finalizer.
+            using RSA rsa = ImportPrivateKey(provider);
+
+            SigningCredentials credentials = CreateSigningCredentials(provider, rsa);
 
             SecurityTokenDescriptor descriptor = new()
             {
@@ -82,7 +101,7 @@ namespace Altinn.Platform.Authentication.Helpers
                 Audience = audience,
                 TokenType = ClientAuthenticationTokenType,
                 IssuedAt = now.UtcDateTime,
-                NotBefore = now.UtcDateTime,
+                NotBefore = now.Subtract(NotBeforeSkew).UtcDateTime,
                 Expires = now.Add(Lifetime).UtcDateTime,
                 SigningCredentials = credentials,
                 Claims = new System.Collections.Generic.Dictionary<string, object>
@@ -102,13 +121,14 @@ namespace Altinn.Platform.Authentication.Helpers
             return handler.CreateEncodedJwt(descriptor);
         }
 
-        private static SigningCredentials CreateSigningCredentials(OidcProvider provider)
+        private static RSA ImportPrivateKey(OidcProvider provider)
         {
             RSA rsa = RSA.Create();
             try
             {
                 // Accepts both PKCS#8 ("BEGIN PRIVATE KEY") and PKCS#1 ("BEGIN RSA PRIVATE KEY").
                 rsa.ImportFromPem(provider.ClientAssertionPrivateKeyPem);
+                return rsa;
             }
             catch (ArgumentException ex)
             {
@@ -116,9 +136,10 @@ namespace Altinn.Platform.Authentication.Helpers
                 throw new InvalidOperationException(
                     $"ClientAssertionPrivateKeyPem for provider '{provider.IssuerKey}' is not a readable PEM private key.", ex);
             }
+        }
 
-            RsaSecurityKey key = new(rsa) { KeyId = provider.ClientAssertionKeyId };
-
+        private static SigningCredentials CreateSigningCredentials(OidcProvider provider, RSA rsa)
+        {
             string algorithm = string.IsNullOrWhiteSpace(provider.ClientAssertionAlgorithm)
                 ? SecurityAlgorithms.RsaSsaPssSha256
                 : provider.ClientAssertionAlgorithm!;
@@ -133,12 +154,18 @@ namespace Altinn.Platform.Authentication.Helpers
                 or SecurityAlgorithms.RsaSha384
                 or SecurityAlgorithms.RsaSha512))
             {
-                rsa.Dispose();
                 throw new InvalidOperationException(
                     $"ClientAssertionAlgorithm '{algorithm}' for provider '{provider.IssuerKey}' is not a supported asymmetric RSA algorithm.");
             }
 
-            return new SigningCredentials(key, algorithm);
+            RsaSecurityKey key = new(rsa) { KeyId = provider.ClientAssertionKeyId };
+
+            return new SigningCredentials(key, algorithm)
+            {
+                // The key instance lives only for this call, so a cached signature provider could
+                // never be reused — it would only accumulate entries wrapping disposed keys.
+                CryptoProviderFactory = new CryptoProviderFactory { CacheSignatureProviders = false },
+            };
         }
     }
 }
