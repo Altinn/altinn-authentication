@@ -17,3 +17,4 @@ An ADR captures a single architectural decision: its **context**, the **decision
 | [0002](0002-authorization-server-is-the-live-auth-path.md) | The OIDC authorization server is the only live browser sign-in path | Accepted |
 | [0003](0003-register-is-canonical-for-user-and-org-lookup.md) | Register is the canonical source for user/party/org lookup | Accepted |
 | [0004](0004-sbl-bridge-altinn2-decommission.md) | Remove the Altinn 2 / SBL Bridge integration | Accepted |
+| [0005](0005-standalone-systemuser-for-own-systems.md) | Standalone SystemUserType for an organisation's own systems | Accepted |

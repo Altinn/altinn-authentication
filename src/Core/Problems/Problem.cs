@@ -502,4 +502,16 @@ public static class Problem
     /// </summary>
     public static ProblemDescriptor SystemIsDeleted { get; }
         = _factory.Create(81, HttpStatusCode.BadRequest, "The Registered System is deleted and cannot be used to create new requests.");
+
+    /// <summary>
+    /// Gets a <see cref="ProblemDescriptor"/>.
+    /// </summary>
+    public static ProblemDescriptor Vendor_ClientId_NotFound { get; }
+        = _factory.Create(82, HttpStatusCode.Unauthorized, "Can't resolve the Maskinporten ClientId from the Token.");
+
+    /// <summary>
+    /// Gets a <see cref="ProblemDescriptor"/>.
+    /// </summary>
+    public static ProblemDescriptor SystemRegister_ClientId_AlreadyExists { get; }
+        = _factory.Create(83, HttpStatusCode.Conflict, "The ClientId from the Token is already registered on another System.");
 }
