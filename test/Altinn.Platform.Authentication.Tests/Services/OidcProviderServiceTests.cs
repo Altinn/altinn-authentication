@@ -312,6 +312,148 @@ namespace Altinn.Platform.Authentication.Tests.Services
             Assert.DoesNotContain("client_secret", body);
         }
 
+        /// <summary>
+        /// The pushed authorization request must authenticate the client, exactly as the token
+        /// request does — HelseID refuses an unauthenticated push.
+        /// </summary>
+        [Fact]
+        public async Task PushAuthorizationRequest_SendsParametersWithClientAssertion()
+        {
+            string? captured = null;
+            (OidcProviderService sut, _) = CreateCapturingSut(
+                HttpStatusCode.Created,
+                """{"request_uri":"urn:ietf:params:oauth:request_uri:abc","expires_in":600}""",
+                body => captured = body);
+
+            PushedAuthorizationResponse? result = await sut.PushAuthorizationRequest(
+                NewParProvider(),
+                new Dictionary<string, string> { ["scope"] = "openid", ["state"] = "s" });
+
+            Assert.Equal("urn:ietf:params:oauth:request_uri:abc", result!.RequestUri);
+            Assert.Equal(600, result.ExpiresIn);
+
+            Assert.Contains("client_assertion=", captured);
+            Assert.Contains("scope=openid", captured);
+            Assert.Contains("state=s", captured);
+        }
+
+        /// <summary>
+        /// A 2xx without a usable reference is not something to redirect on. Returning null aborts
+        /// the sign-in rather than sending the browser to an authorize endpoint that would refuse it.
+        /// </summary>
+        [Theory]
+        [InlineData(HttpStatusCode.OK, """{"expires_in":600}""")]
+        [InlineData(HttpStatusCode.OK, """{"request_uri":"","expires_in":600}""")]
+        [InlineData(HttpStatusCode.OK, """{"request_uri":"urn:x","expires_in":0}""")]
+        [InlineData(HttpStatusCode.OK, "not json")]
+        [InlineData(HttpStatusCode.BadRequest, """{"error":"invalid_request"}""")]
+        public async Task PushAuthorizationRequest_UnusableResponse_ReturnsNull(HttpStatusCode statusCode, string body)
+        {
+            (OidcProviderService sut, _) = CreateSut(statusCode, body);
+
+            Assert.Null(await sut.PushAuthorizationRequest(NewParProvider(), new Dictionary<string, string>()));
+        }
+
+        /// <summary>
+        /// RFC 9449 lets the provider demand a server-chosen nonce, supplied only by rejecting a
+        /// first attempt. The retry is therefore part of the normal flow, and must carry a fresh
+        /// assertion as well — the jti is single-use.
+        /// </summary>
+        [Fact]
+        public async Task GetTokens_DpopNonceChallenge_RetriesOnceWithFreshProofAndAssertion()
+        {
+            List<string> bodies = [];
+            List<string?> proofs = [];
+            int call = 0;
+
+            Mock<HttpMessageHandler> handlerMock = new();
+            handlerMock
+                .Protected()
+                .Setup<Task<HttpResponseMessage>>("SendAsync", ItExpr.IsAny<HttpRequestMessage>(), ItExpr.IsAny<CancellationToken>())
+                .Returns(async (HttpRequestMessage request, CancellationToken _) =>
+                {
+                    bodies.Add(await request.Content!.ReadAsStringAsync());
+                    proofs.Add(request.Headers.TryGetValues("DPoP", out IEnumerable<string>? v) ? v.FirstOrDefault() : null);
+
+                    if (call++ == 0)
+                    {
+                        HttpResponseMessage challenge = new(HttpStatusCode.BadRequest)
+                        {
+                            Content = new StringContent("""{"error":"use_dpop_nonce"}""", Encoding.UTF8, "application/json")
+                        };
+                        challenge.Headers.TryAddWithoutValidation("DPoP-Nonce", "server-nonce");
+                        return challenge;
+                    }
+
+                    return new HttpResponseMessage(HttpStatusCode.OK)
+                    {
+                        Content = new StringContent("""{"access_token":"a","id_token":"b"}""", Encoding.UTF8, "application/json")
+                    };
+                });
+
+            (OidcProviderService sut, _) = CreateSut(handlerMock);
+            OidcCodeResponse? result = await sut.GetTokens("code", NewParProvider(useDpop: true), "https://localhost/cb", "verifier");
+
+            Assert.NotNull(result);
+            Assert.Equal(2, bodies.Count);
+
+            // Both attempts carried a proof, and they are not the same one.
+            Assert.All(proofs, p => Assert.False(string.IsNullOrEmpty(p)));
+            Assert.NotEqual(proofs[0], proofs[1]);
+
+            // The assertion is single-use too, so the retry cannot reuse the first one.
+            Assert.NotEqual(bodies[0], bodies[1]);
+        }
+
+        [Fact]
+        public async Task GetTokens_WithoutDpop_SendsNoProof()
+        {
+            string? proof = null;
+            (OidcProviderService sut, _) = CreateCapturingSut(
+                HttpStatusCode.OK,
+                """{"access_token":"a"}""",
+                _ => { },
+                request => proof = request.Headers.TryGetValues("DPoP", out IEnumerable<string>? v) ? v.FirstOrDefault() : null);
+
+            await sut.GetTokens("code", NewProvider(), "https://localhost/cb", "verifier");
+
+            Assert.Null(proof);
+        }
+
+        private static OidcProvider NewParProvider(bool useDpop = false) => new()
+        {
+            IssuerKey = "helseid",
+            Issuer = "https://helseid-sts.test.nhn.no",
+            TokenEndpoint = "https://helseid-sts.test.nhn.no/connect/token",
+            PushedAuthorizationRequestEndpoint = "https://helseid-sts.test.nhn.no/connect/par",
+            ClientId = "altinn-test-client",
+            ClientAssertionPrivateKeyJwk = GenerateJwk(),
+            UseDpop = useDpop,
+        };
+
+        private (OidcProviderService Sut, MetricCollector<int> Collector) CreateCapturingSut(
+            HttpStatusCode statusCode,
+            string responseBody,
+            Action<string> onBody,
+            Action<HttpRequestMessage>? onRequest = null)
+        {
+            Mock<HttpMessageHandler> handlerMock = new();
+            handlerMock
+                .Protected()
+                .Setup<Task<HttpResponseMessage>>("SendAsync", ItExpr.IsAny<HttpRequestMessage>(), ItExpr.IsAny<CancellationToken>())
+                .Returns(async (HttpRequestMessage request, CancellationToken _) =>
+                {
+                    onRequest?.Invoke(request);
+                    onBody(await request.Content!.ReadAsStringAsync());
+                    return new HttpResponseMessage(statusCode)
+                    {
+                        Content = new StringContent(responseBody, Encoding.UTF8, "application/json")
+                    };
+                });
+
+            return CreateSut(handlerMock);
+        }
+
         private static string GenerateJwk()
         {
             using RSA rsa = RSA.Create(2048);

@@ -1,6 +1,7 @@
 ﻿#nullable enable
 using System;
 using System.Collections.Generic;
+using System.Collections.Specialized;
 using System.Configuration;
 using System.Diagnostics;
 using System.IdentityModel.Tokens.Jwt;
@@ -172,13 +173,23 @@ namespace Altinn.Platform.Authentication.Services
                 && existingSession.ExpiresAt.HasValue
                 && _timeProvider.GetUtcNow() < existingSession.ExpiresAt.Value;
 
-            Uri authorizeUrl = BuildUpstreamAuthorizeUrl(
+            Uri? authorizeUrl = await ResolveUpstreamAuthorizeUrl(
                 provider,
-                upstreamState,
-                upstreamNonce,
-                upstreamPkceChallenge,
-                request,
-                hasExistingSession: hasLiveSession);
+                BuildUpstreamAuthorizeParameters(
+                    provider,
+                    upstreamState,
+                    upstreamNonce,
+                    upstreamPkceChallenge,
+                    request,
+                    hasExistingSession: hasLiveSession),
+                cancellationToken);
+
+            // A failed push leaves nothing to redirect to. The cause is already logged and counted
+            // by the provider service; the client gets an OIDC error at its registered redirect_uri.
+            if (authorizeUrl is null)
+            {
+                return AuthorizeResult.LocalError(502, "temporarily_unavailable", "Could not start sign-in with the identity provider.");
+            }
 
             // ========= 9) Return redirect upstream =========
             return AuthorizeResult.RedirectUpstream(authorizeUrl, upstreamState, tx.RequestId);
@@ -206,12 +217,22 @@ namespace Altinn.Platform.Authentication.Services
 
             (string upstreamState, string upstreamNonce, string upstreamPkceChallenge) = await CreateUpstreamLoginTransaction(unregisteredClientRequestCreate, provider, cancellationToken);
 
-            Uri authorizeUrl = BuildUpstreamAuthorizeUrl(
-            provider,
-            upstreamState,
-            upstreamNonce,
-            upstreamPkceChallenge,
-            request);
+            Uri? authorizeUrl = await ResolveUpstreamAuthorizeUrl(
+                provider,
+                BuildUpstreamAuthorizeParameters(
+                    provider,
+                    upstreamState,
+                    upstreamNonce,
+                    upstreamPkceChallenge,
+                    request),
+                cancellationToken);
+
+            // Nothing to redirect to. This flow has no registered client to send an OIDC error to,
+            // so it must stop locally rather than bounce the browser somewhere and risk a loop.
+            if (authorizeUrl is null)
+            {
+                return AuthorizeResult.LocalError(502, "temporarily_unavailable", "Could not start sign-in with the identity provider.");
+            }
 
             // ========= 9) Return redirect upstream =========
             return AuthorizeResult.RedirectUpstream(authorizeUrl, upstreamState, unregisteredClientRequestCreate.RequestId);
@@ -766,8 +787,25 @@ namespace Altinn.Platform.Authentication.Services
             try
             {
                 JwtSecurityToken idToken = await _upstreamTokenValidator.ValidateTokenAsync(codeReponse.IdToken, provider, upstreamTx.Nonce, cancellationToken);
-                JwtSecurityToken accesstoken = await _upstreamTokenValidator.ValidateTokenAsync(codeReponse.AccessToken, provider, null, cancellationToken);
-                UserAuthenticationModel userIdenity = AuthenticationHelper.GetUserFromToken(idToken, provider, accesstoken, _logger);
+
+                // The access token is the API's to inspect, not ours. HelseID states the client
+                // must not read or validate it, and treats it as opaque — it happens to be a JWT
+                // today, which is precisely why depending on that is fragile: a DPoP-bound or
+                // reformatted token would break a client that parses it.
+                JwtSecurityToken? accessToken = provider.TreatAccessTokenAsOpaque
+                    ? null
+                    : await _upstreamTokenValidator.ValidateTokenAsync(codeReponse.AccessToken, provider, null, cancellationToken);
+
+                UserAuthenticationModel userIdenity = AuthenticationHelper.GetUserFromToken(idToken, provider, accessToken, _logger);
+
+                // Granted scopes come from the token response rather than the access token's
+                // contents. The response is the authoritative statement of what was granted, and
+                // it is available whether or not the token can be read.
+                if (provider.TreatAccessTokenAsOpaque && !string.IsNullOrWhiteSpace(codeReponse.Scope))
+                {
+                    userIdenity.Scope = codeReponse.Scope;
+                }
+
                 return userIdenity;
             }
             catch (Exception ex) when (ex is SecurityTokenException or ArgumentException or InvalidOperationException or HttpRequestException)
@@ -926,7 +964,54 @@ namespace Altinn.Platform.Authentication.Services
                 }, upstreamTx);
             }
 
+            // ===== 4) Validate the issuer the response claims to come from (RFC 9207) =====
+            // The provider is taken from the transaction, never from the callback: letting the
+            // parameter select the provider would defeat the point. Checked before the code is
+            // exchanged and before any session is touched, and for error responses too — a
+            // mix-up attack can just as well replay an error.
+            UpstreamCallbackResult? issuerResult = ValidateCallbackIssuer(input, upstreamTx);
+            if (issuerResult is not null)
+            {
+                return (CallbackResult: issuerResult, UpstreamTranscation: upstreamTx);
+            }
+
             return (CallbackResult: null, UpstreamTranscation: upstreamTx);
+        }
+
+        /// <summary>
+        /// Checks the callback's <c>iss</c> against the provider recorded on the transaction, when
+        /// that provider is configured to require it.
+        /// </summary>
+        /// <remarks>
+        /// Opt-in per provider: a provider that does not send the parameter would otherwise fail
+        /// every sign-in. Where it is required, both a missing and a mismatched value are refused,
+        /// and no trailing-slash normalisation applies.
+        /// </remarks>
+        private UpstreamCallbackResult? ValidateCallbackIssuer(UpstreamCallbackInput input, UpstreamLoginTransaction upstreamTx)
+        {
+            if (!_oidcProviderSettings.TryGetValue(upstreamTx.Provider, out OidcProvider? provider)
+                || !provider.ValidateCallbackIssuer)
+            {
+                return null;
+            }
+
+            if (string.Equals(input.Iss, provider.Issuer, StringComparison.Ordinal))
+            {
+                return null;
+            }
+
+            _logger.LogWarning(
+                "Upstream callback for provider {Provider} carried iss '{Actual}', expected '{Expected}'",
+                upstreamTx.Provider,
+                input.Iss,
+                provider.Issuer);
+
+            return new UpstreamCallbackResult
+            {
+                Kind = UpstreamCallbackResultKind.LocalError,
+                StatusCode = 400,
+                LocalErrorMessage = "Upstream callback issuer did not match the provider the sign-in was started with."
+            };
         }
 
         private async Task<(OidcProvider Provider, string UpstreamState, string UpstreamNonce, string UpstreamPkceChallenge)> CreateUpstreamLoginTransaction(AuthorizeRequest request, LoginTransaction tx, CancellationToken cancellationToken)
@@ -1289,7 +1374,48 @@ namespace Altinn.Platform.Authentication.Services
             }
         }
 
-        private Uri BuildUpstreamAuthorizeUrl(
+        /// <summary>
+        /// Turns the authorization parameters into the URL to send the browser to.
+        /// </summary>
+        /// <remarks>
+        /// For a provider configured with a PAR endpoint the parameters are pushed back-channel
+        /// first, and the browser is redirected with only <c>client_id</c> and <c>request_uri</c>.
+        /// Returns <c>null</c> when that push fails, which must abort the sign-in: there is no
+        /// front-channel fallback, because a provider that requires PAR would refuse the request
+        /// anyway, and sending parameters through the browser after failing to push them would
+        /// defeat the reason for pushing them.
+        /// </remarks>
+        private async Task<Uri?> ResolveUpstreamAuthorizeUrl(OidcProvider p, NameValueCollection q, CancellationToken cancellationToken)
+        {
+            if (string.IsNullOrWhiteSpace(p.PushedAuthorizationRequestEndpoint))
+            {
+                return new UriBuilder(p.AuthorizationEndpoint) { Query = q.ToString()! }.Uri;
+            }
+
+            Dictionary<string, string> parameters = [];
+            foreach (string? key in q.AllKeys)
+            {
+                if (key is not null && q[key] is { } value)
+                {
+                    parameters[key] = value;
+                }
+            }
+
+            PushedAuthorizationResponse? pushed = await _oidcProvider.PushAuthorizationRequest(p, parameters, cancellationToken);
+            if (pushed?.RequestUri is null)
+            {
+                return null;
+            }
+
+            // Only these two go in the redirect. Everything else was pushed, which is the point.
+            var front = System.Web.HttpUtility.ParseQueryString(string.Empty);
+            front["client_id"] = p.ClientId;
+            front["request_uri"] = pushed.RequestUri;
+
+            return new UriBuilder(p.AuthorizationEndpoint) { Query = front.ToString()! }.Uri;
+        }
+
+        private NameValueCollection BuildUpstreamAuthorizeParameters(
                 OidcProvider p,
                 string upstreamState,
                 string upstreamNonce,
@@ -1351,11 +1477,10 @@ namespace Altinn.Platform.Authentication.Services
                 q["max_age"] = incoming.MaxAge.Value.ToString();
             }
 
-            var ub = new UriBuilder(p.AuthorizationEndpoint) { Query = q.ToString()! };
-            return ub.Uri;
+            return q;
         }
 
-        private Uri BuildUpstreamAuthorizeUrl(
+        private NameValueCollection BuildUpstreamAuthorizeParameters(
                OidcProvider p,
                string upstreamState,
                string upstreamNonce,
@@ -1390,8 +1515,7 @@ namespace Altinn.Platform.Authentication.Services
                 q["acr_values"] = upstreamAcr;
             }
 
-            var ub = new UriBuilder(p.AuthorizationEndpoint) { Query = q.ToString()! };
-            return ub.Uri;
+            return q;
         }
 
         private async Task<UserAuthenticationModel?> IdentifyOrCreateAltinnUser(UserAuthenticationModel userAuthenticationModel, OidcProvider? provider, CancellationToken cancellationToken)

@@ -66,7 +66,7 @@ namespace Altinn.Platform.Authentication.Services
 
             try
             {
-                JwtSecurityToken jwtToken = ValidateToken(token, provider.Issuer, signingKeys);
+                JwtSecurityToken jwtToken = ValidateToken(token, provider, signingKeys);
                 if (nonce != null)
                 {
                     // Only relevant for ID tokens
@@ -112,14 +112,21 @@ namespace Altinn.Platform.Authentication.Services
             return CryptographicOperations.FixedTimeEquals(a, b);
         }
 
-        private JwtSecurityToken ValidateToken(string originalToken, string expectedIssuer, ICollection<SecurityKey> signingKeys)
+        private JwtSecurityToken ValidateToken(string originalToken, OidcProvider provider, ICollection<SecurityKey> signingKeys)
         {
+            string expectedIssuer = provider.Issuer;
+
             TokenValidationParameters validationParameters = new()
             {
                 ValidateIssuerSigningKey = true,
                 IssuerSigningKeys = signingKeys,
                 ValidateIssuer = true,
-                ValidateAudience = false,
+
+                // Off unless the provider opts in. The shared validator has always skipped
+                // audience, so requiring it globally could start rejecting tokens from providers
+                // that rely on that. OIDC Core requires it, so new providers should opt in.
+                ValidateAudience = provider.ValidateIdTokenAudience,
+                ValidAudience = provider.ValidateIdTokenAudience ? provider.ClientId : null,
                 IssuerValidator = (tokenIssuer, securityToken, parameters) =>
                 {
                     // Exact match is the spec requirement (OIDC Core).
@@ -130,7 +137,10 @@ namespace Altinn.Platform.Authentication.Services
 
                     // Pragmatic allowance: treat trailing slash difference as equivalent.
                     // Useful when some upstreams include / omit trailing slash inconsistently.
-                    if (TrimEndSlash(tokenIssuer).Equals(TrimEndSlash(expectedIssuer), StringComparison.Ordinal))
+                    // Not applied to providers that opted into strict validation — a profile that
+                    // requires exact issuer matching gets exactly that.
+                    if (!provider.ValidateIdTokenAudience
+                        && TrimEndSlash(tokenIssuer).Equals(TrimEndSlash(expectedIssuer), StringComparison.Ordinal))
                     {
                         // Keep a breadcrumb that we normalized.
                         _logger.LogDebug("Issuer matched after trimming trailing slash: '{Actual}' ~ '{Expected}'", tokenIssuer, expectedIssuer);
