@@ -97,7 +97,7 @@ Providers following a FAPI 2.0-style profile require more than a client assertio
 |---|---|
 | `PushedAuthorizationRequestEndpoint` | Push the authorization parameters back-channel (RFC 9126) and redirect with only `client_id` and `request_uri`. |
 | `UseDpop` | Send a DPoP proof (RFC 9449) with the token request, signed with the client-assertion key. |
-| `ValidateIdTokenAudience` | Require the id_token's `aud` to contain our `client_id`, and the issuer to match exactly. |
+| `StrictIdTokenValidation` | Require the id_token's `aud` to contain our `client_id`, and the issuer to match exactly. |
 | `TreatAccessTokenAsOpaque` | Do not read or validate the access token. |
 | `ValidateCallbackIssuer` | Require and validate the callback's `iss` (RFC 9207). |
 
@@ -107,7 +107,7 @@ Providers following a FAPI 2.0-style profile require more than a client assertio
 
 **The access token is the API's, not ours.** HelseID states the client must not inspect or validate it. It happens to be a JWT today, which is exactly why depending on that is fragile — a DPoP-bound or reformatted token would break a client that parses it. With `TreatAccessTokenAsOpaque` the granted scopes come from the token response's `scope` field instead, which is the authoritative statement of what was granted and is readable either way.
 
-**Strict validation is opt-in for a reason.** The shared validator has always skipped audience entirely and treated a trailing slash on the issuer as equivalent. Requiring both globally could start rejecting tokens from providers that rely on the leniency, so each provider adopts it deliberately. `ValidateIdTokenAudience` turns off the trailing-slash allowance as well: a profile that asks for exact issuer matching gets exactly that.
+**Strict validation is opt-in for a reason.** The shared validator has always skipped audience entirely and treated a trailing slash on the issuer as equivalent. Requiring both globally could start rejecting tokens from providers that rely on the leniency, so each provider adopts it deliberately. `StrictIdTokenValidation` turns off the trailing-slash allowance as well: a profile that asks for exact issuer matching gets exactly that.
 
 **Callback `iss` never selects the provider.** The provider comes from the login transaction looked up by `state`; the parameter is only checked against it. Letting it choose would defeat the purpose. The check runs before the code is exchanged and before any session is touched, and applies to error responses too — a mix-up can replay an error just as well as a code.
 

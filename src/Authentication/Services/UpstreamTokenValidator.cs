@@ -66,7 +66,7 @@ namespace Altinn.Platform.Authentication.Services
 
             try
             {
-                JwtSecurityToken jwtToken = ValidateToken(token, provider, signingKeys);
+                JwtSecurityToken jwtToken = ValidateToken(token, provider, signingKeys, isIdToken: nonce is not null);
                 if (nonce != null)
                 {
                     // Only relevant for ID tokens
@@ -112,7 +112,7 @@ namespace Altinn.Platform.Authentication.Services
             return CryptographicOperations.FixedTimeEquals(a, b);
         }
 
-        private JwtSecurityToken ValidateToken(string originalToken, OidcProvider provider, ICollection<SecurityKey> signingKeys)
+        private JwtSecurityToken ValidateToken(string originalToken, OidcProvider provider, ICollection<SecurityKey> signingKeys, bool isIdToken)
         {
             string expectedIssuer = provider.Issuer;
 
@@ -122,11 +122,14 @@ namespace Altinn.Platform.Authentication.Services
                 IssuerSigningKeys = signingKeys,
                 ValidateIssuer = true,
 
-                // Off unless the provider opts in. The shared validator has always skipped
-                // audience, so requiring it globally could start rejecting tokens from providers
-                // that rely on that. OIDC Core requires it, so new providers should opt in.
-                ValidateAudience = provider.StrictIdTokenValidation,
-                ValidAudience = provider.StrictIdTokenValidation ? provider.ClientId : null,
+                // Only for the ID token, and only when the provider opts in. This method also
+                // validates access tokens, whose audience is the API rather than us — requiring
+                // our client id there would reject every otherwise valid access token and fail the
+                // whole sign-in. The two settings are documented as independent choices, so a
+                // provider may well have strict validation without treating the access token as
+                // opaque.
+                ValidateAudience = isIdToken && provider.StrictIdTokenValidation,
+                ValidAudience = isIdToken && provider.StrictIdTokenValidation ? provider.ClientId : null,
                 IssuerValidator = (tokenIssuer, securityToken, parameters) =>
                 {
                     // Exact match is the spec requirement (OIDC Core).

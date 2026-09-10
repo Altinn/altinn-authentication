@@ -35,6 +35,7 @@ using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Microsoft.FeatureManagement;
+using Microsoft.IdentityModel.Protocols.OpenIdConnect;
 using Microsoft.IdentityModel.Tokens;
 
 namespace Altinn.Platform.Authentication.Services
@@ -981,7 +982,7 @@ namespace Altinn.Platform.Authentication.Services
             // parameter select the provider would defeat the point. Checked before the code is
             // exchanged and before any session is touched, and for error responses too — a
             // mix-up attack can just as well replay an error.
-            UpstreamCallbackResult? issuerResult = ValidateCallbackIssuer(input, upstreamTx);
+            UpstreamCallbackResult? issuerResult = await ValidateCallbackIssuer(input, upstreamTx, cancellationToken);
             if (issuerResult is not null)
             {
                 return (CallbackResult: issuerResult, UpstreamTranscation: upstreamTx);
@@ -999,7 +1000,7 @@ namespace Altinn.Platform.Authentication.Services
         /// every sign-in. Where it is required, both a missing and a mismatched value are refused,
         /// and no trailing-slash normalisation applies.
         /// </remarks>
-        private UpstreamCallbackResult? ValidateCallbackIssuer(UpstreamCallbackInput input, UpstreamLoginTransaction upstreamTx)
+        private async Task<UpstreamCallbackResult?> ValidateCallbackIssuer(UpstreamCallbackInput input, UpstreamLoginTransaction upstreamTx, CancellationToken cancellationToken)
         {
             // A transaction naming a provider that is no longer configured cannot be checked
             // against anything. Refuse rather than treat it as "no check configured": for a
@@ -1023,7 +1024,23 @@ namespace Altinn.Platform.Authentication.Services
                 return null;
             }
 
-            if (string.Equals(input.Iss, provider.Issuer, StringComparison.Ordinal))
+            // The value to compare against comes from the provider's own discovery document, not
+            // from configuration alone. Configuration says what we believe the issuer to be;
+            // discovery is what the provider asserts. A drift between the two is itself a reason
+            // to stop, and is otherwise invisible — the signing-key fetch reads discovery but never
+            // checks its issuer.
+            string? validatedIssuer = await GetValidatedIssuer(provider, cancellationToken);
+            if (validatedIssuer is null)
+            {
+                return new UpstreamCallbackResult
+                {
+                    Kind = UpstreamCallbackResultKind.LocalError,
+                    StatusCode = 502,
+                    LocalErrorMessage = "Could not establish the identity provider's issuer from its discovery document."
+                };
+            }
+
+            if (string.Equals(input.Iss, validatedIssuer, StringComparison.Ordinal))
             {
                 return null;
             }
@@ -1033,7 +1050,7 @@ namespace Altinn.Platform.Authentication.Services
             _logger.LogWarning(
                 "Upstream callback for provider {Provider} carried an iss that does not match the expected '{Expected}'. Received: '{Actual}'",
                 upstreamTx.Provider,
-                provider.Issuer,
+                validatedIssuer,
                 SanitiseForLog(input.Iss));
 
             return new UpstreamCallbackResult
@@ -1042,6 +1059,60 @@ namespace Altinn.Platform.Authentication.Services
                 StatusCode = 400,
                 LocalErrorMessage = "Upstream callback issuer did not match the provider the sign-in was started with."
             };
+        }
+
+        /// <summary>
+        /// The provider's issuer as asserted by its own discovery document, once it has been
+        /// confirmed to match what we have configured.
+        /// </summary>
+        /// <remarks>
+        /// Returns <c>null</c> when discovery is unreachable, states no issuer, or states one that
+        /// disagrees with configuration. All three mean we cannot say what the issuer is, and a
+        /// check we cannot perform must not pass. The document is cached by
+        /// <see cref="ConfigurationMangerHelper"/>, so this is not a fetch per callback.
+        /// </remarks>
+        private async Task<string?> GetValidatedIssuer(OidcProvider provider, CancellationToken cancellationToken)
+        {
+            if (string.IsNullOrWhiteSpace(provider.WellKnownConfigEndpoint))
+            {
+                _logger.LogError(
+                    "Provider {Provider} requires callback issuer validation but has no WellKnownConfigEndpoint configured.",
+                    provider.IssuerKey);
+                return null;
+            }
+
+            OpenIdConnectConfiguration configuration;
+            try
+            {
+                configuration = await ConfigurationMangerHelper.GetOidcConfiguration(provider.WellKnownConfigEndpoint);
+            }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+            {
+                throw;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Could not read discovery metadata for provider {Provider}", provider.IssuerKey);
+                return null;
+            }
+
+            if (string.IsNullOrWhiteSpace(configuration.Issuer))
+            {
+                _logger.LogError("Discovery metadata for provider {Provider} states no issuer.", provider.IssuerKey);
+                return null;
+            }
+
+            if (!string.Equals(configuration.Issuer, provider.Issuer, StringComparison.Ordinal))
+            {
+                _logger.LogError(
+                    "Discovery metadata for provider {Provider} states issuer '{Discovered}', but configuration says '{Configured}'.",
+                    provider.IssuerKey,
+                    configuration.Issuer,
+                    provider.Issuer);
+                return null;
+            }
+
+            return configuration.Issuer;
         }
 
         /// <summary>
