@@ -801,9 +801,21 @@ namespace Altinn.Platform.Authentication.Services
                 // Granted scopes come from the token response rather than the access token's
                 // contents. The response is the authoritative statement of what was granted, and
                 // it is available whether or not the token can be read.
-                if (provider.TreatAccessTokenAsOpaque && !string.IsNullOrWhiteSpace(codeReponse.Scope))
+                if (provider.TreatAccessTokenAsOpaque)
                 {
-                    userIdenity.Scope = codeReponse.Scope;
+                    if (!string.IsNullOrWhiteSpace(codeReponse.Scope))
+                    {
+                        userIdenity.Scope = codeReponse.Scope;
+                    }
+                    else
+                    {
+                        // Without the access token to fall back on there is no other source, so the
+                        // session ends up with no scopes. Say so once rather than leave someone to
+                        // work out why an otherwise successful sign-in granted nothing.
+                        _logger.LogWarning(
+                            "Provider {Provider} returned no 'scope' in the token response, and its access token is treated as opaque. The session will carry no scopes.",
+                            provider.IssuerKey);
+                    }
                 }
 
                 return userIdenity;
@@ -989,8 +1001,24 @@ namespace Altinn.Platform.Authentication.Services
         /// </remarks>
         private UpstreamCallbackResult? ValidateCallbackIssuer(UpstreamCallbackInput input, UpstreamLoginTransaction upstreamTx)
         {
-            if (!_oidcProviderSettings.TryGetValue(upstreamTx.Provider, out OidcProvider? provider)
-                || !provider.ValidateCallbackIssuer)
+            // A transaction naming a provider that is no longer configured cannot be checked
+            // against anything. Refuse rather than treat it as "no check configured": for a
+            // mix-up defence, an unresolvable provider is the wrong direction to fail in.
+            if (!_oidcProviderSettings.TryGetValue(upstreamTx.Provider, out OidcProvider? provider))
+            {
+                _logger.LogError(
+                    "Upstream callback names provider {Provider}, which is not in the current configuration. Refusing the callback.",
+                    upstreamTx.Provider);
+
+                return new UpstreamCallbackResult
+                {
+                    Kind = UpstreamCallbackResultKind.LocalError,
+                    StatusCode = 400,
+                    LocalErrorMessage = "The identity provider the sign-in was started with is no longer configured."
+                };
+            }
+
+            if (!provider.ValidateCallbackIssuer)
             {
                 return null;
             }
@@ -1000,11 +1028,13 @@ namespace Altinn.Platform.Authentication.Services
                 return null;
             }
 
+            // input.Iss is attacker-controlled, so it is sanitised before it reaches the log:
+            // an unescaped newline would let a caller forge log entries.
             _logger.LogWarning(
-                "Upstream callback for provider {Provider} carried iss '{Actual}', expected '{Expected}'",
+                "Upstream callback for provider {Provider} carried an iss that does not match the expected '{Expected}'. Received: '{Actual}'",
                 upstreamTx.Provider,
-                input.Iss,
-                provider.Issuer);
+                provider.Issuer,
+                SanitiseForLog(input.Iss));
 
             return new UpstreamCallbackResult
             {
@@ -1012,6 +1042,21 @@ namespace Altinn.Platform.Authentication.Services
                 StatusCode = 400,
                 LocalErrorMessage = "Upstream callback issuer did not match the provider the sign-in was started with."
             };
+        }
+
+        /// <summary>
+        /// Makes an attacker-controlled value safe to put in a log line: strips the characters that
+        /// would let a caller forge additional entries, and caps the length.
+        /// </summary>
+        private static string SanitiseForLog(string? value)
+        {
+            if (string.IsNullOrEmpty(value))
+            {
+                return string.Empty;
+            }
+
+            string trimmed = value.Length > 200 ? value[..200] + "..." : value;
+            return trimmed.Replace('\r', ' ').Replace('\n', ' ');
         }
 
         private async Task<(OidcProvider Provider, string UpstreamState, string UpstreamNonce, string UpstreamPkceChallenge)> CreateUpstreamLoginTransaction(AuthorizeRequest request, LoginTransaction tx, CancellationToken cancellationToken)

@@ -161,7 +161,12 @@ namespace Altinn.Platform.Authentication.Services
                 return response;
             }
 
-            _logger.LogDebug("Provider {Provider} requested a DPoP nonce; retrying the token request once", provider.IssuerKey ?? provider.Issuer);
+            // Counted, not just logged. The first 400 is discarded and the outcome counter only
+            // records the retry, so without this the challenge is invisible — and how often a
+            // provider challenges is exactly what tells you whether the retry path is healthy.
+            string providerKey = provider.IssuerKey ?? provider.Issuer;
+            _metrics.DpopNonceChallenge(providerKey);
+            _logger.LogDebug("Provider {Provider} requested a DPoP nonce; retrying the token request once", providerKey);
             response.Dispose();
 
             // The assertion is single-use as well, so the retry needs a fresh one alongside the
@@ -420,16 +425,25 @@ namespace Altinn.Platform.Authentication.Services
                         name: "altinn.authentication.oidc.upstream_pushed_authorization_request",
                         description: "Pushed authorization requests against the upstream OIDC provider");
 
+            private readonly Counter<int> _dpopNonceChallenge
+                = meter.CreateCounter<int>(
+                        name: "altinn.authentication.oidc.upstream_dpop_nonce_challenge",
+                        description: "Token requests the upstream provider answered with a DPoP nonce challenge, prompting one retry");
+
             public static Metrics Create(Meter meter) => new(meter);
 
             /// <summary>
-            /// Counts one authorization-code-to-token request. Successes are counted too, so that an
-            /// alert can be written on the failure <em>rate</em> rather than an absolute failure count;
-            /// a success is a measurement with no <c>error.type</c>, per the OpenTelemetry convention.
+            /// Counts one DPoP nonce challenge. The challenge is part of the normal flow, so this
+            /// is not an error count — but it is the only way to see the retry path at all, since
+            /// the discarded first response never reaches <see cref="TokenExchange"/>.
             /// </summary>
-            /// <param name="provider">The configured provider key, e.g. <c>idporten</c>.</param>
-            /// <param name="statusCode">The upstream HTTP status, or <c>null</c> when no response was received.</param>
-            /// <param name="errorType">The failure classification, or <c>null</c> on success.</param>
+            public void DpopNonceChallenge(string provider)
+            {
+                TagList tags = default;
+                tags.Add("provider", provider);
+                _dpopNonceChallenge.Add(1, tags);
+            }
+
             /// <summary>
             /// Counts one pushed authorization request, on the same convention as
             /// <see cref="TokenExchange"/>: successes counted too, so an alert can be written on
@@ -437,6 +451,9 @@ namespace Altinn.Platform.Authentication.Services
             /// failure mean different things — the first stops a sign-in before the user reaches
             /// the provider, the second after they have authenticated there.
             /// </summary>
+            /// <param name="provider">The configured provider key, e.g. <c>helseid</c>.</param>
+            /// <param name="statusCode">The upstream HTTP status, or <c>null</c> when no response was received.</param>
+            /// <param name="errorType">The failure classification, or <c>null</c> on success.</param>
             public void PushedAuthorizationRequest(string provider, int? statusCode, string? errorType)
             {
                 TagList tags = default;
@@ -455,6 +472,14 @@ namespace Altinn.Platform.Authentication.Services
                 _pushedAuthorizationRequest.Add(1, tags);
             }
 
+            /// <summary>
+            /// Counts one authorization-code-to-token request. Successes are counted too, so that an
+            /// alert can be written on the failure <em>rate</em> rather than an absolute failure count;
+            /// a success is a measurement with no <c>error.type</c>, per the OpenTelemetry convention.
+            /// </summary>
+            /// <param name="provider">The configured provider key, e.g. <c>idporten</c>.</param>
+            /// <param name="statusCode">The upstream HTTP status, or <c>null</c> when no response was received.</param>
+            /// <param name="errorType">The failure classification, or <c>null</c> on success.</param>
             public void TokenExchange(string provider, int? statusCode, string? errorType)
             {
                 TagList tags = default;

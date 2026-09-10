@@ -125,8 +125,8 @@ namespace Altinn.Platform.Authentication.Services
                 // Off unless the provider opts in. The shared validator has always skipped
                 // audience, so requiring it globally could start rejecting tokens from providers
                 // that rely on that. OIDC Core requires it, so new providers should opt in.
-                ValidateAudience = provider.ValidateIdTokenAudience,
-                ValidAudience = provider.ValidateIdTokenAudience ? provider.ClientId : null,
+                ValidateAudience = provider.StrictIdTokenValidation,
+                ValidAudience = provider.StrictIdTokenValidation ? provider.ClientId : null,
                 IssuerValidator = (tokenIssuer, securityToken, parameters) =>
                 {
                     // Exact match is the spec requirement (OIDC Core).
@@ -139,7 +139,7 @@ namespace Altinn.Platform.Authentication.Services
                     // Useful when some upstreams include / omit trailing slash inconsistently.
                     // Not applied to providers that opted into strict validation — a profile that
                     // requires exact issuer matching gets exactly that.
-                    if (!provider.ValidateIdTokenAudience
+                    if (!provider.StrictIdTokenValidation
                         && TrimEndSlash(tokenIssuer).Equals(TrimEndSlash(expectedIssuer), StringComparison.Ordinal))
                     {
                         // Keep a breadcrumb that we normalized.

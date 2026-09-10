@@ -130,15 +130,19 @@ namespace Altinn.Platform.Authentication.Model
         public bool UseDpop { get; set; }
 
         /// <summary>
-        /// Validate that the id_token's <c>aud</c> contains our <see cref="ClientId"/>, and require
-        /// the issuer to match exactly.
+        /// Validate the id_token to the letter of OIDC Core. Turns on <em>both</em>:
+        /// <list type="bullet">
+        /// <item><description>the <c>aud</c> must contain our <see cref="ClientId"/>;</description></item>
+        /// <item><description>the issuer must match <see cref="Issuer"/> exactly, with no
+        /// trailing-slash normalisation.</description></item>
+        /// </list>
         /// <para>
-        /// Off by default because the shared validator historically skipped audience entirely and
-        /// treated a trailing slash on the issuer as equivalent. Turning that on globally could
-        /// reject tokens from providers that rely on the leniency, so it is adopted per provider.
+        /// Off by default because the shared validator historically did neither, and requiring them
+        /// globally could start rejecting tokens from providers that rely on that leniency. Each
+        /// provider therefore adopts it deliberately.
         /// </para>
         /// </summary>
-        public bool ValidateIdTokenAudience { get; set; }
+        public bool StrictIdTokenValidation { get; set; }
 
         /// <summary>
         /// Treat the access token as opaque: do not validate or read it.

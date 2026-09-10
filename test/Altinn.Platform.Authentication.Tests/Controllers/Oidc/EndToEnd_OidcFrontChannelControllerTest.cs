@@ -2419,6 +2419,76 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
         }
 
         /// <summary>
+        /// A provider configured with a PAR endpoint must push the authorization parameters
+        /// back-channel and redirect with only <c>client_id</c> and <c>request_uri</c>.
+        /// </summary>
+        /// <remarks>
+        /// The branch this covers has no fallback by design, so it must not be possible to change
+        /// it by accident. The proof and the request path are tested elsewhere; this is the only
+        /// coverage of the choice itself.
+        /// </remarks>
+        [Fact]
+        public async Task TC19_ParProvider_PushesParametersAndRedirectsWithRequestUriOnly()
+        {
+            using HttpClient client = CreateClientWithHeaders();
+            OidcTestScenario testScenario = OidcScenarioHelper.GetScenario("HelseId_Bruker");
+
+            OidcClientCreate create = OidcServerTestUtils.NewClientCreate(testScenario);
+            _ = await Repository.InsertClientAsync(create);
+
+            Mocks.OidcProviderAdvancedMock mock = Assert.IsType<Mocks.OidcProviderAdvancedMock>(
+                Services.GetRequiredService<IOidcProvider>());
+            mock.PushedRequestUri = "urn:ietf:params:oauth:request_uri:pushed-123";
+
+            HttpResponseMessage response = await client.GetAsync(
+                "/authentication/api/v1/authentication?iss=helseid-par&goto=https%3A%2F%2Fhelse.apps.localhost%2Fsykemelding%2Finstance%2F51441547");
+
+            Assert.Equal(HttpStatusCode.Redirect, response.StatusCode);
+
+            Uri location = response.Headers.Location!;
+            Assert.StartsWith("https://helseid-par.test.nhn.no/connect/authorize", location.ToString());
+
+            // Only these two may appear. Everything else was pushed, which is the point of pushing.
+            System.Collections.Specialized.NameValueCollection query = HttpUtility.ParseQueryString(location.Query);
+            Assert.Equal(["client_id", "request_uri"], query.AllKeys.Where(k => k is not null).Select(k => k!).OrderBy(k => k, StringComparer.Ordinal).ToArray());
+            Assert.Equal("urn:ietf:params:oauth:request_uri:pushed-123", query["request_uri"]);
+            Assert.Equal("altinn-par-client", query["client_id"]);
+
+            // And the parameters really did go back-channel.
+            Assert.NotNull(mock.LastPushedParameters);
+            Assert.Equal("code", mock.LastPushedParameters!["response_type"]);
+            Assert.Equal("S256", mock.LastPushedParameters["code_challenge_method"]);
+            Assert.False(string.IsNullOrEmpty(mock.LastPushedParameters["state"]));
+            Assert.False(string.IsNullOrEmpty(mock.LastPushedParameters["nonce"]));
+            Assert.False(string.IsNullOrEmpty(mock.LastPushedParameters["code_challenge"]));
+        }
+
+        /// <summary>
+        /// A refused push aborts the sign-in. There is deliberately no front-channel fallback: a
+        /// provider that requires PAR would refuse the request anyway, and sending the parameters
+        /// through the browser after failing to push them would defeat the reason for pushing them.
+        /// </summary>
+        [Fact]
+        public async Task TC20_ParProvider_FailedPush_AbortsWithoutRedirectingUpstream()
+        {
+            using HttpClient client = CreateClientWithHeaders();
+            OidcTestScenario testScenario = OidcScenarioHelper.GetScenario("HelseId_Bruker");
+
+            OidcClientCreate create = OidcServerTestUtils.NewClientCreate(testScenario);
+            _ = await Repository.InsertClientAsync(create);
+
+            Mocks.OidcProviderAdvancedMock mock = Assert.IsType<Mocks.OidcProviderAdvancedMock>(
+                Services.GetRequiredService<IOidcProvider>());
+            mock.PushedRequestUri = null;
+
+            HttpResponseMessage response = await client.GetAsync(
+                "/authentication/api/v1/authentication?iss=helseid-par&goto=https%3A%2F%2Fhelse.apps.localhost%2Fsykemelding%2Finstance%2F51441547");
+
+            Assert.NotEqual(HttpStatusCode.Redirect, response.StatusCode);
+            Assert.Null(response.Headers.Location);
+        }
+
+        /// <summary>
         /// A HelseID token without the configured pid claim — the pid scope not granted, or
         /// ClaimMappings.Pid misconfigured — must abort the sign-in. None of the identifiers
         /// IdentifyOrCreateAltinnUser branches on are present, and before the guard was added this
