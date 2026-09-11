@@ -143,9 +143,45 @@ namespace Altinn.Platform.Authentication.Helpers
         /// The imported key, together with the <c>kid</c> and <c>alg</c> the key material itself
         /// declared. A JWK carries both; a PEM carries neither.
         /// </summary>
-        private sealed record ImportedKey(RSA Rsa, string? KeyId, string? Algorithm);
+        internal sealed record ImportedKey(RSA Rsa, string? KeyId, string? Algorithm);
 
-        private static ImportedKey ImportPrivateKey(OidcProvider provider)
+        /// <summary>
+        /// Resolves the signing algorithm: explicit configuration, then the key's own <c>alg</c>,
+        /// then PS256. Shared with <see cref="DpopProofBuilder"/> so a proof is never signed with a
+        /// different algorithm than the assertion sent alongside it.
+        /// </summary>
+        /// <exception cref="InvalidOperationException">
+        /// Thrown for anything but an asymmetric RSA algorithm. A symmetric one would mean the
+        /// signature proves no possession of the private key.
+        /// </exception>
+        internal static string ResolveAlgorithm(OidcProvider provider, ImportedKey imported)
+        {
+            string algorithm =
+                FirstNonEmpty(provider.ClientAssertionAlgorithm, imported.Algorithm) ?? SecurityAlgorithms.RsaSsaPssSha256;
+
+            if (algorithm is not (SecurityAlgorithms.RsaSsaPssSha256
+                or SecurityAlgorithms.RsaSsaPssSha384
+                or SecurityAlgorithms.RsaSsaPssSha512
+                or SecurityAlgorithms.RsaSha256
+                or SecurityAlgorithms.RsaSha384
+                or SecurityAlgorithms.RsaSha512))
+            {
+                throw new InvalidOperationException(
+                    $"ClientAssertionAlgorithm '{algorithm}' for provider '{provider.IssuerKey}' is not a supported asymmetric RSA algorithm.");
+            }
+
+            return algorithm;
+        }
+
+        /// <summary>
+        /// Imports the provider's configured signing key. Shared with
+        /// <see cref="DpopProofBuilder"/>, which signs its proofs with the same key — the profile
+        /// that mandates private_key_jwt permits the key to serve both purposes.
+        /// </summary>
+        /// <remarks>
+        /// The caller owns the returned <see cref="RSA"/> and must dispose it.
+        /// </remarks>
+        internal static ImportedKey ImportPrivateKey(OidcProvider provider)
         {
             bool hasPem = !string.IsNullOrWhiteSpace(provider.ClientAssertionPrivateKeyPem);
             bool hasJwk = !string.IsNullOrWhiteSpace(provider.ClientAssertionPrivateKeyJwk);
@@ -312,25 +348,7 @@ namespace Altinn.Platform.Authentication.Helpers
 
         private static SigningCredentials CreateSigningCredentials(OidcProvider provider, ImportedKey imported)
         {
-            // Explicit configuration wins, then whatever the key material itself declared, then the
-            // default. A JWK states its own alg, so configuring it separately is redundant and only
-            // creates something that can drift out of step with the key.
-            string algorithm =
-                FirstNonEmpty(provider.ClientAssertionAlgorithm, imported.Algorithm) ?? SecurityAlgorithms.RsaSsaPssSha256;
-
-            // Only asymmetric algorithms are meaningful here, and providers that mandate
-            // private_key_jwt generally mandate PSS as well. Reject anything else outright rather
-            // than let a typo produce a signature the provider silently refuses.
-            if (algorithm is not (SecurityAlgorithms.RsaSsaPssSha256
-                or SecurityAlgorithms.RsaSsaPssSha384
-                or SecurityAlgorithms.RsaSsaPssSha512
-                or SecurityAlgorithms.RsaSha256
-                or SecurityAlgorithms.RsaSha384
-                or SecurityAlgorithms.RsaSha512))
-            {
-                throw new InvalidOperationException(
-                    $"ClientAssertionAlgorithm '{algorithm}' for provider '{provider.IssuerKey}' is not a supported asymmetric RSA algorithm.");
-            }
+            string algorithm = ResolveAlgorithm(provider, imported);
 
             RsaSecurityKey key = new(imported.Rsa) { KeyId = FirstNonEmpty(provider.ClientAssertionKeyId, imported.KeyId) };
 

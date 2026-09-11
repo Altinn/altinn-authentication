@@ -191,7 +191,8 @@ namespace Altinn.Platform.Authentication.Tests.Utils
             DateTimeOffset authTime,
             string securityLevel = "4",
             string idp = "bankid-oidc",
-            bool includePid = true)
+            bool includePid = true,
+            string issuer = "https://helseid-sts.test.nhn.no")
         {
             string sub = Guid.NewGuid().ToString();
 
@@ -202,8 +203,8 @@ namespace Altinn.Platform.Authentication.Tests.Utils
                 RefreshToken = "dummy-refresh",
                 RefreshTokenExpiresIn = 600,
                 Scope = string.Join(' ', createdUpstreamLogingTransaction.Scopes),
-                IdToken = GetHelseIdIdToken(scenario, createdUpstreamLogingTransaction, sub, upstreamSid, authTime, securityLevel, idp, includePid),
-                AccessToken = GetHelseIdAccessToken(scenario, createdUpstreamLogingTransaction, sub, authTime),
+                IdToken = GetHelseIdIdToken(scenario, createdUpstreamLogingTransaction, sub, upstreamSid, authTime, securityLevel, idp, includePid, issuer),
+                AccessToken = GetHelseIdAccessToken(scenario, createdUpstreamLogingTransaction, sub, authTime, issuer),
             };
         }
 
@@ -215,12 +216,11 @@ namespace Altinn.Platform.Authentication.Tests.Utils
             DateTimeOffset authTime,
             string securityLevel,
             string idp,
-            bool includePid)
+            bool includePid,
+            string issuer = "https://helseid-sts.test.nhn.no")
         {
-            // Must match the Issuer configured for the 'helseid' provider; the upstream token
+            // Must match the Issuer configured for the provider under test; the upstream token
             // validator rejects anything else.
-            string issuer = "https://helseid-sts.test.nhn.no";
-
             List<Claim> claims =
             [
                 new Claim("iss", issuer, ClaimValueTypes.String, issuer),
@@ -264,10 +264,9 @@ namespace Altinn.Platform.Authentication.Tests.Utils
             OidcTestScenario scenario,
             UpstreamLoginTransaction createdUpstreamLogingTransaction,
             string sub,
-            DateTimeOffset authTime)
+            DateTimeOffset authTime,
+            string issuer = "https://helseid-sts.test.nhn.no")
         {
-            string issuer = "https://helseid-sts.test.nhn.no";
-
             List<Claim> claims =
             [
                 new Claim("iss", issuer, ClaimValueTypes.String, issuer),

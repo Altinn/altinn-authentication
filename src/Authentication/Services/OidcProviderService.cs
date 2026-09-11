@@ -4,6 +4,8 @@ using System.Collections.Frozen;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.Metrics;
+using System.Linq;
+using System.Net;
 using System.Net.Http;
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -45,20 +47,28 @@ namespace Altinn.Platform.Authentication.Services
         /// </summary>
         private const int MaxLoggedBodyLength = 512;
 
+        /// <summary>Header carrying the DPoP proof (RFC 9449).</summary>
+        private const string DpopHeader = "DPoP";
+
+        /// <summary>Response header by which a provider supplies the nonce a proof must carry.</summary>
+        private const string DpopNonceHeader = "DPoP-Nonce";
+
         private readonly HttpClient _httpClient;
         private readonly ILogger _logger;
         private readonly Metrics _metrics;
         private readonly TimeProvider _timeProvider;
+        private readonly IDpopNonceStore _nonceStore;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="OidcProviderService"/> class.
         /// </summary>
-        public OidcProviderService(HttpClient httpClient, ILogger<OidcProviderService> logger, IMetricsProvider metricsProvider, TimeProvider timeProvider)
+        public OidcProviderService(HttpClient httpClient, ILogger<OidcProviderService> logger, IMetricsProvider metricsProvider, TimeProvider timeProvider, IDpopNonceStore nonceStore)
         {
             _httpClient = httpClient;
             _logger = logger;
             _metrics = metricsProvider.Get<Metrics>();
             _timeProvider = timeProvider;
+            _nonceStore = nonceStore;
         }
 
         /// <summary>
@@ -85,27 +95,17 @@ namespace Altinn.Platform.Authentication.Services
             // Client authentication. private_key_jwt takes precedence: a provider configured with
             // an assertion key has one because it does not accept a client secret at all, so
             // falling back to the secret would only produce invalid_client.
-            if (ClientAssertionBuilder.IsConfiguredFor(provider))
-            {
-                kvps.Add("client_assertion_type", ClientAssertionBuilder.ClientAssertionType);
-                kvps.Add("client_assertion", ClientAssertionBuilder.Build(provider, _timeProvider.GetUtcNow()));
-            }
-            else if (!string.IsNullOrEmpty(provider.ClientSecret))
-            {
-                kvps.Add("client_secret", provider.ClientSecret);
-            }
+            AddClientAuthentication(kvps, provider);
 
             if (!string.IsNullOrWhiteSpace(codeVerifier))
             {
                 kvps.Add("code_verifier", codeVerifier);
             }
 
-            FormUrlEncodedContent formUrlEncodedContent = new(kvps);
-
             HttpResponseMessage response;
             try
             {
-                response = await _httpClient.PostAsync(provider.TokenEndpoint, formUrlEncodedContent, cancellationToken);
+                response = await SendTokenRequest(provider, kvps, cancellationToken);
             }
             catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
             {
@@ -131,6 +131,200 @@ namespace Altinn.Platform.Authentication.Services
                 return response.IsSuccessStatusCode
                     ? ReadSuccessResponse(content, providerKey, statusCode)
                     : ReadErrorResponse(content, providerKey, statusCode);
+            }
+        }
+
+        /// <summary>
+        /// Sends the token request, adding a DPoP proof when the provider requires one and
+        /// retrying once if the provider answers with a nonce challenge.
+        /// </summary>
+        /// <remarks>
+        /// RFC 9449 lets the provider demand that proofs carry a server-chosen nonce, which it
+        /// supplies only by rejecting a first attempt with <c>use_dpop_nonce</c> and a
+        /// <c>DPoP-Nonce</c> header. A single retry is therefore part of the normal flow rather
+        /// than error handling. It is bounded at one: a provider that keeps challenging is
+        /// misbehaving, and retrying further would just hold the user's sign-in open.
+        /// </remarks>
+        private async Task<HttpResponseMessage> SendTokenRequest(OidcProvider provider, Dictionary<string, string> body, CancellationToken cancellationToken)
+        {
+            if (!provider.UseDpop)
+            {
+                return await SendTokenRequestOnce(provider, body, nonce: null, cancellationToken);
+            }
+
+            string providerKey = provider.IssuerKey ?? provider.Issuer;
+
+            // Start with the nonce this provider last gave us, on any earlier response. RFC 9449
+            // section 8.2 makes that a MUST, not an optimisation: a nonce supplied on a successful
+            // response is to be used for every subsequent token request until a new one arrives.
+            HttpResponseMessage response = await SendTokenRequestOnce(provider, body, _nonceStore.Get(providerKey), cancellationToken);
+            string? supplied = RememberNonce(providerKey, response);
+
+            if (response.StatusCode != HttpStatusCode.BadRequest || supplied is null)
+            {
+                return response;
+            }
+
+            // Counted, not just logged. The first 400 is discarded and the outcome counter only
+            // records the retry, so without this the challenge is invisible — and how often a
+            // provider challenges is exactly what tells you whether the retry path is healthy.
+            _metrics.DpopNonceChallenge(providerKey);
+            _logger.LogDebug("Provider {Provider} requested a DPoP nonce; retrying the token request once", providerKey);
+            response.Dispose();
+
+            // The assertion is single-use as well, so the retry needs a fresh one alongside the
+            // fresh proof.
+            Dictionary<string, string> retryBody = new(body);
+            AddClientAuthentication(retryBody, provider);
+
+            HttpResponseMessage retried = await SendTokenRequestOnce(provider, retryBody, supplied, cancellationToken);
+
+            // A successful retry may carry the next nonce too; it must not be dropped just because
+            // it arrived on the second attempt.
+            RememberNonce(providerKey, retried);
+            return retried;
+        }
+
+        /// <summary>
+        /// Stores the <c>DPoP-Nonce</c> a response carries, if any, and returns it. Read on every
+        /// response regardless of status: the RFC supplies nonces on 200 as well as on the 400
+        /// challenge, and both replace whatever we held before.
+        /// </summary>
+        private string? RememberNonce(string providerKey, HttpResponseMessage response)
+        {
+            string? nonce = response.Headers.TryGetValues(DpopNonceHeader, out IEnumerable<string>? values)
+                ? values.FirstOrDefault()
+                : null;
+
+            if (string.IsNullOrWhiteSpace(nonce))
+            {
+                return null;
+            }
+
+            _nonceStore.Set(providerKey, nonce);
+            return nonce;
+        }
+
+        private async Task<HttpResponseMessage> SendTokenRequestOnce(OidcProvider provider, Dictionary<string, string> body, string? nonce, CancellationToken cancellationToken)
+        {
+            using HttpRequestMessage request = new(HttpMethod.Post, provider.TokenEndpoint)
+            {
+                Content = new FormUrlEncodedContent(body),
+            };
+
+            if (provider.UseDpop)
+            {
+                request.Headers.TryAddWithoutValidation(
+                    DpopHeader,
+                    DpopProofBuilder.Build(provider, HttpMethod.Post.Method, provider.TokenEndpoint, _timeProvider.GetUtcNow(), nonce));
+            }
+
+            return await _httpClient.SendAsync(request, cancellationToken);
+        }
+
+        /// <inheritdoc/>
+        public async Task<PushedAuthorizationResponse?> PushAuthorizationRequest(OidcProvider provider, IDictionary<string, string> parameters, CancellationToken cancellationToken = default)
+        {
+            string providerKey = provider.IssuerKey ?? provider.Issuer;
+
+            Dictionary<string, string> body = new(parameters);
+            AddClientAuthentication(body, provider);
+
+            HttpResponseMessage response;
+            try
+            {
+                using HttpRequestMessage request = new(HttpMethod.Post, provider.PushedAuthorizationRequestEndpoint)
+                {
+                    Content = new FormUrlEncodedContent(body),
+                };
+
+                response = await _httpClient.SendAsync(request, cancellationToken);
+            }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+            {
+                throw;
+            }
+            catch (Exception ex)
+            {
+                _metrics.PushedAuthorizationRequest(providerKey, statusCode: null, errorType: ex.GetType().FullName);
+                _logger.LogError(ex, "Pushed authorization request to {Provider} failed before a response was received", providerKey);
+                return null;
+            }
+
+            using (response)
+            {
+                int statusCode = (int)response.StatusCode;
+                string content = await response.Content.ReadAsStringAsync(cancellationToken);
+
+                if (!response.IsSuccessStatusCode)
+                {
+                    Oauth2ErrorResponse? error = TryReadOAuthError(content);
+                    string errorType = error?.Error is { Length: > 0 } code && KnownErrorCodes.Contains(code)
+                        ? code
+                        : Metrics.ErrorTypeOther;
+
+                    _metrics.PushedAuthorizationRequest(providerKey, statusCode, errorType);
+                    _logger.LogError(
+                        "Pushed authorization request to {Provider} was refused with {StatusCode}: {Error} {ErrorDescription}. Body: {Body}",
+                        providerKey,
+                        statusCode,
+                        error?.Error,
+                        error?.ErrorDescription,
+                        Truncate(error is null ? content : null));
+
+                    return null;
+                }
+
+                PushedAuthorizationResponse? parsed;
+                try
+                {
+                    parsed = JsonSerializer.Deserialize<PushedAuthorizationResponse>(content);
+                }
+                catch (JsonException ex)
+                {
+                    _metrics.PushedAuthorizationRequest(providerKey, statusCode, Metrics.ErrorTypeInvalidResponse);
+                    _logger.LogError(ex, "Pushed authorization request to {Provider} answered {StatusCode} with a body that is not JSON", providerKey, statusCode);
+                    return null;
+                }
+
+                // A 2xx with no usable request_uri is not something to redirect on. The body is
+                // deliberately not logged: it carries the reference, which is a credential.
+                if (string.IsNullOrWhiteSpace(parsed?.RequestUri) || parsed.ExpiresIn <= 0)
+                {
+                    _metrics.PushedAuthorizationRequest(providerKey, statusCode, Metrics.ErrorTypeInvalidResponse);
+                    _logger.LogError(
+                        "Pushed authorization request to {Provider} answered {StatusCode} without a usable request_uri or expires_in",
+                        providerKey,
+                        statusCode);
+                    return null;
+                }
+
+                _metrics.PushedAuthorizationRequest(providerKey, statusCode, errorType: null);
+                return parsed;
+            }
+        }
+
+        /// <summary>
+        /// Adds client authentication to an outgoing form body: a client assertion when the
+        /// provider is configured for one, otherwise the client secret.
+        /// </summary>
+        /// <remarks>
+        /// Shared by the token request and the pushed authorization request so the two cannot
+        /// drift apart. A fresh assertion is built per call — the <c>jti</c> is single-use, so the
+        /// assertion pushed with PAR must not be reused when the code is exchanged.
+        /// </remarks>
+        private void AddClientAuthentication(Dictionary<string, string> body, OidcProvider provider)
+        {
+            body["client_id"] = provider.ClientId;
+
+            if (ClientAssertionBuilder.IsConfiguredFor(provider))
+            {
+                body["client_assertion_type"] = ClientAssertionBuilder.ClientAssertionType;
+                body["client_assertion"] = ClientAssertionBuilder.Build(provider, _timeProvider.GetUtcNow());
+            }
+            else if (!string.IsNullOrEmpty(provider.ClientSecret))
+            {
+                body["client_secret"] = provider.ClientSecret;
             }
         }
 
@@ -254,7 +448,62 @@ namespace Altinn.Platform.Authentication.Services
                         name: "altinn.authentication.oidc.upstream_token_exchange",
                         description: "Authorization-code-to-token requests against the upstream OIDC provider");
 
+            private readonly Counter<int> _pushedAuthorizationRequest
+                = meter.CreateCounter<int>(
+                        name: "altinn.authentication.oidc.upstream_pushed_authorization_request",
+                        description: "Pushed authorization requests against the upstream OIDC provider");
+
+            private readonly Counter<int> _dpopNonceChallenge
+                = meter.CreateCounter<int>(
+                        name: "altinn.authentication.oidc.upstream_dpop_nonce_challenge",
+                        description: "Token requests the upstream provider answered with a DPoP nonce challenge, prompting one retry");
+
             public static Metrics Create(Meter meter) => new(meter);
+
+            /// <summary>
+            /// Counts one DPoP nonce challenge. The challenge is part of the normal flow, so this
+            /// is not an error count — but it is the only way to see the retry path at all, since
+            /// the discarded first response never reaches <see cref="TokenExchange"/>.
+            /// </summary>
+            /// <remarks>
+            /// The last nonce is kept per provider and sent up front, so in steady state this
+            /// should read close to zero: a challenge means the provider rotated its nonce, or this
+            /// instance had none yet. A sustained rate is the signal worth alerting on.
+            /// </remarks>
+            public void DpopNonceChallenge(string provider)
+            {
+                TagList tags = default;
+                tags.Add("provider", provider);
+                _dpopNonceChallenge.Add(1, tags);
+            }
+
+            /// <summary>
+            /// Counts one pushed authorization request, on the same convention as
+            /// <see cref="TokenExchange"/>: successes counted too, so an alert can be written on
+            /// the failure rate. Kept as its own instrument because a PAR failure and a token
+            /// failure mean different things — the first stops a sign-in before the user reaches
+            /// the provider, the second after they have authenticated there.
+            /// </summary>
+            /// <param name="provider">The configured provider key, e.g. <c>helseid</c>.</param>
+            /// <param name="statusCode">The upstream HTTP status, or <c>null</c> when no response was received.</param>
+            /// <param name="errorType">The failure classification, or <c>null</c> on success.</param>
+            public void PushedAuthorizationRequest(string provider, int? statusCode, string? errorType)
+            {
+                TagList tags = default;
+                tags.Add("provider", provider);
+
+                if (statusCode is not null)
+                {
+                    tags.Add("http.response.status_code", statusCode.Value);
+                }
+
+                if (errorType is not null)
+                {
+                    tags.Add("error.type", errorType);
+                }
+
+                _pushedAuthorizationRequest.Add(1, tags);
+            }
 
             /// <summary>
             /// Counts one authorization-code-to-token request. Successes are counted too, so that an

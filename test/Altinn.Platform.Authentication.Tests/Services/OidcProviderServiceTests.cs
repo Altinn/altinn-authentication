@@ -312,6 +312,148 @@ namespace Altinn.Platform.Authentication.Tests.Services
             Assert.DoesNotContain("client_secret", body);
         }
 
+        /// <summary>
+        /// The pushed authorization request must authenticate the client, exactly as the token
+        /// request does — HelseID refuses an unauthenticated push.
+        /// </summary>
+        [Fact]
+        public async Task PushAuthorizationRequest_SendsParametersWithClientAssertion()
+        {
+            string? captured = null;
+            (OidcProviderService sut, _) = CreateCapturingSut(
+                HttpStatusCode.Created,
+                """{"request_uri":"urn:ietf:params:oauth:request_uri:abc","expires_in":600}""",
+                body => captured = body);
+
+            PushedAuthorizationResponse? result = await sut.PushAuthorizationRequest(
+                NewParProvider(),
+                new Dictionary<string, string> { ["scope"] = "openid", ["state"] = "s" });
+
+            Assert.Equal("urn:ietf:params:oauth:request_uri:abc", result!.RequestUri);
+            Assert.Equal(600, result.ExpiresIn);
+
+            Assert.Contains("client_assertion=", captured);
+            Assert.Contains("scope=openid", captured);
+            Assert.Contains("state=s", captured);
+        }
+
+        /// <summary>
+        /// A 2xx without a usable reference is not something to redirect on. Returning null aborts
+        /// the sign-in rather than sending the browser to an authorize endpoint that would refuse it.
+        /// </summary>
+        [Theory]
+        [InlineData(HttpStatusCode.OK, """{"expires_in":600}""")]
+        [InlineData(HttpStatusCode.OK, """{"request_uri":"","expires_in":600}""")]
+        [InlineData(HttpStatusCode.OK, """{"request_uri":"urn:x","expires_in":0}""")]
+        [InlineData(HttpStatusCode.OK, "not json")]
+        [InlineData(HttpStatusCode.BadRequest, """{"error":"invalid_request"}""")]
+        public async Task PushAuthorizationRequest_UnusableResponse_ReturnsNull(HttpStatusCode statusCode, string body)
+        {
+            (OidcProviderService sut, _) = CreateSut(statusCode, body);
+
+            Assert.Null(await sut.PushAuthorizationRequest(NewParProvider(), new Dictionary<string, string>()));
+        }
+
+        /// <summary>
+        /// RFC 9449 lets the provider demand a server-chosen nonce, supplied only by rejecting a
+        /// first attempt. The retry is therefore part of the normal flow, and must carry a fresh
+        /// assertion as well — the jti is single-use.
+        /// </summary>
+        [Fact]
+        public async Task GetTokens_DpopNonceChallenge_RetriesOnceWithFreshProofAndAssertion()
+        {
+            List<string> bodies = [];
+            List<string?> proofs = [];
+            int call = 0;
+
+            Mock<HttpMessageHandler> handlerMock = new();
+            handlerMock
+                .Protected()
+                .Setup<Task<HttpResponseMessage>>("SendAsync", ItExpr.IsAny<HttpRequestMessage>(), ItExpr.IsAny<CancellationToken>())
+                .Returns(async (HttpRequestMessage request, CancellationToken _) =>
+                {
+                    bodies.Add(await request.Content!.ReadAsStringAsync());
+                    proofs.Add(request.Headers.TryGetValues("DPoP", out IEnumerable<string>? v) ? v.FirstOrDefault() : null);
+
+                    if (call++ == 0)
+                    {
+                        HttpResponseMessage challenge = new(HttpStatusCode.BadRequest)
+                        {
+                            Content = new StringContent("""{"error":"use_dpop_nonce"}""", Encoding.UTF8, "application/json")
+                        };
+                        challenge.Headers.TryAddWithoutValidation("DPoP-Nonce", "server-nonce");
+                        return challenge;
+                    }
+
+                    return new HttpResponseMessage(HttpStatusCode.OK)
+                    {
+                        Content = new StringContent("""{"access_token":"a","id_token":"b"}""", Encoding.UTF8, "application/json")
+                    };
+                });
+
+            (OidcProviderService sut, _) = CreateSut(handlerMock);
+            OidcCodeResponse? result = await sut.GetTokens("code", NewParProvider(useDpop: true), "https://localhost/cb", "verifier");
+
+            Assert.NotNull(result);
+            Assert.Equal(2, bodies.Count);
+
+            // Both attempts carried a proof, and they are not the same one.
+            Assert.All(proofs, p => Assert.False(string.IsNullOrEmpty(p)));
+            Assert.NotEqual(proofs[0], proofs[1]);
+
+            // The assertion is single-use too, so the retry cannot reuse the first one.
+            Assert.NotEqual(bodies[0], bodies[1]);
+        }
+
+        [Fact]
+        public async Task GetTokens_WithoutDpop_SendsNoProof()
+        {
+            string? proof = null;
+            (OidcProviderService sut, _) = CreateCapturingSut(
+                HttpStatusCode.OK,
+                """{"access_token":"a"}""",
+                _ => { },
+                request => proof = request.Headers.TryGetValues("DPoP", out IEnumerable<string>? v) ? v.FirstOrDefault() : null);
+
+            await sut.GetTokens("code", NewProvider(), "https://localhost/cb", "verifier");
+
+            Assert.Null(proof);
+        }
+
+        private static OidcProvider NewParProvider(bool useDpop = false) => new()
+        {
+            IssuerKey = "helseid",
+            Issuer = "https://helseid-sts.test.nhn.no",
+            TokenEndpoint = "https://helseid-sts.test.nhn.no/connect/token",
+            PushedAuthorizationRequestEndpoint = "https://helseid-sts.test.nhn.no/connect/par",
+            ClientId = "altinn-test-client",
+            ClientAssertionPrivateKeyJwk = GenerateJwk(),
+            UseDpop = useDpop,
+        };
+
+        private (OidcProviderService Sut, MetricCollector<int> Collector) CreateCapturingSut(
+            HttpStatusCode statusCode,
+            string responseBody,
+            Action<string> onBody,
+            Action<HttpRequestMessage>? onRequest = null)
+        {
+            Mock<HttpMessageHandler> handlerMock = new();
+            handlerMock
+                .Protected()
+                .Setup<Task<HttpResponseMessage>>("SendAsync", ItExpr.IsAny<HttpRequestMessage>(), ItExpr.IsAny<CancellationToken>())
+                .Returns(async (HttpRequestMessage request, CancellationToken _) =>
+                {
+                    onRequest?.Invoke(request);
+                    onBody(await request.Content!.ReadAsStringAsync());
+                    return new HttpResponseMessage(statusCode)
+                    {
+                        Content = new StringContent(responseBody, Encoding.UTF8, "application/json")
+                    };
+                });
+
+            return CreateSut(handlerMock);
+        }
+
         private static string GenerateJwk()
         {
             using RSA rsa = RSA.Create(2048);
@@ -422,9 +564,152 @@ namespace Altinn.Platform.Authentication.Tests.Services
                 new HttpClient(handlerMock.Object),
                 _loggerMock.Object,
                 new TestMetricsProvider(meterFactory),
-                TimeProvider.System);
+                TimeProvider.System,
+                _nonceStore);
 
             return (sut, collector);
+        }
+
+        /// <summary>
+        /// Shared across the SUTs a test creates, as the singleton is in production, so a nonce
+        /// learned on one request is visible to the next.
+        /// </summary>
+        private readonly DpopNonceStore _nonceStore = new();
+
+        /// <summary>
+        /// Reads the DPoP proof's nonce claim from a captured request, or null when the proof has
+        /// none.
+        /// </summary>
+        private static string? ProofNonce(HttpRequestMessage request)
+        {
+            if (!request.Headers.TryGetValues("DPoP", out IEnumerable<string>? values))
+            {
+                return null;
+            }
+
+            System.IdentityModel.Tokens.Jwt.JwtSecurityToken proof = new System.IdentityModel.Tokens.Jwt.JwtSecurityTokenHandler().ReadJwtToken(values.First());
+            return proof.Claims.FirstOrDefault(c => c.Type == "nonce")?.Value;
+        }
+
+        /// <summary>
+        /// RFC 9449 section 8.2: a nonce supplied on a successful response MUST be used on the next
+        /// token request. Two sign-ins in a row — the second must carry the first's nonce up front,
+        /// without a challenge.
+        /// </summary>
+        [Fact]
+        public async Task GetTokens_NonceFromSuccessfulResponse_IsSentOnTheNextRequest()
+        {
+            List<string?> proofNonces = [];
+
+            Mock<HttpMessageHandler> handlerMock = new();
+            handlerMock
+                .Protected()
+                .Setup<Task<HttpResponseMessage>>("SendAsync", ItExpr.IsAny<HttpRequestMessage>(), ItExpr.IsAny<CancellationToken>())
+                .Returns((HttpRequestMessage request, CancellationToken _) =>
+                {
+                    proofNonces.Add(ProofNonce(request));
+                    HttpResponseMessage ok = new(HttpStatusCode.OK)
+                    {
+                        Content = new StringContent("""{"access_token":"a","id_token":"b"}""", Encoding.UTF8, "application/json")
+                    };
+                    ok.Headers.TryAddWithoutValidation("DPoP-Nonce", "nonce-from-200");
+                    return Task.FromResult(ok);
+                });
+
+            (OidcProviderService sut, _) = CreateSut(handlerMock);
+            OidcProvider provider = NewParProvider(useDpop: true);
+
+            await sut.GetTokens("code-1", provider, "https://localhost/cb", "verifier");
+            await sut.GetTokens("code-2", provider, "https://localhost/cb", "verifier");
+
+            Assert.Equal(2, proofNonces.Count);
+            Assert.Null(proofNonces[0]);
+            Assert.Equal("nonce-from-200", proofNonces[1]);
+        }
+
+        /// <summary>
+        /// A nonce supplied on the successful <em>retry</em> counts too. It must not be dropped just
+        /// because it arrived on the second attempt.
+        /// </summary>
+        [Fact]
+        public async Task GetTokens_NonceFromSuccessfulRetry_IsSentOnTheNextRequest()
+        {
+            List<string?> proofNonces = [];
+            int call = 0;
+
+            Mock<HttpMessageHandler> handlerMock = new();
+            handlerMock
+                .Protected()
+                .Setup<Task<HttpResponseMessage>>("SendAsync", ItExpr.IsAny<HttpRequestMessage>(), ItExpr.IsAny<CancellationToken>())
+                .Returns((HttpRequestMessage request, CancellationToken _) =>
+                {
+                    proofNonces.Add(ProofNonce(request));
+
+                    if (call++ == 0)
+                    {
+                        HttpResponseMessage challenge = new(HttpStatusCode.BadRequest)
+                        {
+                            Content = new StringContent("""{"error":"use_dpop_nonce"}""", Encoding.UTF8, "application/json")
+                        };
+                        challenge.Headers.TryAddWithoutValidation("DPoP-Nonce", "challenge-nonce");
+                        return Task.FromResult(challenge);
+                    }
+
+                    HttpResponseMessage ok = new(HttpStatusCode.OK)
+                    {
+                        Content = new StringContent("""{"access_token":"a","id_token":"b"}""", Encoding.UTF8, "application/json")
+                    };
+                    ok.Headers.TryAddWithoutValidation("DPoP-Nonce", "rotated-on-retry");
+                    return Task.FromResult(ok);
+                });
+
+            (OidcProviderService sut, _) = CreateSut(handlerMock);
+            OidcProvider provider = NewParProvider(useDpop: true);
+
+            await sut.GetTokens("code-1", provider, "https://localhost/cb", "verifier");
+            await sut.GetTokens("code-2", provider, "https://localhost/cb", "verifier");
+
+            // first attempt, challenged retry, then the next sign-in carrying the rotated nonce
+            Assert.Equal(new string?[] { null, "challenge-nonce", "rotated-on-retry" }, proofNonces);
+        }
+
+        /// <summary>
+        /// RFC 9449 section 9: a nonce is accepted only by the server that issued it. One provider's
+        /// nonce must never leak into a request to another.
+        /// </summary>
+        [Fact]
+        public async Task GetTokens_Nonce_IsScopedToTheProviderThatIssuedIt()
+        {
+            List<(string Host, string? Nonce)> seen = [];
+
+            Mock<HttpMessageHandler> handlerMock = new();
+            handlerMock
+                .Protected()
+                .Setup<Task<HttpResponseMessage>>("SendAsync", ItExpr.IsAny<HttpRequestMessage>(), ItExpr.IsAny<CancellationToken>())
+                .Returns((HttpRequestMessage request, CancellationToken _) =>
+                {
+                    seen.Add((request.RequestUri!.Host, ProofNonce(request)));
+                    HttpResponseMessage ok = new(HttpStatusCode.OK)
+                    {
+                        Content = new StringContent("""{"access_token":"a","id_token":"b"}""", Encoding.UTF8, "application/json")
+                    };
+                    ok.Headers.TryAddWithoutValidation("DPoP-Nonce", "nonce-for-" + request.RequestUri.Host);
+                    return Task.FromResult(ok);
+                });
+
+            (OidcProviderService sut, _) = CreateSut(handlerMock);
+            OidcProvider first = NewParProvider(useDpop: true);
+            OidcProvider second = NewParProvider(useDpop: true);
+            second.IssuerKey = "other-provider";
+            second.TokenEndpoint = "https://other.example/connect/token";
+
+            await sut.GetTokens("c", first, "https://localhost/cb", "v");
+            await sut.GetTokens("c", second, "https://localhost/cb", "v");
+            await sut.GetTokens("c", first, "https://localhost/cb", "v");
+
+            Assert.Null(seen[0].Nonce);
+            Assert.Null(seen[1].Nonce);
+            Assert.Equal("nonce-for-helseid-sts.test.nhn.no", seen[2].Nonce);
         }
 
         private void VerifyLogged(LogLevel level, params string[] expectedFragments)

@@ -89,6 +89,36 @@ The audience is the provider's **issuer identifier, not its token endpoint**. Th
 
 The key is a secret and belongs wherever the deployment keeps secrets, alongside the client secrets it replaces. A misconfigured or unreadable key throws on the first sign-in with the provider named, rather than producing an `invalid_client` from upstream that says nothing about the cause.
 
+### Pushed Authorization Requests, DPoP and strict validation
+
+Providers following a FAPI 2.0-style profile require more than a client assertion. HelseID requires all of the following, and refuses a sign-in that omits any of them. Each is opt-in per provider, so ID-porten and UIDP are unaffected.
+
+| Setting | Requirement |
+|---|---|
+| `PushedAuthorizationRequestEndpoint` | Push the authorization parameters back-channel (RFC 9126) and redirect with only `client_id` and `request_uri`. |
+| `UseDpop` | Send a DPoP proof (RFC 9449) with the token request, signed with the client-assertion key. |
+| `StrictIdTokenValidation` | For id_tokens only: require `aud` to contain our `client_id`, and the issuer to match exactly. Never applied to access tokens. |
+| `TreatAccessTokenAsOpaque` | Do not read or validate the access token. |
+| `ValidateCallbackIssuer` | Require and validate the callback's `iss` (RFC 9207). |
+
+**PAR has no front-channel fallback.** A failed push aborts the sign-in. A provider that requires PAR would refuse the front-channel request anyway, and sending parameters through the browser after failing to push them would defeat the reason for pushing them. The unregistered-client flow stops locally rather than redirecting, so a failure cannot become a sign-in loop.
+
+**DPoP nonces are remembered per provider.** RFC 9449 §8.2 makes it a MUST: a nonce the provider supplies on a successful response is used on the next token request, and every one after it, until the provider supplies a new one. `IDpopNonceStore` (a singleton — the provider service is a typed `HttpClient` and therefore transient) keeps the most recent nonce per provider key and sends it up front. A nonce is accepted only by the server that issued it (§9), so the store is keyed by provider and never mixes them.
+
+A provider may still reject a request with `use_dpop_nonce` and a `DPoP-Nonce` header — the first request after a restart, or when it rotates its nonce. One retry with a fresh proof and a fresh client assertion (both `jti` values are single-use) is part of the normal flow, and whatever nonce the retry's response carries is remembered too. The retry is bounded at one. In steady state the `upstream_dpop_nonce_challenge` counter should read close to zero; a sustained rate means the provider is rotating faster than we track, or something is wrong.
+
+**The access token is the API's, not ours.** HelseID states the client must not inspect or validate it. It happens to be a JWT today, which is exactly why depending on that is fragile — a DPoP-bound or reformatted token would break a client that parses it. With `TreatAccessTokenAsOpaque` the granted scopes come from the token response's `scope` field instead, which is the authoritative statement of what was granted and is readable either way.
+
+**Strict validation is opt-in for a reason.** The shared validator has always skipped audience entirely and treated a trailing slash on the issuer as equivalent. Requiring both globally could start rejecting tokens from providers that rely on the leniency, so each provider adopts it deliberately. `StrictIdTokenValidation` turns off the trailing-slash allowance as well: a profile that asks for exact issuer matching gets exactly that.
+
+"Exact" is enforced against IdentityModel's own defaults: it ignores a trailing slash when comparing audiences unless told not to, so `<client_id>/` would otherwise pass as our client id. Strict validation turns that off.
+
+It is an **id_token** rule, and applies to every id_token — including one presented as `id_token_hint` at end-session — but never to an access token, whose audience is the API rather than us. The caller states which kind it is validating; it is not inferred from whether a nonce was supplied, because an `id_token_hint` carries none and was once validated as if it were an access token.
+
+**Discovery is the authority for the callback issuer.** With `ValidateCallbackIssuer`, the callback's `iss` is compared against the issuer the provider asserts in its discovery document, which must itself match configuration. Unreachable discovery, a document with no issuer, or a disagreement between document and configuration all refuse the callback.
+
+**Callback `iss` never selects the provider.** The provider comes from the login transaction looked up by `state`; the parameter is only checked against it. Letting it choose would defeat the purpose. The check runs before the code is exchanged and before any session is touched, and applies to error responses too — a mix-up can replay an error just as well as a code.
+
 ### Providers outside ID-porten's conventions
 
 A provider whose token does not follow ID-porten's claim names or values is described in configuration, not in code:

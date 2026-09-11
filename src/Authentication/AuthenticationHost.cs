@@ -187,6 +187,7 @@ internal static class AuthenticationHost
         services.AddSingleton<IPublicSigningKeyProvider, PublicSigningKeyProvider>();
         services.AddSingleton<IAccessTokenValidator, AccessTokenValidator>();
         services.AddSingleton<IEFormidlingAccessValidator, EFormidlingAccessValidator>();
+        services.AddSingleton<IDpopNonceStore, DpopNonceStore>();
         services.AddHttpClient<IOidcProvider, OidcProviderService>();
         services.AddSingleton<IAuthentication, AuthenticationCore>();
         services.AddSingleton<IEventsQueueClient, EventsQueueClient>();
