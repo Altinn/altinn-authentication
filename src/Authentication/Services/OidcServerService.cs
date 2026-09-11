@@ -35,7 +35,6 @@ using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Microsoft.FeatureManagement;
-using Microsoft.IdentityModel.Protocols.OpenIdConnect;
 using Microsoft.IdentityModel.Tokens;
 
 namespace Altinn.Platform.Authentication.Services
@@ -64,7 +63,8 @@ namespace Altinn.Platform.Authentication.Services
         IEventLog eventLog,
         IFeatureManager featureManager, 
         IOidcDownstreamLogout oidcDownstreamLogout,
-        IAcrValueCatalog acrValueCatalog) : IOidcServerService
+        IAcrValueCatalog acrValueCatalog,
+        ISigningKeysRetriever signingKeysRetriever) : IOidcServerService
     {
         private readonly ILogger<OidcServerService> _logger = logger;
         private readonly IOidcServerClientRepository _oidcServerClientRepository = oidcServerClientRepository;
@@ -74,6 +74,7 @@ namespace Altinn.Platform.Authentication.Services
         private readonly IAuthorizeClientPolicyValidator _clientValidator = authorizeClientPolicyValidator;
         private readonly OidcProviderSettings _oidcProviderSettings = oidcProviderSettings.Value;
         private readonly IAcrValueCatalog _acrValueCatalog = acrValueCatalog;
+        private readonly ISigningKeysRetriever _signingKeysRetriever = signingKeysRetriever;
         private readonly TimeProvider _timeProvider = timeProvider;
         private readonly IOidcProvider _oidcProvider = oidcProvider;
         private readonly IUpstreamTokenValidator _upstreamTokenValidator = upstreamTokenValidator;
@@ -185,11 +186,18 @@ namespace Altinn.Platform.Authentication.Services
                     hasExistingSession: hasLiveSession),
                 cancellationToken);
 
-            // A failed push leaves nothing to redirect to. The cause is already logged and counted
-            // by the provider service; the client gets an OIDC error at its registered redirect_uri.
+            // A failed push leaves nothing to send the user upstream to. The cause is already logged
+            // and counted by the provider service. A registered client's redirect_uri was validated
+            // earlier in this flow, so it is safe to return an OIDC error there with the client's
+            // own state — which is what an OIDC client expects, rather than a bare status code.
             if (authorizeUrl is null)
             {
-                return AuthorizeResult.LocalError(502, "temporarily_unavailable", "Could not start sign-in with the identity provider.");
+                return AuthorizeResult.ErrorRedirect(
+                    request.RedirectUri,
+                    "temporarily_unavailable",
+                    "Could not start sign-in with the identity provider.",
+                    request.State,
+                    tx.RequestId);
             }
 
             // ========= 9) Return redirect upstream =========
@@ -471,7 +479,7 @@ namespace Altinn.Platform.Authentication.Services
                     try
                     {
                         OidcProvider provider = ChooseProviderByIssuer(raw.Issuer);
-                        JwtSecurityToken validated = await _upstreamTokenValidator.ValidateTokenAsync(input.IdTokenHint, provider, null, cancellationToken);
+                        JwtSecurityToken validated = await _upstreamTokenValidator.ValidateTokenAsync(input.IdTokenHint, provider, UpstreamTokenKind.IdToken, nonce: null, cancellationToken);
                         hintClientId = validated.Audiences?.FirstOrDefault();
                         hintSid = validated.Claims.FirstOrDefault(c => c.Type == "sid")?.Value;
                     }
@@ -787,7 +795,7 @@ namespace Altinn.Platform.Authentication.Services
 
             try
             {
-                JwtSecurityToken idToken = await _upstreamTokenValidator.ValidateTokenAsync(codeReponse.IdToken, provider, upstreamTx.Nonce, cancellationToken);
+                JwtSecurityToken idToken = await _upstreamTokenValidator.ValidateTokenAsync(codeReponse.IdToken, provider, UpstreamTokenKind.IdToken, upstreamTx.Nonce, cancellationToken);
 
                 // The access token is the API's to inspect, not ours. HelseID states the client
                 // must not read or validate it, and treats it as opaque — it happens to be a JWT
@@ -795,7 +803,7 @@ namespace Altinn.Platform.Authentication.Services
                 // reformatted token would break a client that parses it.
                 JwtSecurityToken? accessToken = provider.TreatAccessTokenAsOpaque
                     ? null
-                    : await _upstreamTokenValidator.ValidateTokenAsync(codeReponse.AccessToken, provider, null, cancellationToken);
+                    : await _upstreamTokenValidator.ValidateTokenAsync(codeReponse.AccessToken, provider, UpstreamTokenKind.AccessToken, nonce: null, cancellationToken);
 
                 UserAuthenticationModel userIdenity = AuthenticationHelper.GetUserFromToken(idToken, provider, accessToken, _logger);
 
@@ -1069,7 +1077,7 @@ namespace Altinn.Platform.Authentication.Services
         /// Returns <c>null</c> when discovery is unreachable, states no issuer, or states one that
         /// disagrees with configuration. All three mean we cannot say what the issuer is, and a
         /// check we cannot perform must not pass. The document is cached by
-        /// <see cref="ConfigurationMangerHelper"/>, so this is not a fetch per callback.
+        /// <see cref="ISigningKeysRetriever"/>, so this is not a fetch per callback.
         /// </remarks>
         private async Task<string?> GetValidatedIssuer(OidcProvider provider, CancellationToken cancellationToken)
         {
@@ -1081,10 +1089,10 @@ namespace Altinn.Platform.Authentication.Services
                 return null;
             }
 
-            OpenIdConnectConfiguration configuration;
+            string? discoveredIssuer;
             try
             {
-                configuration = await ConfigurationMangerHelper.GetOidcConfiguration(provider.WellKnownConfigEndpoint);
+                discoveredIssuer = await _signingKeysRetriever.GetIssuer(provider.WellKnownConfigEndpoint, cancellationToken);
             }
             catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
             {
@@ -1096,23 +1104,23 @@ namespace Altinn.Platform.Authentication.Services
                 return null;
             }
 
-            if (string.IsNullOrWhiteSpace(configuration.Issuer))
+            if (string.IsNullOrWhiteSpace(discoveredIssuer))
             {
                 _logger.LogError("Discovery metadata for provider {Provider} states no issuer.", provider.IssuerKey);
                 return null;
             }
 
-            if (!string.Equals(configuration.Issuer, provider.Issuer, StringComparison.Ordinal))
+            if (!string.Equals(discoveredIssuer, provider.Issuer, StringComparison.Ordinal))
             {
                 _logger.LogError(
                     "Discovery metadata for provider {Provider} states issuer '{Discovered}', but configuration says '{Configured}'.",
                     provider.IssuerKey,
-                    configuration.Issuer,
+                    discoveredIssuer,
                     provider.Issuer);
                 return null;
             }
 
-            return configuration.Issuer;
+            return discoveredIssuer;
         }
 
         /// <summary>

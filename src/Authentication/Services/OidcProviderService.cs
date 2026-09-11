@@ -437,6 +437,12 @@ namespace Altinn.Platform.Authentication.Services
             /// is not an error count — but it is the only way to see the retry path at all, since
             /// the discarded first response never reaches <see cref="TokenExchange"/>.
             /// </summary>
+            /// <remarks>
+            /// Read this with care: the last nonce is not yet kept between requests, as RFC 9449
+            /// section 8 recommends, so a provider that issues nonces challenges <em>every</em>
+            /// token request. Expect one challenge per sign-in until that is added. A rate above
+            /// that is the signal worth alerting on.
+            /// </remarks>
             public void DpopNonceChallenge(string provider)
             {
                 TagList tags = default;

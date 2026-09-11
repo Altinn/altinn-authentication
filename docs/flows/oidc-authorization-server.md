@@ -97,7 +97,7 @@ Providers following a FAPI 2.0-style profile require more than a client assertio
 |---|---|
 | `PushedAuthorizationRequestEndpoint` | Push the authorization parameters back-channel (RFC 9126) and redirect with only `client_id` and `request_uri`. |
 | `UseDpop` | Send a DPoP proof (RFC 9449) with the token request, signed with the client-assertion key. |
-| `StrictIdTokenValidation` | Require the id_token's `aud` to contain our `client_id`, and the issuer to match exactly. |
+| `StrictIdTokenValidation` | For id_tokens only: require `aud` to contain our `client_id`, and the issuer to match exactly. Never applied to access tokens. |
 | `TreatAccessTokenAsOpaque` | Do not read or validate the access token. |
 | `ValidateCallbackIssuer` | Require and validate the callback's `iss` (RFC 9207). |
 
@@ -108,6 +108,10 @@ Providers following a FAPI 2.0-style profile require more than a client assertio
 **The access token is the API's, not ours.** HelseID states the client must not inspect or validate it. It happens to be a JWT today, which is exactly why depending on that is fragile — a DPoP-bound or reformatted token would break a client that parses it. With `TreatAccessTokenAsOpaque` the granted scopes come from the token response's `scope` field instead, which is the authoritative statement of what was granted and is readable either way.
 
 **Strict validation is opt-in for a reason.** The shared validator has always skipped audience entirely and treated a trailing slash on the issuer as equivalent. Requiring both globally could start rejecting tokens from providers that rely on the leniency, so each provider adopts it deliberately. `StrictIdTokenValidation` turns off the trailing-slash allowance as well: a profile that asks for exact issuer matching gets exactly that.
+
+It is an **id_token** rule, and applies to every id_token — including one presented as `id_token_hint` at end-session — but never to an access token, whose audience is the API rather than us. The caller states which kind it is validating; it is not inferred from whether a nonce was supplied, because an `id_token_hint` carries none and was once validated as if it were an access token.
+
+**Discovery is the authority for the callback issuer.** With `ValidateCallbackIssuer`, the callback's `iss` is compared against the issuer the provider asserts in its discovery document, which must itself match configuration. Unreachable discovery, a document with no issuer, or a disagreement between document and configuration all refuse the callback.
 
 **Callback `iss` never selects the provider.** The provider comes from the login transaction looked up by `state`; the parameter is only checked against it. Letting it choose would defeat the purpose. The check runs before the code is exchanged and before any session is touched, and applies to error responses too — a mix-up can replay an error just as well as a code.
 

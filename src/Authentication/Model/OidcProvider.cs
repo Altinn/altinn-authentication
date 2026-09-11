@@ -130,7 +130,9 @@ namespace Altinn.Platform.Authentication.Model
         public bool UseDpop { get; set; }
 
         /// <summary>
-        /// Validate the id_token to the letter of OIDC Core. Turns on <em>both</em>:
+        /// Validate the id_token to the letter of OIDC Core. Applies to id_tokens only — including
+        /// one presented as <c>id_token_hint</c> — and never to access tokens, whose audience is
+        /// the API. Turns on <em>both</em>:
         /// <list type="bullet">
         /// <item><description>the <c>aud</c> must contain our <see cref="ClientId"/>;</description></item>
         /// <item><description>the issuer must match <see cref="Issuer"/> exactly, with no
