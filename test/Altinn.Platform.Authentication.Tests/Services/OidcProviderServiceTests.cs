@@ -564,9 +564,152 @@ namespace Altinn.Platform.Authentication.Tests.Services
                 new HttpClient(handlerMock.Object),
                 _loggerMock.Object,
                 new TestMetricsProvider(meterFactory),
-                TimeProvider.System);
+                TimeProvider.System,
+                _nonceStore);
 
             return (sut, collector);
+        }
+
+        /// <summary>
+        /// Shared across the SUTs a test creates, as the singleton is in production, so a nonce
+        /// learned on one request is visible to the next.
+        /// </summary>
+        private readonly DpopNonceStore _nonceStore = new();
+
+        /// <summary>
+        /// Reads the DPoP proof's nonce claim from a captured request, or null when the proof has
+        /// none.
+        /// </summary>
+        private static string? ProofNonce(HttpRequestMessage request)
+        {
+            if (!request.Headers.TryGetValues("DPoP", out IEnumerable<string>? values))
+            {
+                return null;
+            }
+
+            System.IdentityModel.Tokens.Jwt.JwtSecurityToken proof = new System.IdentityModel.Tokens.Jwt.JwtSecurityTokenHandler().ReadJwtToken(values.First());
+            return proof.Claims.FirstOrDefault(c => c.Type == "nonce")?.Value;
+        }
+
+        /// <summary>
+        /// RFC 9449 section 8.2: a nonce supplied on a successful response MUST be used on the next
+        /// token request. Two sign-ins in a row — the second must carry the first's nonce up front,
+        /// without a challenge.
+        /// </summary>
+        [Fact]
+        public async Task GetTokens_NonceFromSuccessfulResponse_IsSentOnTheNextRequest()
+        {
+            List<string?> proofNonces = [];
+
+            Mock<HttpMessageHandler> handlerMock = new();
+            handlerMock
+                .Protected()
+                .Setup<Task<HttpResponseMessage>>("SendAsync", ItExpr.IsAny<HttpRequestMessage>(), ItExpr.IsAny<CancellationToken>())
+                .Returns((HttpRequestMessage request, CancellationToken _) =>
+                {
+                    proofNonces.Add(ProofNonce(request));
+                    HttpResponseMessage ok = new(HttpStatusCode.OK)
+                    {
+                        Content = new StringContent("""{"access_token":"a","id_token":"b"}""", Encoding.UTF8, "application/json")
+                    };
+                    ok.Headers.TryAddWithoutValidation("DPoP-Nonce", "nonce-from-200");
+                    return Task.FromResult(ok);
+                });
+
+            (OidcProviderService sut, _) = CreateSut(handlerMock);
+            OidcProvider provider = NewParProvider(useDpop: true);
+
+            await sut.GetTokens("code-1", provider, "https://localhost/cb", "verifier");
+            await sut.GetTokens("code-2", provider, "https://localhost/cb", "verifier");
+
+            Assert.Equal(2, proofNonces.Count);
+            Assert.Null(proofNonces[0]);
+            Assert.Equal("nonce-from-200", proofNonces[1]);
+        }
+
+        /// <summary>
+        /// A nonce supplied on the successful <em>retry</em> counts too. It must not be dropped just
+        /// because it arrived on the second attempt.
+        /// </summary>
+        [Fact]
+        public async Task GetTokens_NonceFromSuccessfulRetry_IsSentOnTheNextRequest()
+        {
+            List<string?> proofNonces = [];
+            int call = 0;
+
+            Mock<HttpMessageHandler> handlerMock = new();
+            handlerMock
+                .Protected()
+                .Setup<Task<HttpResponseMessage>>("SendAsync", ItExpr.IsAny<HttpRequestMessage>(), ItExpr.IsAny<CancellationToken>())
+                .Returns((HttpRequestMessage request, CancellationToken _) =>
+                {
+                    proofNonces.Add(ProofNonce(request));
+
+                    if (call++ == 0)
+                    {
+                        HttpResponseMessage challenge = new(HttpStatusCode.BadRequest)
+                        {
+                            Content = new StringContent("""{"error":"use_dpop_nonce"}""", Encoding.UTF8, "application/json")
+                        };
+                        challenge.Headers.TryAddWithoutValidation("DPoP-Nonce", "challenge-nonce");
+                        return Task.FromResult(challenge);
+                    }
+
+                    HttpResponseMessage ok = new(HttpStatusCode.OK)
+                    {
+                        Content = new StringContent("""{"access_token":"a","id_token":"b"}""", Encoding.UTF8, "application/json")
+                    };
+                    ok.Headers.TryAddWithoutValidation("DPoP-Nonce", "rotated-on-retry");
+                    return Task.FromResult(ok);
+                });
+
+            (OidcProviderService sut, _) = CreateSut(handlerMock);
+            OidcProvider provider = NewParProvider(useDpop: true);
+
+            await sut.GetTokens("code-1", provider, "https://localhost/cb", "verifier");
+            await sut.GetTokens("code-2", provider, "https://localhost/cb", "verifier");
+
+            // first attempt, challenged retry, then the next sign-in carrying the rotated nonce
+            Assert.Equal(new string?[] { null, "challenge-nonce", "rotated-on-retry" }, proofNonces);
+        }
+
+        /// <summary>
+        /// RFC 9449 section 9: a nonce is accepted only by the server that issued it. One provider's
+        /// nonce must never leak into a request to another.
+        /// </summary>
+        [Fact]
+        public async Task GetTokens_Nonce_IsScopedToTheProviderThatIssuedIt()
+        {
+            List<(string Host, string? Nonce)> seen = [];
+
+            Mock<HttpMessageHandler> handlerMock = new();
+            handlerMock
+                .Protected()
+                .Setup<Task<HttpResponseMessage>>("SendAsync", ItExpr.IsAny<HttpRequestMessage>(), ItExpr.IsAny<CancellationToken>())
+                .Returns((HttpRequestMessage request, CancellationToken _) =>
+                {
+                    seen.Add((request.RequestUri!.Host, ProofNonce(request)));
+                    HttpResponseMessage ok = new(HttpStatusCode.OK)
+                    {
+                        Content = new StringContent("""{"access_token":"a","id_token":"b"}""", Encoding.UTF8, "application/json")
+                    };
+                    ok.Headers.TryAddWithoutValidation("DPoP-Nonce", "nonce-for-" + request.RequestUri.Host);
+                    return Task.FromResult(ok);
+                });
+
+            (OidcProviderService sut, _) = CreateSut(handlerMock);
+            OidcProvider first = NewParProvider(useDpop: true);
+            OidcProvider second = NewParProvider(useDpop: true);
+            second.IssuerKey = "other-provider";
+            second.TokenEndpoint = "https://other.example/connect/token";
+
+            await sut.GetTokens("c", first, "https://localhost/cb", "v");
+            await sut.GetTokens("c", second, "https://localhost/cb", "v");
+            await sut.GetTokens("c", first, "https://localhost/cb", "v");
+
+            Assert.Null(seen[0].Nonce);
+            Assert.Null(seen[1].Nonce);
+            Assert.Equal("nonce-for-helseid-sts.test.nhn.no", seen[2].Nonce);
         }
 
         private void VerifyLogged(LogLevel level, params string[] expectedFragments)

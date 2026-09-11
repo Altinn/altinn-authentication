@@ -1,4 +1,4 @@
-﻿#nullable enable
+#nullable enable
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -128,6 +128,11 @@ namespace Altinn.Platform.Authentication.Services
                 // opaque.
                 ValidateAudience = isIdToken && provider.StrictIdTokenValidation,
                 ValidAudience = isIdToken && provider.StrictIdTokenValidation ? provider.ClientId : null,
+
+                // IdentityModel defaults this to true, which would accept "<client_id>/" as our
+                // audience. "Exact" has to mean exact, or the strict flag does not deliver what
+                // its name and OIDC Core promise.
+                IgnoreTrailingSlashWhenValidatingAudience = !(isIdToken && provider.StrictIdTokenValidation),
                 IssuerValidator = (tokenIssuer, securityToken, parameters) =>
                 {
                     // Exact match is the spec requirement (OIDC Core).

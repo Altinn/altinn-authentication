@@ -57,16 +57,18 @@ namespace Altinn.Platform.Authentication.Services
         private readonly ILogger _logger;
         private readonly Metrics _metrics;
         private readonly TimeProvider _timeProvider;
+        private readonly IDpopNonceStore _nonceStore;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="OidcProviderService"/> class.
         /// </summary>
-        public OidcProviderService(HttpClient httpClient, ILogger<OidcProviderService> logger, IMetricsProvider metricsProvider, TimeProvider timeProvider)
+        public OidcProviderService(HttpClient httpClient, ILogger<OidcProviderService> logger, IMetricsProvider metricsProvider, TimeProvider timeProvider, IDpopNonceStore nonceStore)
         {
             _httpClient = httpClient;
             _logger = logger;
             _metrics = metricsProvider.Get<Metrics>();
             _timeProvider = timeProvider;
+            _nonceStore = nonceStore;
         }
 
         /// <summary>
@@ -145,18 +147,20 @@ namespace Altinn.Platform.Authentication.Services
         /// </remarks>
         private async Task<HttpResponseMessage> SendTokenRequest(OidcProvider provider, Dictionary<string, string> body, CancellationToken cancellationToken)
         {
-            HttpResponseMessage response = await SendTokenRequestOnce(provider, body, nonce: null, cancellationToken);
-
-            if (!provider.UseDpop || response.StatusCode != HttpStatusCode.BadRequest)
+            if (!provider.UseDpop)
             {
-                return response;
+                return await SendTokenRequestOnce(provider, body, nonce: null, cancellationToken);
             }
 
-            string? nonce = response.Headers.TryGetValues(DpopNonceHeader, out IEnumerable<string>? values)
-                ? values.FirstOrDefault()
-                : null;
+            string providerKey = provider.IssuerKey ?? provider.Issuer;
 
-            if (string.IsNullOrWhiteSpace(nonce))
+            // Start with the nonce this provider last gave us, on any earlier response. RFC 9449
+            // section 8.2 makes that a MUST, not an optimisation: a nonce supplied on a successful
+            // response is to be used for every subsequent token request until a new one arrives.
+            HttpResponseMessage response = await SendTokenRequestOnce(provider, body, _nonceStore.Get(providerKey), cancellationToken);
+            string? supplied = RememberNonce(providerKey, response);
+
+            if (response.StatusCode != HttpStatusCode.BadRequest || supplied is null)
             {
                 return response;
             }
@@ -164,7 +168,6 @@ namespace Altinn.Platform.Authentication.Services
             // Counted, not just logged. The first 400 is discarded and the outcome counter only
             // records the retry, so without this the challenge is invisible — and how often a
             // provider challenges is exactly what tells you whether the retry path is healthy.
-            string providerKey = provider.IssuerKey ?? provider.Issuer;
             _metrics.DpopNonceChallenge(providerKey);
             _logger.LogDebug("Provider {Provider} requested a DPoP nonce; retrying the token request once", providerKey);
             response.Dispose();
@@ -174,7 +177,32 @@ namespace Altinn.Platform.Authentication.Services
             Dictionary<string, string> retryBody = new(body);
             AddClientAuthentication(retryBody, provider);
 
-            return await SendTokenRequestOnce(provider, retryBody, nonce, cancellationToken);
+            HttpResponseMessage retried = await SendTokenRequestOnce(provider, retryBody, supplied, cancellationToken);
+
+            // A successful retry may carry the next nonce too; it must not be dropped just because
+            // it arrived on the second attempt.
+            RememberNonce(providerKey, retried);
+            return retried;
+        }
+
+        /// <summary>
+        /// Stores the <c>DPoP-Nonce</c> a response carries, if any, and returns it. Read on every
+        /// response regardless of status: the RFC supplies nonces on 200 as well as on the 400
+        /// challenge, and both replace whatever we held before.
+        /// </summary>
+        private string? RememberNonce(string providerKey, HttpResponseMessage response)
+        {
+            string? nonce = response.Headers.TryGetValues(DpopNonceHeader, out IEnumerable<string>? values)
+                ? values.FirstOrDefault()
+                : null;
+
+            if (string.IsNullOrWhiteSpace(nonce))
+            {
+                return null;
+            }
+
+            _nonceStore.Set(providerKey, nonce);
+            return nonce;
         }
 
         private async Task<HttpResponseMessage> SendTokenRequestOnce(OidcProvider provider, Dictionary<string, string> body, string? nonce, CancellationToken cancellationToken)
@@ -438,10 +466,9 @@ namespace Altinn.Platform.Authentication.Services
             /// the discarded first response never reaches <see cref="TokenExchange"/>.
             /// </summary>
             /// <remarks>
-            /// Read this with care: the last nonce is not yet kept between requests, as RFC 9449
-            /// section 8 recommends, so a provider that issues nonces challenges <em>every</em>
-            /// token request. Expect one challenge per sign-in until that is added. A rate above
-            /// that is the signal worth alerting on.
+            /// The last nonce is kept per provider and sent up front, so in steady state this
+            /// should read close to zero: a challenge means the provider rotated its nonce, or this
+            /// instance had none yet. A sustained rate is the signal worth alerting on.
             /// </remarks>
             public void DpopNonceChallenge(string provider)
             {

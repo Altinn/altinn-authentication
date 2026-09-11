@@ -103,11 +103,15 @@ Providers following a FAPI 2.0-style profile require more than a client assertio
 
 **PAR has no front-channel fallback.** A failed push aborts the sign-in. A provider that requires PAR would refuse the front-channel request anyway, and sending parameters through the browser after failing to push them would defeat the reason for pushing them. The unregistered-client flow stops locally rather than redirecting, so a failure cannot become a sign-in loop.
 
-**DPoP includes a nonce round-trip.** The provider may reject a first attempt with `use_dpop_nonce` and a `DPoP-Nonce` header, which is how it supplies the nonce; one retry with a fresh proof is part of the normal flow. The retry also builds a fresh client assertion, because its `jti` is single-use. The retry is bounded at one.
+**DPoP nonces are remembered per provider.** RFC 9449 §8.2 makes it a MUST: a nonce the provider supplies on a successful response is used on the next token request, and every one after it, until the provider supplies a new one. `IDpopNonceStore` (a singleton — the provider service is a typed `HttpClient` and therefore transient) keeps the most recent nonce per provider key and sends it up front. A nonce is accepted only by the server that issued it (§9), so the store is keyed by provider and never mixes them.
+
+A provider may still reject a request with `use_dpop_nonce` and a `DPoP-Nonce` header — the first request after a restart, or when it rotates its nonce. One retry with a fresh proof and a fresh client assertion (both `jti` values are single-use) is part of the normal flow, and whatever nonce the retry's response carries is remembered too. The retry is bounded at one. In steady state the `upstream_dpop_nonce_challenge` counter should read close to zero; a sustained rate means the provider is rotating faster than we track, or something is wrong.
 
 **The access token is the API's, not ours.** HelseID states the client must not inspect or validate it. It happens to be a JWT today, which is exactly why depending on that is fragile — a DPoP-bound or reformatted token would break a client that parses it. With `TreatAccessTokenAsOpaque` the granted scopes come from the token response's `scope` field instead, which is the authoritative statement of what was granted and is readable either way.
 
 **Strict validation is opt-in for a reason.** The shared validator has always skipped audience entirely and treated a trailing slash on the issuer as equivalent. Requiring both globally could start rejecting tokens from providers that rely on the leniency, so each provider adopts it deliberately. `StrictIdTokenValidation` turns off the trailing-slash allowance as well: a profile that asks for exact issuer matching gets exactly that.
+
+"Exact" is enforced against IdentityModel's own defaults: it ignores a trailing slash when comparing audiences unless told not to, so `<client_id>/` would otherwise pass as our client id. Strict validation turns that off.
 
 It is an **id_token** rule, and applies to every id_token — including one presented as `id_token_hint` at end-session — but never to an access token, whose audience is the API rather than us. The caller states which kind it is validating; it is not inferred from whether a nonce was supplied, because an `id_token_hint` carries none and was once validated as if it were an access token.
 

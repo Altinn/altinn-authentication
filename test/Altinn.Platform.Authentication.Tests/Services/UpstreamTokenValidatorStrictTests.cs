@@ -89,6 +89,15 @@ namespace Altinn.Platform.Authentication.Tests.Services
         }
 
         [Fact]
+        public async Task Strict_IdTokenWithTrailingSlashAudience_IsRejected()
+        {
+            // IdentityModel ignores a trailing slash on the audience by default, so without an
+            // explicit override "altinn-par-client/" would pass as our client id.
+            await Assert.ThrowsAnyAsync<SecurityTokenInvalidAudienceException>(() => CreateSut().ValidateTokenAsync(
+                Token(Issuer, ClientId + "/"), Provider(strict: true), UpstreamTokenKind.IdToken, nonce: null));
+        }
+
+        [Fact]
         public async Task Strict_IdTokenWithTrailingSlashIssuer_IsRejected()
         {
             await Assert.ThrowsAnyAsync<SecurityTokenInvalidIssuerException>(() => CreateSut().ValidateTokenAsync(
