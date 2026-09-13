@@ -53,6 +53,9 @@ namespace Altinn.Platform.Authentication.Services
         /// <summary>Response header by which a provider supplies the nonce a proof must carry.</summary>
         private const string DpopNonceHeader = "DPoP-Nonce";
 
+        /// <summary>The OAuth error code that means "resend with the nonce I just gave you" (RFC 9449 section 8).</summary>
+        private const string DpopNonceError = "use_dpop_nonce";
+
         private readonly HttpClient _httpClient;
         private readonly ILogger _logger;
         private readonly Metrics _metrics;
@@ -165,8 +168,19 @@ namespace Altinn.Platform.Authentication.Services
                 return response;
             }
 
+            // A retry is only warranted for the nonce challenge itself. A server may put
+            // DPoP-Nonce on any response â€” RememberNonce relies on exactly that â€” so the header
+            // alone does not mean "try again". An invalid_grant that happens to carry a nonce must
+            // not be resent with the same authorization code and a fresh assertion, nor counted as
+            // a challenge. RFC 9449 section 8 ties the retry to error=use_dpop_nonce.
+            string firstBody = await response.Content.ReadAsStringAsync(cancellationToken);
+            if (!string.Equals(TryReadOAuthError(firstBody)?.Error, DpopNonceError, StringComparison.Ordinal))
+            {
+                return response;
+            }
+
             // Counted, not just logged. The first 400 is discarded and the outcome counter only
-            // records the retry, so without this the challenge is invisible — and how often a
+            // records the retry, so without this the challenge is invisible â€” and how often a
             // provider challenges is exactly what tells you whether the retry path is healthy.
             _metrics.DpopNonceChallenge(providerKey);
             _logger.LogDebug("Provider {Provider} requested a DPoP nonce; retrying the token request once", providerKey);
@@ -310,7 +324,7 @@ namespace Altinn.Platform.Authentication.Services
         /// </summary>
         /// <remarks>
         /// Shared by the token request and the pushed authorization request so the two cannot
-        /// drift apart. A fresh assertion is built per call — the <c>jti</c> is single-use, so the
+        /// drift apart. A fresh assertion is built per call â€” the <c>jti</c> is single-use, so the
         /// assertion pushed with PAR must not be reused when the code is exchanged.
         /// </remarks>
         private void AddClientAuthentication(Dictionary<string, string> body, OidcProvider provider)
@@ -434,7 +448,7 @@ namespace Altinn.Platform.Authentication.Services
             : IMetrics<Metrics>
         {
             /// <summary>
-            /// The OTel fallback when the failure has no low-cardinality name of its own — an upstream
+            /// The OTel fallback when the failure has no low-cardinality name of its own â€” an upstream
             /// error code outside <see cref="KnownErrorCodes"/>, or a body that is not an OAuth error
             /// response at all. The accompanying <c>http.response.status_code</c> narrows it down.
             /// </summary>
@@ -462,7 +476,7 @@ namespace Altinn.Platform.Authentication.Services
 
             /// <summary>
             /// Counts one DPoP nonce challenge. The challenge is part of the normal flow, so this
-            /// is not an error count — but it is the only way to see the retry path at all, since
+            /// is not an error count â€” but it is the only way to see the retry path at all, since
             /// the discarded first response never reaches <see cref="TokenExchange"/>.
             /// </summary>
             /// <remarks>
@@ -481,7 +495,7 @@ namespace Altinn.Platform.Authentication.Services
             /// Counts one pushed authorization request, on the same convention as
             /// <see cref="TokenExchange"/>: successes counted too, so an alert can be written on
             /// the failure rate. Kept as its own instrument because a PAR failure and a token
-            /// failure mean different things — the first stops a sign-in before the user reaches
+            /// failure mean different things â€” the first stops a sign-in before the user reaches
             /// the provider, the second after they have authenticated there.
             /// </summary>
             /// <param name="provider">The configured provider key, e.g. <c>helseid</c>.</param>

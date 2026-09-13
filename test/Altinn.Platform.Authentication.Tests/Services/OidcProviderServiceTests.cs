@@ -674,6 +674,46 @@ namespace Altinn.Platform.Authentication.Tests.Services
         }
 
         /// <summary>
+        /// A 400 that merely carries a DPoP-Nonce header is not a challenge. An invalid_grant must not
+        /// be resent with the same authorization code, and must not be counted as a nonce challenge
+        /// — but the nonce it carried is still remembered for the next request.
+        /// </summary>
+        [Fact]
+        public async Task GetTokens_NonChallenge400WithNonceHeader_IsNotRetried_ButNonceIsKept()
+        {
+            List<string?> proofNonces = [];
+
+            Mock<HttpMessageHandler> handlerMock = new();
+            handlerMock
+                .Protected()
+                .Setup<Task<HttpResponseMessage>>("SendAsync", ItExpr.IsAny<HttpRequestMessage>(), ItExpr.IsAny<CancellationToken>())
+                .Returns((HttpRequestMessage request, CancellationToken _) =>
+                {
+                    proofNonces.Add(ProofNonce(request));
+                    HttpResponseMessage refused = new(HttpStatusCode.BadRequest)
+                    {
+                        Content = new StringContent("""{"error":"invalid_grant","error_description":"code already used"}""", Encoding.UTF8, "application/json")
+                    };
+                    refused.Headers.TryAddWithoutValidation("DPoP-Nonce", "nonce-on-refusal");
+                    return Task.FromResult(refused);
+                });
+
+            (OidcProviderService sut, MetricCollector<int> collector) = CreateSut(handlerMock);
+            OidcProvider provider = NewParProvider(useDpop: true);
+
+            OidcCodeResponse? first = await sut.GetTokens("code-1", provider, "https://localhost/cb", "verifier");
+            await sut.GetTokens("code-2", provider, "https://localhost/cb", "verifier");
+
+            Assert.Null(first);
+
+            // Exactly one request per call — no retry — and the second carries the nonce from the first.
+            Assert.Equal(new string?[] { null, "nonce-on-refusal" }, proofNonces);
+
+            // Both calls are counted as ordinary invalid_grant outcomes; nothing is counted as a challenge.
+            Assert.All(collector.GetMeasurementSnapshot(), m => Assert.Equal("invalid_grant", m.Tags["error.type"]));
+        }
+
+        /// <summary>
         /// RFC 9449 section 9: a nonce is accepted only by the server that issued it. One provider's
         /// nonce must never leak into a request to another.
         /// </summary>
