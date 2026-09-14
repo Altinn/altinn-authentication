@@ -571,6 +571,13 @@ public class SystemRegisterController : ControllerBase
     {
         ValidationProblemBuilder errors = default;
 
+        if (!AuthenticationHelper.HasNameInAllLanguages(systemToValidate.Name))
+        {
+            errors.Add(ValidationErrors.SystemRegister_Name_Not_Provided_In_All_Languages, [
+            ErrorPathConstant.SYSTEM_NAME
+            ]);
+        }
+
         if (AuthenticationHelper.HasSpaceInId(systemToValidate.Id))
         {
             errors.Add(ValidationErrors.SystemRegister_Invalid_SystemId_Spaces, [

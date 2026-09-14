@@ -115,6 +115,16 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             HttpClient getClient = GetAuthenticatedClient(Write, ValidOrg);
             await SystemRegisterTestHelper.GetAndAssertSystemChangeLog(getClient, "991825827_the_matrix", "ChangeLogCreate");
         }
+        
+        [Fact]
+        public async Task SystemRegister_Create_NameOnlyProvidedInNorwegian()
+        {
+            // Arrange
+            string dataFileName = "Data/SystemRegister/Json/SystemRegisterWithoutEnglishName.json";
+            HttpClient client = GetAuthenticatedClient(Admin, ValidOrg);
+            HttpResponseMessage response = await SystemRegisterTestHelper.CreateSystemRegister(client, dataFileName);
+            Assert.Equal(System.Net.HttpStatusCode.BadRequest, response.StatusCode);
+        }
 
         [Fact]
         public async Task SystemRegister_Create_WithApp_Success()
@@ -373,6 +383,37 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
 
                 HttpClient getClient = GetAuthenticatedClient(Write, ValidOrg);
                 await SystemRegisterTestHelper.GetAndAssertSystemChangeLog(getClient, systemID, "ChangeLogRightsUpdate");
+            }
+        }
+        
+        [Fact]
+        public async Task SystemRegister_Update_Name_NameNotProvidedInAllLanguages_BadRequest()
+        {
+            string dataFileName = "Data/SystemRegister/Json/SystemRegister.json";
+            HttpClient createClient = GetAuthenticatedClient(Admin, ValidOrg);
+            HttpResponseMessage response = await SystemRegisterTestHelper.CreateSystemRegister(createClient, dataFileName);
+
+            if (response.IsSuccessStatusCode)
+            {
+                HttpClient client = CreateClient();
+                string[] prefixes = { "altinn", "digdir" };
+                string token = PrincipalUtil.GetOrgToken("digdir", "991825827", "altinn:authentication/systemregister.admin", prefixes, TestTime);
+                client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+                JsonSerializerOptions options = new JsonSerializerOptions()
+                {
+                    PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+                };
+
+                // Arrange
+                Stream dataStream = File.OpenRead("Data/SystemRegister/Json/SystemRegisterUpdatedRemoveName.json");
+                StreamContent content = new StreamContent(dataStream);
+                content.Headers.ContentType = new MediaTypeHeaderValue("application/json");
+
+                string systemID = "991825827_the_matrix";
+                HttpRequestMessage request = new(HttpMethod.Put, $"/authentication/api/v1/systemregister/vendor/{systemID}/rights");
+                request.Content = content;
+                HttpResponseMessage updateResponse = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead);
+                Assert.Equal(System.Net.HttpStatusCode.BadRequest, updateResponse.StatusCode);
             }
         }
 

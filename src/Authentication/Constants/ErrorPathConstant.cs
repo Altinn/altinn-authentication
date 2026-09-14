@@ -14,6 +14,11 @@
         /// Error path for systemid
         /// </summary>
         public const string SYSTEM_ID = "/registersystemrequest/systemid";
+        
+        /// <summary>
+        /// Error path for system name
+        /// </summary>
+        public const string SYSTEM_NAME = "/registersystemrequest/name";
 
         /// <summary>
         /// Error path for allowedredirecturls
