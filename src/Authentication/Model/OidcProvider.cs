@@ -106,6 +106,69 @@ namespace Altinn.Platform.Authentication.Model
         public string ClientAssertionAudience { get; set; }
 
         /// <summary>
+        /// The provider's Pushed Authorization Request endpoint (RFC 9126). Setting it makes every
+        /// sign-in with this provider push the authorization parameters back-channel first and
+        /// redirect with only <c>client_id</c> and <c>request_uri</c>.
+        /// <para>
+        /// Required by providers whose profile mandates PAR — HelseID refuses a front-channel
+        /// authorization request with <c>invalid_request: Pushed authorization is required</c>.
+        /// Left unset, the provider keeps the ordinary front-channel flow.
+        /// </para>
+        /// </summary>
+        public string PushedAuthorizationRequestEndpoint { get; set; }
+
+        /// <summary>
+        /// Send a DPoP proof (RFC 9449) with the token request, binding the issued tokens to our
+        /// key. Signed with the client-assertion key, which the profile permits to serve both
+        /// purposes.
+        /// <para>
+        /// HelseID requires this for every grant type, including <c>authorization_code</c>, so it
+        /// is not optional there despite the security requirements describing DPoP under API
+        /// consumption.
+        /// </para>
+        /// </summary>
+        public bool UseDpop { get; set; }
+
+        /// <summary>
+        /// Validate the id_token to the letter of OIDC Core. Applies to id_tokens only — including
+        /// one presented as <c>id_token_hint</c> — and never to access tokens, whose audience is
+        /// the API. Turns on <em>both</em>:
+        /// <list type="bullet">
+        /// <item><description>the <c>aud</c> must contain our <see cref="ClientId"/>;</description></item>
+        /// <item><description>the issuer must match <see cref="Issuer"/> exactly, with no
+        /// trailing-slash normalisation.</description></item>
+        /// </list>
+        /// <para>
+        /// Off by default because the shared validator historically did neither, and requiring them
+        /// globally could start rejecting tokens from providers that rely on that leniency. Each
+        /// provider therefore adopts it deliberately.
+        /// </para>
+        /// </summary>
+        public bool StrictIdTokenValidation { get; set; }
+
+        /// <summary>
+        /// Treat the access token as opaque: do not validate or read it.
+        /// <para>
+        /// HelseID states the client must not inspect or validate it. The token happens to be a
+        /// JWT today, which is exactly why relying on that is fragile — a DPoP-bound or reformatted
+        /// token would break a client that parses it. Granted scopes are taken from the token
+        /// response instead.
+        /// </para>
+        /// </summary>
+        public bool TreatAccessTokenAsOpaque { get; set; }
+
+        /// <summary>
+        /// Require and validate the <c>iss</c> parameter on the upstream callback (RFC 9207)
+        /// against this provider's issuer, before the code is exchanged.
+        /// <para>
+        /// Defends against mix-up attacks, where a response from one provider is replayed to a
+        /// callback expecting another. Off by default: providers that do not send the parameter
+        /// would otherwise fail every sign-in.
+        /// </para>
+        /// </summary>
+        public bool ValidateCallbackIssuer { get; set; }
+
+        /// <summary>
         /// The response type
         /// </summary>
         public string ResponseType { get; set; } = "code";

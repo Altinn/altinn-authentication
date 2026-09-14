@@ -2419,6 +2419,189 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
         }
 
         /// <summary>
+        /// A provider configured with a PAR endpoint must push the authorization parameters
+        /// back-channel and redirect with only <c>client_id</c> and <c>request_uri</c>.
+        /// </summary>
+        /// <remarks>
+        /// The branch this covers has no fallback by design, so it must not be possible to change
+        /// it by accident. The proof and the request path are tested elsewhere; this is the only
+        /// coverage of the choice itself.
+        /// </remarks>
+        [Fact]
+        public async Task TC19_ParProvider_PushesParametersAndRedirectsWithRequestUriOnly()
+        {
+            using HttpClient client = CreateClientWithHeaders();
+            OidcTestScenario testScenario = OidcScenarioHelper.GetScenario("HelseId_Bruker");
+
+            OidcClientCreate create = OidcServerTestUtils.NewClientCreate(testScenario);
+            _ = await Repository.InsertClientAsync(create);
+
+            Mocks.OidcProviderAdvancedMock mock = Assert.IsType<Mocks.OidcProviderAdvancedMock>(
+                Services.GetRequiredService<IOidcProvider>());
+            mock.PushedRequestUri = "urn:ietf:params:oauth:request_uri:pushed-123";
+
+            HttpResponseMessage response = await client.GetAsync(
+                "/authentication/api/v1/authentication?iss=helseid-par&goto=https%3A%2F%2Fhelse.apps.localhost%2Fsykemelding%2Finstance%2F51441547");
+
+            Assert.Equal(HttpStatusCode.Redirect, response.StatusCode);
+
+            Uri location = response.Headers.Location!;
+            Assert.StartsWith("https://helseid-par.test.nhn.no/connect/authorize", location.ToString());
+
+            // Only these two may appear. Everything else was pushed, which is the point of pushing.
+            System.Collections.Specialized.NameValueCollection query = HttpUtility.ParseQueryString(location.Query);
+            Assert.Equal(["client_id", "request_uri"], query.AllKeys.Where(k => k is not null).Select(k => k!).OrderBy(k => k, StringComparer.Ordinal).ToArray());
+            Assert.Equal("urn:ietf:params:oauth:request_uri:pushed-123", query["request_uri"]);
+            Assert.Equal("altinn-par-client", query["client_id"]);
+
+            // And the parameters really did go back-channel.
+            Assert.NotNull(mock.LastPushedParameters);
+            Assert.Equal("code", mock.LastPushedParameters!["response_type"]);
+            Assert.Equal("S256", mock.LastPushedParameters["code_challenge_method"]);
+            Assert.False(string.IsNullOrEmpty(mock.LastPushedParameters["state"]));
+            Assert.False(string.IsNullOrEmpty(mock.LastPushedParameters["nonce"]));
+            Assert.False(string.IsNullOrEmpty(mock.LastPushedParameters["code_challenge"]));
+        }
+
+        /// <summary>
+        /// A refused push aborts the sign-in. There is deliberately no front-channel fallback: a
+        /// provider that requires PAR would refuse the request anyway, and sending the parameters
+        /// through the browser after failing to push them would defeat the reason for pushing them.
+        /// </summary>
+        [Fact]
+        public async Task TC20_ParProvider_FailedPush_AbortsWithoutRedirectingUpstream()
+        {
+            using HttpClient client = CreateClientWithHeaders();
+            OidcTestScenario testScenario = OidcScenarioHelper.GetScenario("HelseId_Bruker");
+
+            OidcClientCreate create = OidcServerTestUtils.NewClientCreate(testScenario);
+            _ = await Repository.InsertClientAsync(create);
+
+            Mocks.OidcProviderAdvancedMock mock = Assert.IsType<Mocks.OidcProviderAdvancedMock>(
+                Services.GetRequiredService<IOidcProvider>());
+            mock.PushedRequestUri = null;
+
+            HttpResponseMessage response = await client.GetAsync(
+                "/authentication/api/v1/authentication?iss=helseid-par&goto=https%3A%2F%2Fhelse.apps.localhost%2Fsykemelding%2Finstance%2F51441547");
+
+            // The unregistered flow has no validated redirect_uri to return an OIDC error to, so it
+            // stops locally with 502 rather than bouncing the browser somewhere.
+            Assert.Equal(HttpStatusCode.BadGateway, response.StatusCode);
+            Assert.Null(response.Headers.Location);
+        }
+
+        /// <summary>
+        /// Starts a sign-in with <c>helseid-par</c> and returns what the callback needs. The state is
+        /// read from the pushed parameters: with PAR it never appears in the redirect.
+        /// </summary>
+        private async Task<(HttpClient Client, OidcTestScenario Scenario, string State, UpstreamLoginTransaction Transaction)> StartHelseIdParSignIn()
+        {
+            HttpClient client = CreateClientWithHeaders();
+            OidcTestScenario testScenario = OidcScenarioHelper.GetScenario("HelseId_Bruker");
+
+            OidcClientCreate create = OidcServerTestUtils.NewClientCreate(testScenario);
+            _ = await Repository.InsertClientAsync(create);
+
+            Mocks.OidcProviderAdvancedMock mock = Assert.IsType<Mocks.OidcProviderAdvancedMock>(
+                Services.GetRequiredService<IOidcProvider>());
+            mock.PushedRequestUri = "urn:ietf:params:oauth:request_uri:pushed-iss";
+
+            HttpResponseMessage response = await client.GetAsync(
+                "/authentication/api/v1/authentication?iss=helseid-par&goto=https%3A%2F%2Fhelse.apps.localhost%2Fsykemelding%2Finstance%2F51441547");
+            Assert.Equal(HttpStatusCode.Redirect, response.StatusCode);
+
+            string state = mock.LastPushedParameters!["state"];
+            UpstreamLoginTransaction? tx = await OidcServerDatabaseUtil.GetUpstreamTransaction(state, DataSource);
+            Assert.NotNull(tx);
+
+            return (client, testScenario, state, tx!);
+        }
+
+        private static string CallbackUrl(OidcTestScenario scenario, string state, string? iss)
+        {
+            string url = $"/authentication/api/v1/upstream/callback?code={Uri.EscapeDataString(scenario.GetUpstreamProviderCode())}&state={Uri.EscapeDataString(state)}";
+            return iss is null ? url : url + $"&iss={Uri.EscapeDataString(iss)}";
+        }
+
+        /// <summary>
+        /// The callback <c>iss</c> matching the issuer the provider's discovery document states lets
+        /// the sign-in complete. Also exercises strict id_token validation — audience our client id,
+        /// exact issuer — and an opaque access token, which would fail if anything tried to parse it.
+        /// </summary>
+        [Fact]
+        public async Task TC21_ValidateCallbackIssuer_MatchingIss_CompletesSignIn()
+        {
+            (HttpClient client, OidcTestScenario scenario, string state, UpstreamLoginTransaction tx) = await StartHelseIdParSignIn();
+            using (client)
+            {
+                _fakeTime.Advance(TimeSpan.FromMinutes(1));
+
+                OidcCodeResponse tokens = IDProviderTestTokenUtil.GetHelseIdTokenResponse(
+                    scenario, tx, Guid.NewGuid().ToString(), _fakeTime.GetUtcNow(), issuer: "https://helseid-par.test.nhn.no");
+
+                // Deliberately not a JWT. With TreatAccessTokenAsOpaque nothing may read it.
+                tokens.AccessToken = "opaque-access-token";
+
+                Mocks.OidcProviderAdvancedMock mock = Assert.IsType<Mocks.OidcProviderAdvancedMock>(Services.GetRequiredService<IOidcProvider>());
+                mock.SetupSuccess(scenario.GetUpstreamProviderCode(), tx.UpstreamClientId, tx.UpstreamRedirectUri.ToString(), tx.CodeVerifier, tokens);
+                await ConfigureProfileMock(scenario);
+
+                HttpResponseMessage callback = await client.GetAsync(CallbackUrl(scenario, state, "https://helseid-par.test.nhn.no"));
+
+                Assert.Equal(HttpStatusCode.Redirect, callback.StatusCode);
+                Assert.StartsWith("https://helse.apps.localhost/sykemelding/instance/51441547", callback.Headers.Location!.ToString());
+            }
+        }
+
+        [Fact]
+        public async Task TC22_ValidateCallbackIssuer_MissingIss_IsRejected()
+        {
+            (HttpClient client, OidcTestScenario scenario, string state, _) = await StartHelseIdParSignIn();
+            using (client)
+            {
+                HttpResponseMessage callback = await client.GetAsync(CallbackUrl(scenario, state, iss: null));
+
+                Assert.Equal(HttpStatusCode.BadRequest, callback.StatusCode);
+            }
+        }
+
+        /// <summary>
+        /// A response carrying another provider's issuer is refused before the code is exchanged.
+        /// No token response is configured, so reaching the exchange would itself fail the test.
+        /// </summary>
+        [Fact]
+        public async Task TC23_ValidateCallbackIssuer_ForeignIss_IsRejectedBeforeTokenExchange()
+        {
+            (HttpClient client, OidcTestScenario scenario, string state, _) = await StartHelseIdParSignIn();
+            using (client)
+            {
+                HttpResponseMessage callback = await client.GetAsync(CallbackUrl(scenario, state, "https://helseid-sts.test.nhn.no"));
+
+                Assert.Equal(HttpStatusCode.BadRequest, callback.StatusCode);
+            }
+        }
+
+        /// <summary>
+        /// When the provider's discovery document states a different issuer than configuration, we
+        /// cannot say what the issuer is, and the callback is refused even though its iss matches
+        /// configuration.
+        /// </summary>
+        [Fact]
+        public async Task TC24_ValidateCallbackIssuer_DiscoveryDisagreesWithConfiguration_IsRejected()
+        {
+            (HttpClient client, OidcTestScenario scenario, string state, _) = await StartHelseIdParSignIn();
+            using (client)
+            {
+                Fakes.SigningKeysRetrieverStub stub = Assert.IsType<Fakes.SigningKeysRetrieverStub>(Services.GetRequiredService<ISigningKeysRetriever>());
+                stub.IssuerOverrides["https://helseid-par.test.nhn.no/.well-known/openid-configuration"] = "https://somewhere-else.example";
+
+                HttpResponseMessage callback = await client.GetAsync(CallbackUrl(scenario, state, "https://helseid-par.test.nhn.no"));
+
+                Assert.Equal(HttpStatusCode.BadGateway, callback.StatusCode);
+            }
+        }
+
+        /// <summary>
         /// A HelseID token without the configured pid claim — the pid scope not granted, or
         /// ClaimMappings.Pid misconfigured — must abort the sign-in. None of the identifiers
         /// IdentifyOrCreateAltinnUser branches on are present, and before the guard was added this
