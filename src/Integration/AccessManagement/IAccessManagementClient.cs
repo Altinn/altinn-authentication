@@ -71,19 +71,26 @@ public interface IAccessManagementClient
     Task<Result<bool>> DeleteSystemUserAssignment(Guid facilitatorId, Guid assignmentId, CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Get clients for a facilitator
+    /// Get clients for a facilitator.
     /// </summary>
     /// <param name="provider">The partyUuid of the VIA organisastion</param>
     /// <param name="packages">Access package URNs</param>
+    /// <param name="matchAllPackages">
+    /// When <see langword="true"/> (the default), only clients holding ALL of the requested
+    /// <paramref name="packages"/> are returned (AND), via the v2 enduser match=all parameter. This only
+    /// takes effect on v2; the v1 enduser endpoint always filters with OR. Callers that need AND on v1
+    /// use <see cref="GetClientsForFacilitatorFromInternalApi"/> instead.
+    /// </param>
     /// <returns>List of clients FROM which the VIA provider can delegate packages TO an entity</returns>
-    Task<Result<List<ClientDelegationDto>>> GetClientsForFacilitator(Guid provider, List<string> packages, CancellationToken cancellationToken = default);
+    Task<Result<List<ClientDelegationDto>>> GetClientsForFacilitator(Guid provider, List<string> packages, bool matchAllPackages = true, CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Get clients for a facilitator via the Access Management internal API.
-    /// TEMPORARY: the enduser clientdelegations API (v1 and v2) filters clients with OR when several
-    /// packages are supplied, whereas the internal API requires the client to hold ALL requested
-    /// packages (AND). This method is used for the client list until the enduser/v2 API supports AND
-    /// package filtering, after which it should be removed in favour of <see cref="GetClientsForFacilitator"/>.
+    /// Get clients for a facilitator via the Access Management internal API, which requires the client to
+    /// hold ALL requested packages (AND).
+    /// TEMPORARY: used as the AND-filtering fallback for the client list while the v2 feature flag is off
+    /// (the v1 enduser API only filters with OR). Once v2 is enabled everywhere - where AND is available
+    /// via the match=all parameter - this method and the v1 fallback in
+    /// <see cref="GetClientsForFacilitator"/> can be removed.
     /// </summary>
     /// <param name="provider">The partyUuid of the VIA organisation (facilitator)</param>
     /// <param name="packages">Access package identifiers to filter by (AND)</param>

@@ -914,7 +914,7 @@ namespace Altinn.Platform.Authentication.Services
             bool[] outerValidationSet = new bool[packages.Count];
             List<string> packageUrns = [.. packages.Select(p => p.Urn!)];
 
-            Result<List<ClientDelegationDto>> clients = await _accessManagementClient.GetClientsForFacilitator(provider, packageUrns, cancellationToken);
+            Result<List<ClientDelegationDto>> clients = await _accessManagementClient.GetClientsForFacilitator(provider, packageUrns, cancellationToken: cancellationToken);
             if (clients.IsProblem)
             {
                 return clients.Problem;
@@ -1152,10 +1152,14 @@ namespace Altinn.Platform.Authentication.Services
         /// <inheritdoc/>
         public async Task<Result<List<ExternalClientDto>>> GetClientsForFacilitator(Guid facilitator, List<string>? packages, IFeatureManager featureManager, CancellationToken cancellationToken)
         {
-            // Temporary: use the Access Management internal API, which requires the client to hold ALL
-            // requested packages (AND). The enduser clientdelegations API (v1/v2) filters with OR, which
-            // lists partially-matching clients. Revert to GetClientsForFacilitator once v2 supports AND.
-            var res = await _accessManagementClient.GetClientsForFacilitatorFromInternalApi(facilitator, packages!, cancellationToken);
+            // The client must hold ALL requested packages (AND), otherwise partially-matching clients are
+            // listed and later fail delegation. v2 does AND via the match=all parameter; v1's enduser
+            // endpoint only supports OR, so use the internal API (which filters with AND) on v1.
+            bool useV2 = await featureManager.IsEnabledAsync(AccessManagementFeatureFlags.ClientDelegationApiV2);
+            Result<List<ClientDelegationDto>> res = useV2
+                ? await _accessManagementClient.GetClientsForFacilitator(facilitator, packages!, matchAllPackages: true, cancellationToken)
+                : await _accessManagementClient.GetClientsForFacilitatorFromInternalApi(facilitator, packages!, cancellationToken);
+
             if (!res.IsSuccess)
             {
                 return res.Problem ?? Problem.AgentSystemUser_FailedToGetClients;

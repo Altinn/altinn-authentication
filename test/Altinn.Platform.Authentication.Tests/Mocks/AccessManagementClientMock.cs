@@ -299,7 +299,7 @@ public class AccessManagementClientMock: IAccessManagementClient
         return Task.FromResult<Result<List<DelegationDto>>>(delegations);
     }
 
-    public Task<Result<List<ClientDelegationDto>>> GetClientsForFacilitator(Guid facilitatorId, List<string> packages, CancellationToken cancellationToken)
+    public Task<Result<List<ClientDelegationDto>>> GetClientsForFacilitator(Guid facilitatorId, List<string> packages, bool matchAllPackages = true, CancellationToken cancellationToken = default)
     {
         if (facilitatorId.ToString() == "6bb78d06-70b2-45f6-85bc-19ca7b4d34d8")
         {
@@ -331,15 +331,18 @@ public class AccessManagementClientMock: IAccessManagementClient
         {
             // The real API accepts either the full URN (urn:altinn:accesspackage:regnskapsforer-lonn)
             // or the short identifier (regnskapsforer-lonn), so match a package against both forms.
+            // matchAllPackages requires the client to hold ALL requested packages (AND); otherwise ANY (OR).
             var packageSet = new HashSet<string>(packages, StringComparer.OrdinalIgnoreCase);
             clients = clients
                 .Where(c =>
-                    c.Access != null &&
-                    c.Access.Any(a =>
-                        a.Packages != null &&
-                        a.Packages.Any(p =>
-                            p.Urn != null &&
-                            (packageSet.Contains(p.Urn) || packageSet.Contains(p.Urn.Split(':').Last())))))
+                {
+                    HashSet<string> held = (c.Access ?? [])
+                        .SelectMany(a => a.Packages ?? [])
+                        .Where(p => p.Urn is not null)
+                        .SelectMany(p => new[] { p.Urn!, p.Urn!.Split(':').Last() })
+                        .ToHashSet(StringComparer.OrdinalIgnoreCase);
+                    return matchAllPackages ? packageSet.All(held.Contains) : packageSet.Any(held.Contains);
+                })
                 .ToList();
         }
 
