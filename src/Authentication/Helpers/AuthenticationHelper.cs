@@ -861,7 +861,7 @@ namespace Altinn.Platform.Authentication.Helpers
         public static bool HasNameInAllLanguages(IDictionary<string, string> name)
         {
             var requiredLanguages = new[] { "nb", "nn", "en" };
-            return requiredLanguages.All(name.ContainsKey);
+            return name is not null && requiredLanguages.All(lang => name.TryGetValue(lang, out var value) && !string.IsNullOrWhiteSpace(value));
         }
 
         /// <summary>

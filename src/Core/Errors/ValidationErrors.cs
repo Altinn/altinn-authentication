@@ -128,7 +128,7 @@ public static class ValidationErrors
         = _factory.Create(18, "Access packages meant for system user for client relations can't be used in combination with the flag isVisible: true");
     
     /// <summary>
-    /// Gets a validation error descriptor when IsVisible is true but access package has IsAssignable false
+    /// Gets a validation error descriptor when SystemRegister name is not provided in all languages
     /// </summary>
     public static ValidationErrorDescriptor SystemRegister_Name_Not_Provided_In_All_Languages { get; }
         = _factory.Create(19, "The name of system must be provided in all languages");
