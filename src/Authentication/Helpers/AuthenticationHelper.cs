@@ -39,6 +39,11 @@ namespace Altinn.Platform.Authentication.Helpers
             OidcAuthLevelDefaults.IdPorten.Select(l => l.Acr).ToHashSet(StringComparer.Ordinal);
 
         /// <summary>
+        /// The required languages for system name.
+        /// </summary>
+        private static readonly string[] RequiredLanguages = ["nb", "nn", "en"];
+
+        /// <summary>
         /// Get user information from the token
         /// </summary>
         /// <param name="jwtSecurityToken">jwt token</param>
@@ -854,10 +859,20 @@ namespace Altinn.Platform.Authentication.Helpers
         }
 
         /// <summary>
+        /// Check if the system name is provided for all languages
+        /// </summary>
+        /// <param name="name">The name of the system</param>
+        /// <returns>True if the system has name in all languages</returns>
+        public static bool HasNameInAllLanguages(IDictionary<string, string> name)
+        {
+            return name is not null && RequiredLanguages.All(lang => name.TryGetValue(lang, out var value) && !string.IsNullOrWhiteSpace(value));
+        }
+
+        /// <summary>
         /// check if the system id contains space
         /// </summary>
         /// <param name="systemId">the id of the system</param>
-        /// <returns>true id the systemid contains space</returns>
+        /// <returns>true if the systemid contains space</returns>
         public static bool HasSpaceInId(string systemId)
         {
             return systemId.Contains(' ');
