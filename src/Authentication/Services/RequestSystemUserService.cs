@@ -120,7 +120,7 @@ public class RequestSystemUserService(
 
         if (createRequest.Rights is not null && createRequest.Rights.Count > 0)
         {
-            Result<bool> valRights = systemUserService.ValidateRights(createRequest.Rights, systemInfo);
+            Result<bool> valRights = await systemUserService.ValidateRights(createRequest.Rights, systemInfo);
             if (valRights.IsProblem)
             {
                 return valRights.Problem;

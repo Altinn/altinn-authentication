@@ -502,4 +502,10 @@ public static class Problem
     /// </summary>
     public static ProblemDescriptor SystemIsDeleted { get; }
         = _factory.Create(81, HttpStatusCode.BadRequest, "The Registered System is deleted and cannot be used to create new requests.");
+
+    /// <summary>
+    /// One or more of the requested single rights refer to a resource the resource registry has marked as not delegable.
+    /// </summary>
+    public static ProblemDescriptor Rights_ResourceNotDelegable { get; }
+        = _factory.Create(82, HttpStatusCode.BadRequest, "One or more resources specified in rights is marked as not delegable in the resource registry.");
 }
