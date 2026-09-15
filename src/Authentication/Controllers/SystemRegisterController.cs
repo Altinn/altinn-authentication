@@ -202,6 +202,13 @@ public class SystemRegisterController : ControllerBase
 
         List<string> allClientIds = CombineClientIds(currentSystem.ClientId, proposedUpdateToSystem.ClientId);
         List<MaskinPortenClientInfo> allClientIdUsages = await _systemRegisterService.GetMaskinportenClients(allClientIds, cancellationToken);
+        
+        if (!AuthenticationHelper.HasNameInAllLanguages(proposedUpdateToSystem.Name))
+        {
+            errors.Add(ValidationErrors.SystemRegister_Name_Not_Provided_In_All_Languages, [
+                ErrorPathConstant.SYSTEM_NAME
+            ]);
+        }
 
         errors.MergeWith([
             await ValidateRights(proposedUpdateToSystem.Rights, cancellationToken),
