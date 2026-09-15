@@ -39,6 +39,11 @@ namespace Altinn.Platform.Authentication.Helpers
             OidcAuthLevelDefaults.IdPorten.Select(l => l.Acr).ToHashSet(StringComparer.Ordinal);
 
         /// <summary>
+        /// The required languages for system name.
+        /// </summary>
+        private static readonly string[] RequiredLanguages = ["nb", "nn", "en"];
+
+        /// <summary>
         /// Get user information from the token
         /// </summary>
         /// <param name="jwtSecurityToken">jwt token</param>
@@ -860,8 +865,7 @@ namespace Altinn.Platform.Authentication.Helpers
         /// <returns>True if the system has name in all languages</returns>
         public static bool HasNameInAllLanguages(IDictionary<string, string> name)
         {
-            var requiredLanguages = new[] { "nb", "nn", "en" };
-            return name is not null && requiredLanguages.All(lang => name.TryGetValue(lang, out var value) && !string.IsNullOrWhiteSpace(value));
+            return name is not null && RequiredLanguages.All(lang => name.TryGetValue(lang, out var value) && !string.IsNullOrWhiteSpace(value));
         }
 
         /// <summary>
