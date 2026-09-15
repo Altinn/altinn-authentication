@@ -2415,28 +2415,36 @@ public class ChangeRequestControllerTest(
         // Get the Request
         HttpClient client2 = CreateClient();
         string token2 = AddSystemUserRequestReadTestTokenToClient(client2);
-        string endpoint2 = $"/authentication/api/v1/systemuser/request/vendor/bysystem/{systemId}";
+        string testEndpoint = $"/authentication/api/v1/systemuser/changerequest/vendor/bysystem/{systemId}";
 
-        HttpResponseMessage message2 = await client2.GetAsync(endpoint2);
-        Assert.Equal(HttpStatusCode.OK, message2.StatusCode);
-        Paginated<RequestSystemResponse>? res2 = await message2.Content.ReadFromJsonAsync<Paginated<RequestSystemResponse>>();
-        Assert.True(res2 is not null);
-        var list = res2.Items.ToList();
+        HttpResponseMessage message = await client2.GetAsync(testEndpoint);
+        Assert.Equal(HttpStatusCode.OK, message.StatusCode);
+        Paginated<ChangeRequestResponse>? res = await message.Content.ReadFromJsonAsync<Paginated<ChangeRequestResponse>>();
+        Assert.True(res is not null);
+        var list = res.Items.ToList();
         Assert.NotEmpty(list);
 
         Assert.Equal(_paginationSize, list.Count);        
         Assert.Contains(list, x => x.PartyOrgNo == "910493353");
-        Assert.NotNull(res2.Links.Next);
+        Assert.NotNull(res.Links.Next);
 
         _pdpMock.Setup(p => p.GetDecisionForRequest(It.IsAny<XacmlJsonRequestRoot>())).ReturnsAsync(new XacmlJsonResponse
         {
             Response = xacmlJsonResults
         });
 
-        HttpResponseMessage message3 = await client2.GetAsync(res2.Links.Next);
-        Assert.Equal(HttpStatusCode.OK, message3.StatusCode);
-        Paginated<RequestSystemResponse>? res3 = await message3.Content.ReadFromJsonAsync<Paginated<RequestSystemResponse>>();
-        Assert.True(res3 is not null);
+        HttpResponseMessage message2 = await client2.GetAsync(res.Links.Next);
+        Assert.Equal(HttpStatusCode.OK, message2.StatusCode);
+        Paginated<ChangeRequestResponse>? res2 = await message2.Content.ReadFromJsonAsync<Paginated<ChangeRequestResponse>>();
+        Assert.True(res2 is not null);
+
+        var list2 = res2.Items.ToList();
+        Assert.Single(list2);
+        Assert.Null(res2.Links.Next);
+
+        // No ChangeRequest is duplicated across or lost between the pages
+        List<Guid> allIds = [.. list.Select(x => x.Id), .. list2.Select(x => x.Id)];
+        Assert.Equal(_paginationSize + 1, allIds.Distinct().Count());
     }
 
     private async Task CreateSeveralChangeRequest(int paginationSize, string systemId)
