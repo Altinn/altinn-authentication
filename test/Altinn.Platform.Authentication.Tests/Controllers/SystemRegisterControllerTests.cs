@@ -411,7 +411,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
                 content.Headers.ContentType = new MediaTypeHeaderValue("application/json");
 
                 string systemID = "991825827_the_matrix";
-                HttpRequestMessage request = new(HttpMethod.Put, $"/authentication/api/v1/systemregister/vendor/{systemID}/rights");
+                HttpRequestMessage request = new(HttpMethod.Put, $"/authentication/api/v1/systemregister/vendor/{systemID}");
                 request.Content = content;
                 HttpResponseMessage updateResponse = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead);
                 Assert.Equal(System.Net.HttpStatusCode.BadRequest, updateResponse.StatusCode);

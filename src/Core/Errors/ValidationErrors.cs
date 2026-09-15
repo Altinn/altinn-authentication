@@ -132,5 +132,5 @@ public static class ValidationErrors
     /// </summary>
     public static ValidationErrorDescriptor SystemRegister_Name_Not_Provided_In_All_Languages { get; }
         = _factory.Create(19, "The name of system must be provided in all languages: nb, nn, en");
-    
+
 }

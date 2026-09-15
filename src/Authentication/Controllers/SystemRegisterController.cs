@@ -581,7 +581,7 @@ public class SystemRegisterController : ControllerBase
         if (!AuthenticationHelper.HasNameInAllLanguages(systemToValidate.Name))
         {
             errors.Add(ValidationErrors.SystemRegister_Name_Not_Provided_In_All_Languages, [
-            ErrorPathConstant.SYSTEM_NAME
+                ErrorPathConstant.SYSTEM_NAME
             ]);
         }
 
