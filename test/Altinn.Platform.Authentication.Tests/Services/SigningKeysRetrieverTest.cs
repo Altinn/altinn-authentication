@@ -50,5 +50,5 @@ namespace Altinn.Platform.Authentication.Tests.Services
             Assert.NotNull(keys2);
             Assert.Equal(keys2, keys3);
         }
-     }
+    }
 }

@@ -4,7 +4,7 @@
 /// Used to compare OrgNo in the format used by MaskinPorten
 /// </summary>
 public record OrganisationNumber()
-{    
+{
     public string Authority { get; private set; } = string.Empty;
 
     public string ID { get; private set; } = string.Empty;
@@ -12,7 +12,7 @@ public record OrganisationNumber()
     public static OrganisationNumber CreateFromMaskinPortenToken(string data)
     {
         OrganisationNumber org = new();
-        string cleanData = RemoveSpecialCharacters(data);        
+        string cleanData = RemoveSpecialCharacters(data);
 
         string[] pairs = cleanData.Split(',');
         pairs[0] = pairs[0].TrimStart();
@@ -31,22 +31,22 @@ public record OrganisationNumber()
             {
                 keyValuePairs.Add(splitPair[0], splitPair[1] + ":" + splitPair[2]);
             }
-            
+
         }
         try
         {
             org.Authority = keyValuePairs["authority"];
             org.ID = keyValuePairs["ID"];
         }
-        catch 
+        catch
         {
-        
+
         }
 
         return org;
     }
 
-    public static OrganisationNumber CreateFromStringOrgNo ( string orgno)
+    public static OrganisationNumber CreateFromStringOrgNo(string orgno)
     {
         var prefix = "0192:";
 
@@ -62,14 +62,14 @@ public record OrganisationNumber()
         };
     }
 
-    public static OrganisationNumber Empty () 
+    public static OrganisationNumber Empty()
     {
         return new OrganisationNumber()
         {
         };
     }
 
-    private static string RemoveSpecialCharacters (string str)
+    private static string RemoveSpecialCharacters(string str)
     {
         return new string(
         str.Where(

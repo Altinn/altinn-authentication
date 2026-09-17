@@ -403,7 +403,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
                 Stream dataStream = File.OpenRead("Data/SystemRegister/Json/UpdateRight.json");
                 StreamContent content = new StreamContent(dataStream);
                 content.Headers.ContentType = new MediaTypeHeaderValue("application/json");
-               
+
                 HttpRequestMessage request = new(HttpMethod.Put, $"/authentication/api/v1/systemregister/vendor/{systemID}/rights");
                 request.Content = content;
                 HttpResponseMessage updateResponse = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead);
@@ -440,7 +440,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
                 Stream dataStream = File.OpenRead("Data/SystemRegister/Json/UpdateAccessPackages.json");
                 StreamContent content = new StreamContent(dataStream);
                 content.Headers.ContentType = new MediaTypeHeaderValue("application/json");
-                
+
                 HttpRequestMessage request = new(HttpMethod.Put, $"/authentication/api/v1/systemregister/vendor/{systemID}/accesspackages");
                 request.Content = content;
                 HttpResponseMessage updateResponse = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead);
@@ -754,7 +754,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             Assert.Equal(System.Net.HttpStatusCode.OK, response04.StatusCode);
 
             HttpClient client = GetAuthenticatedClient(Write, "312529750");
-                
+
             HttpRequestMessage request = new(HttpMethod.Get, $"/authentication/api/v1/systemregister/vendor");
             HttpResponseMessage getAllResponse = await client.SendAsync(request, HttpCompletionOption.ResponseContentRead);
             List<RegisteredSystemDTO>? list = JsonSerializer.Deserialize<List<RegisteredSystemDTO>>(await getAllResponse.Content.ReadAsStringAsync(), _options);
@@ -1116,7 +1116,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
         {
             string dataFileName = "Data/SystemRegister/Json/SystemRegister.json";
             HttpClient createClient = GetAuthenticatedClient(Admin, ValidOrg);
-            HttpResponseMessage response = await SystemRegisterTestHelper.CreateSystemRegister(createClient, dataFileName);            
+            HttpResponseMessage response = await SystemRegisterTestHelper.CreateSystemRegister(createClient, dataFileName);
 
             if (response.StatusCode == System.Net.HttpStatusCode.OK)
             {
@@ -1136,7 +1136,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
         {
             string dataFileName = "Data/SystemRegister/Json/SystemRegister.json";
             HttpClient createClient = GetAuthenticatedClient(Admin, ValidOrg);
-            HttpResponseMessage response = await SystemRegisterTestHelper.CreateSystemRegister(createClient, dataFileName);          
+            HttpResponseMessage response = await SystemRegisterTestHelper.CreateSystemRegister(createClient, dataFileName);
 
             if (response.StatusCode == System.Net.HttpStatusCode.OK)
             {
@@ -1274,7 +1274,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             Assert.NotNull(expectedRegisteredSystem);
             Assert.NotNull(actualUpdatedSystem);
             AssertionUtil.AssertRegisteredSystem(expectedRegisteredSystem, actualUpdatedSystem);
-           
+
             HttpClient getClient = GetAuthenticatedClient(Write, ValidOrg);
             await SystemRegisterTestHelper.GetAndAssertSystemChangeLog(getClient, "991825827_the_matrix", "ChangeLogUpdate");
 
@@ -1882,7 +1882,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
                 "digdir",
                 "991825827",
                 "altinn:authentication/systemregister.admin",
-                prefixes, 
+                prefixes,
                 TestTime);
 
             client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);

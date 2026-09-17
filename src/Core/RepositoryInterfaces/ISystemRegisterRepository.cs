@@ -86,7 +86,7 @@ public interface ISystemRegisterRepository
     /// </summary>
     /// <param name="id">The external string ID</param>
     /// <returns>UUID systemInternalId</returns>
-    Task<Guid?> RetrieveGuidFromStringId (string id);
+    Task<Guid?> RetrieveGuidFromStringId(string id);
 
     /// <summary>
     /// Updates the rights on a registered system

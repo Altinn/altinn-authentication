@@ -131,13 +131,13 @@ namespace Altinn.Platform.Authentication.Controllers
                 {
                     string b64 = v.Substring("Basic ".Length).Trim();
                     string decoded;
-                    try 
-                    { 
-                        decoded = Encoding.UTF8.GetString(Convert.FromBase64String(b64)); 
+                    try
+                    {
+                        decoded = Encoding.UTF8.GetString(Convert.FromBase64String(b64));
                     }
-                    catch 
-                    { 
-                        decoded = string.Empty; 
+                    catch
+                    {
+                        decoded = string.Empty;
                     }
 
                     int idx = decoded.IndexOf(':');

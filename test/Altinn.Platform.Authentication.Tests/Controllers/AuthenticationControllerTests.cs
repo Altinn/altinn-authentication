@@ -88,7 +88,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             services.AddSingleton<IPostConfigureOptions<JwtCookieOptions>, JwtCookiePostConfigureOptionsStub>();
             services.AddSingleton<IPublicSigningKeyProvider, SigningKeyResolverStub>();
             services.AddSingleton<IOidcProvider, OidcProviderServiceMock>();
-            services.AddSingleton(_eventQueue.Object);            
+            services.AddSingleton(_eventQueue.Object);
             services.AddSingleton(guidService.Object);
             services.AddSingleton<IUserProfileService>(_userProfileService.Object);
             SetupGuidMock();
@@ -928,7 +928,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             authenticationEvent.AuthenticationMethod = authMethod;
             authenticationEvent.AuthenticationLevel = authLevel;
             authenticationEvent.OrgNumber = orgNumber;
-            authenticationEvent.EventType = authEventType;            
+            authenticationEvent.EventType = authEventType;
             authenticationEvent.UserId = userId;
             authenticationEvent.IsAuthenticated = isAuthenticated;
             authenticationEvent.SessionId = "eaec330c-1e2d-4acb-8975-5f3eba12b2fb";

@@ -44,7 +44,7 @@ namespace Altinn.Platform.Authentication.Clients
             {
                 QueueClient client = await GetAuthenticationEventQueueClient();
                 TimeSpan timeToLive = TimeSpan.FromDays(_settings.TimeToLive);
-                await client.SendMessageAsync(Convert.ToBase64String(Encoding.UTF8.GetBytes(content)), null, timeToLive);      
+                await client.SendMessageAsync(Convert.ToBase64String(Encoding.UTF8.GetBytes(content)), null, timeToLive);
             }
             catch (Exception ex)
             {

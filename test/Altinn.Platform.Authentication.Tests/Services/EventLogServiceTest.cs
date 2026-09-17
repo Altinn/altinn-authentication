@@ -156,7 +156,7 @@ namespace Altinn.Platform.Authentication.Tests.Services
                 AuthenticationLevel = authenticationLevel,
                 AuthenticationMethod = authenticationMethod,
                 IsAuthenticated = true,
-                UserID = userId                
+                UserID = userId
             };
 
             return authenticatedUser;

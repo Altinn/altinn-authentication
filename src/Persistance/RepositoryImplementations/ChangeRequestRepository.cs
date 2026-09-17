@@ -297,7 +297,7 @@ public class ChangeRequestRepository(
             var dbres = await command.ExecuteEnumerableAsync()
                 .Select(ConvertFromReaderToChangeRequest)
                 .FirstOrDefaultAsync();
-                        
+
             return dbres;
         }
         catch (Exception ex)
@@ -338,7 +338,7 @@ public class ChangeRequestRepository(
             var dbres = await command.ExecuteEnumerableAsync()
                 .Select(ConvertFromReaderToChangeRequest)
                 .FirstOrDefaultAsync();
-                        
+
             return dbres;
         }
         catch (Exception ex)

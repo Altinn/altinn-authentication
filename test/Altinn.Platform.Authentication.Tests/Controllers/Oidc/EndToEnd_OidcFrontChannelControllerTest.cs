@@ -72,9 +72,9 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
         {
             base.ConfigureServices(services);
             _fakeTime = new(DateTimeOffset.Parse("2025-03-01T08:00:00Z")); // any stable baseline for tests
-            
+
             services.AddSingleton<IOidcProvider, Mocks.OidcProviderAdvancedMock>();
-            
+
             // Make sure **all** app code that depends on TimeProvider gets this fake one
             services.AddSingleton<TimeProvider>(_fakeTime);
 
@@ -289,7 +289,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
             for (int i = 0; i < 9; i++)
             {
                 _fakeTime.Advance(TimeSpan.FromMinutes(5)); // 08:41 08:46 08:51 08:56 08:59 09:06 09:11 09:16 09:21
-                
+
                 // Second keep alive from App
                 HttpResponseMessage cookieRefreshResponseFromSecondApp2 = await client.GetAsync(
                    "/authentication/api/v1/refresh");
@@ -339,7 +339,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
             Assert.Equal(sid, sid2); // should be same session as before
 
             // ===== Phase 11: User is done for the day. Press Logout in Arbeidsflate. This should log the user out both in Altinn and Idporten. =====
-           
+
             // Verify that session is active before logout
             OidcSession? beforeLoggedOutSession = await OidcServerDatabaseUtil.GetOidcSessionAsync(sid, DataSource);
             OidcAssertHelper.AssertValidSession(beforeLoggedOutSession, testScenario, _fakeTime.GetUtcNow());
@@ -348,7 +348,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
             using var logoutResp = await client.GetAsync(
                 "/authentication/api/v1/openid/logout?post_logout_redirect_uri=https%3A%2F%2Farbeidsflate.apps.localhost%2Floggetut&state=987654321");
             string content = await logoutResp.Content.ReadAsStringAsync();
-        
+
             Assert.Equal(HttpStatusCode.Found, logoutResp.StatusCode);
             Assert.StartsWith("https://login.idporten.no/logout?client_id=345345s&post_logout_redirect_uri=http%3a%2f%2flocalhost%2fauthentication%2fapi%2fv1%2flogout%2fhandleloggedout", logoutResp.Headers.Location!.ToString());
 
@@ -562,7 +562,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
             OidcSession? beforeLoggedOutSession = await OidcServerDatabaseUtil.GetOidcSessionAsync(sid, DataSource);
             OidcAssertHelper.AssertValidSession(beforeLoggedOutSession, testScenario, _fakeTime.GetUtcNow());
             Debug.Assert(beforeLoggedOutSession != null);
-            
+
             // Simulate that ID-provider call the front channel logout endpoint
             using var frontChannelLogoutResp = await client.GetAsync(
                 $"/authentication/api/v1/upstream/frontchannel-logout?iss={HttpUtility.UrlEncode(beforeLoggedOutSession.UpstreamIssuer)}&sid={HttpUtility.UrlEncode(beforeLoggedOutSession.UpstreamSessionSid!)}");
@@ -734,7 +734,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
                 It.IsAny<OidcClient>(),
                 It.IsAny<string>(),
                 It.IsAny<string>(),
-                It.IsAny<System.Threading.CancellationToken>()), 
+                It.IsAny<System.Threading.CancellationToken>()),
                 Times.Once);
         }
 
@@ -996,7 +996,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
             TokenResponseDto refreshed = JsonSerializer.Deserialize<TokenResponseDto>(refreshJson)!;
             TokenAssertsHelper.AssertTokenRefreshResponse(refreshed, testScenario, _fakeTime.GetUtcNow());
             OidcSession? refreshedSession = await OidcServerDatabaseUtil.GetOidcSessionAsync(sidFromCodeResponse, DataSource);
-            
+
             // ===== Phase 5: User is done for the day. Press Logout in Arbeidsflate. This should log the user out both in Altinn and Idporten. =====
 
             // Verify that session is active before logout
@@ -1244,7 +1244,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
             OidcAssertHelper.AssertValidSession(originalSessionBeforeUpgrade, testScenario, _fakeTime.GetUtcNow());
 
             // Update test scenario to require level4
-            testScenario.Acr = ["idporten-loa-high"]; 
+            testScenario.Acr = ["idporten-loa-high"];
             testScenario.Amr = ["BankID Mobil"];
             testScenario.SetLoginAttempt(2);
 
@@ -1514,7 +1514,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
             // Insert a client that matches the authorize request
             OidcClientCreate create = OidcServerTestUtils.NewClientCreate(testScenario);
             _ = await Repository.InsertClientAsync(create);
-           
+
             // === Phase 1: User request to open a Consent request. Consent page send user to authentication for login. Sends with additional 
             HttpResponseMessage app2RedirectResponse = await client.GetAsync("/authentication/api/v1/authentication?goto=https%3a%2f%2flocalhost%2faccessmanagement%2fui%2fconsent%2frequest%3fid%3d9383f24f-756e-4531-a341-652cff24e4f5%26DONTCHOOSEREPORTEE%3dtrue");
             Assert.Equal(HttpStatusCode.Redirect, app2RedirectResponse.StatusCode);
@@ -2665,11 +2665,11 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
             OidcCodeResponse oidcCodeResponse = IDProviderTestTokenUtil.GetIdPortenTokenResponse(
                 testScenario.Ssn!, // deliberately null in e-mail user scenarios: token util omits the pid claim
                 testScenario.Email!, // deliberately null in scenarios without e-mail: token util omits the email claim
-                createdUpstreamLogingTransaction.Nonce, 
+                createdUpstreamLogingTransaction.Nonce,
                 upstreamSID.ToString(),
-                testScenario.Acr.ToArray(), 
+                testScenario.Acr.ToArray(),
                 testScenario.Amr?.ToArray()!, // deliberately null when scenario has no amr: token util guards against null
-                createdUpstreamLogingTransaction.UpstreamClientId, 
+                createdUpstreamLogingTransaction.UpstreamClientId,
                 createdUpstreamLogingTransaction.Scopes,
                 authTime);
 

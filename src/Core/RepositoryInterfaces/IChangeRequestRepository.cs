@@ -19,7 +19,7 @@ public interface IChangeRequestRepository
     /// </summary>
     /// <param name="id">Request guid</param>
     /// <returns>Create Request model</returns>
-    Task<ChangeRequestResponse?> GetChangeRequestById (Guid id);
+    Task<ChangeRequestResponse?> GetChangeRequestById(Guid id);
 
     /// <summary>
     /// Gets a ChangeRequest model by the three external references
