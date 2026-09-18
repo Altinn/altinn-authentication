@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.IdentityModel.Tokens.Jwt;
 using System.Linq;
@@ -95,6 +95,7 @@ public class RequestSystemUserController : ControllerBase
     /// <param name="cancellationToken">The cancellation token</param>
     /// <returns>Response model of CreateRequestSystemUserResponse</returns>
     [Authorize(Policy = AuthzConstants.POLICY_SCOPE_SYSTEMUSERREQUEST_WRITE)]
+    [Produces("application/json")]
     [HttpPost("vendor")]
     [ServiceFilter(typeof(TrimStringsActionFilter))]
     public async Task<ActionResult<RequestSystemResponse>> CreateRequest([FromBody] CreateRequestSystemUser createRequest, CancellationToken cancellationToken = default)
@@ -147,6 +148,7 @@ public class RequestSystemUserController : ControllerBase
     /// <param name="cancellationToken">The cancellation token to cancel the operation.</param>
     /// <returns>A response model containing the details of the created agent request.</returns>
     [Authorize(Policy = AuthzConstants.POLICY_SCOPE_SYSTEMUSERREQUEST_WRITE)]
+    [Produces("application/json")]
     [HttpPost("vendor/agent")]
     [ServiceFilter(typeof(TrimStringsActionFilter))]
     public async Task<ActionResult<AgentRequestSystemResponse>> CreateAgentRequest([FromBody] CreateAgentRequestSystemUser createAgentRequest, CancellationToken cancellationToken = default)
@@ -217,6 +219,7 @@ public class RequestSystemUserController : ControllerBase
     /// <param name="cancellationToken">The cancellation token</param>
     /// <returns>Status response model CreateRequestSystemUserResponse</returns>
     [Authorize(Policy = AuthzConstants.POLICY_SCOPE_SYSTEMUSERREQUEST_READ)]
+    [Produces("application/json")]
     [HttpGet("vendor/{requestId}")]
     public async Task<ActionResult<RequestSystemResponse>> GetRequestByGuid(Guid requestId, CancellationToken cancellationToken = default)
     {
@@ -248,6 +251,7 @@ public class RequestSystemUserController : ControllerBase
     /// <param name="cancellationToken">The cancellation token to cancel the operation.</param>
     /// <returns>An action result containing the status response model of the agent system user request.</returns>
     [Authorize(Policy = AuthzConstants.POLICY_SCOPE_SYSTEMUSERREQUEST_READ)]
+    [Produces("application/json")]
     [HttpGet("vendor/agent/{requestId}")]
     public async Task<ActionResult<AgentRequestSystemResponse>> GetAgentSystemUserRequestByGuid(Guid requestId, CancellationToken cancellationToken = default)
     {
@@ -283,6 +287,7 @@ public class RequestSystemUserController : ControllerBase
     /// <param name="cancellationToken">The cancellation token</param>
     /// <returns>Status response model CreateRequestSystemUserResponse</returns>
     [Authorize(Policy = AuthzConstants.POLICY_SCOPE_SYSTEMUSERREQUEST_READ)]
+    [Produces("application/json")]
     [HttpGet("vendor/byexternalref/{systemId}/{orgNo}/{externalRef}")]
     public async Task<ActionResult<RequestSystemResponse>> GetRequestByExternalRef(string systemId, string externalRef, string orgNo, CancellationToken cancellationToken = default)
     {
@@ -324,6 +329,7 @@ public class RequestSystemUserController : ControllerBase
     /// <param name="cancellationToken">The cancellation token to cancel the operation.</param>
     /// <returns>An action result containing the status response model of the agent system user request.</returns>
     [Authorize(Policy = AuthzConstants.POLICY_SCOPE_SYSTEMUSERREQUEST_READ)]
+    [Produces("application/json")]
     [HttpGet("vendor/agent/byexternalref/{systemId}/{orgNo}/{externalRef}")]
     public async Task<ActionResult<RequestSystemResponse>> GetAgentRequestByExternalRef(string systemId, string externalRef, string orgNo, CancellationToken cancellationToken = default)
     {
@@ -361,6 +367,7 @@ public class RequestSystemUserController : ControllerBase
     /// </summary>
     /// <returns>RequestSystemResponse model</returns>
     [Authorize(Policy = AuthzConstants.POLICY_ACCESS_MANAGEMENT_READ)]
+    [Produces("application/json")]
     [HttpGet("{party}/{requestId}")]
     public async Task<ActionResult<RequestSystemResponse>> GetRequestByPartyIdAndRequestId(int party, Guid requestId)
     {
@@ -379,6 +386,7 @@ public class RequestSystemUserController : ControllerBase
     /// </summary>
     /// <returns>RequestSystemResponseInternal model</returns>    
     [Authorize(Policy = AuthzConstants.POLICY_SCOPE_PORTAL)]
+    [Produces("application/json")]
     [HttpGet("{requestId}")]
     public async Task<ActionResult<RequestSystemResponseInternal>> GetRequestById(Guid requestId)
     {
@@ -397,6 +405,7 @@ public class RequestSystemUserController : ControllerBase
     /// </summary>
     /// <returns>AgentRequestSystemResponse model</returns>
     [Authorize(Policy = AuthzConstants.POLICY_ACCESS_MANAGEMENT_READ)]
+    [Produces("application/json")]
     [HttpGet("agent/{party}/{requestId}")]
     public async Task<ActionResult<AgentRequestSystemResponse>> GetAgentRequestByPartyIdAndRequestId(int party, Guid requestId)
     {
@@ -415,6 +424,7 @@ public class RequestSystemUserController : ControllerBase
     /// </summary>
     /// <returns>AgentRequestSystemResponse model</returns>
     [Authorize(Policy = AuthzConstants.POLICY_SCOPE_PORTAL)]
+    [Produces("application/json")]
     [HttpGet("agent/{requestId}")]
     public async Task<ActionResult<RequestSystemResponseInternal>> GetAgentRequestById(Guid requestId)
     {
@@ -436,6 +446,7 @@ public class RequestSystemUserController : ControllerBase
     /// <returns>Status response model CreateRequestSystemUserResponse</returns>
     [Authorize(Policy = AuthzConstants.POLICY_SCOPE_PORTAL)]
     [Authorize(Policy = AuthzConstants.POLICY_ACCESS_MANAGEMENT_WRITE)]    
+    [Produces("application/json")]
     [HttpPost("{party}/{requestId}/approve")]
     public async Task<ActionResult<RequestSystemResponse>> ApproveSystemUserRequest(int party, Guid requestId, CancellationToken cancellationToken = default)
     {
@@ -463,6 +474,7 @@ public class RequestSystemUserController : ControllerBase
     /// <param name="cancellationToken">The cancellation token</param>
     /// <returns>Status response model CreateRequestSystemUserResponse</returns>
     [Authorize(Policy = AuthzConstants.POLICY_SCOPE_PORTAL)]
+    [Produces("application/json")]
     [HttpPost("{party}/{requestId}/escalate")]
     public async Task<ActionResult<bool>> EscalateApprovalSystemUserRequest(int party, Guid requestId, CancellationToken cancellationToken = default)
     {
@@ -490,6 +502,7 @@ public class RequestSystemUserController : ControllerBase
     /// <returns>Status response model CreateRequestSystemUserResponse</returns>
     [Authorize(Policy = AuthzConstants.POLICY_SCOPE_PORTAL)]
     [Authorize(Policy = AuthzConstants.POLICY_ACCESS_MANAGEMENT_WRITE)]
+    [Produces("application/json")]
     [HttpPost("agent/{party}/{requestId}/approve")]
     public async Task<ActionResult<AgentRequestSystemResponse>> ApproveAgentSystemUserRequest(int party, Guid requestId, CancellationToken cancellationToken = default)
     {
@@ -517,6 +530,7 @@ public class RequestSystemUserController : ControllerBase
     /// <param name="cancellationToken">The cancellation token</param>
     /// <returns>Status response model CreateRequestSystemUserResponse</returns>
     [Authorize(Policy = AuthzConstants.POLICY_SCOPE_PORTAL)]
+    [Produces("application/json")]
     [HttpPost("agent/{party}/{requestId}/escalate")]
     public async Task<ActionResult<bool>> EscalateApprovalAgentSystemUserRequest(int party, Guid requestId, CancellationToken cancellationToken = default)
     {
@@ -543,6 +557,7 @@ public class RequestSystemUserController : ControllerBase
     /// <param name="cancellationToken">The cancellation token</param>
     /// <returns>Status response model CreateRequestSystemUserResponse</returns>
     [Authorize(Policy = AuthzConstants.POLICY_SCOPE_SYSTEMUSERREQUEST_READ)]
+    [Produces("application/json")]
     [HttpGet("vendor/bysystem/{systemId}", Name = ROUTE_VENDOR_GET_REQUESTS_BY_SYSTEM)]
     public async Task<ActionResult<Paginated<RequestSystemResponse>>> GetAllRequestsForVendor(
         string systemId,
@@ -593,6 +608,7 @@ public class RequestSystemUserController : ControllerBase
     /// <param name="cancellationToken">The cancellation token</param>
     /// <returns>An action result containing a paginated list of agent system user requests</returns>
     [Authorize(Policy = AuthzConstants.POLICY_SCOPE_SYSTEMUSERREQUEST_READ)]
+    [Produces("application/json")]
     [HttpGet("vendor/agent/bysystem/{systemId}", Name = ROUTE_VENDOR_GET_AGENT_REQUESTS_BY_SYSTEM)]
     public async Task<ActionResult<Paginated<AgentRequestSystemResponse>>> GetAllAgentRequestsForVendor(
         string systemId,
@@ -643,6 +659,7 @@ public class RequestSystemUserController : ControllerBase
     /// <param name="cancellationToken">The cancellation token</param>
     /// <returns>Status response model CreateRequestSystemUserResponse</returns>
     [Authorize(Policy = AuthzConstants.POLICY_ACCESS_MANAGEMENT_WRITE)]
+    [Produces("application/json")]
     [HttpPost("{party}/{requestId}/reject")]
     public async Task<ActionResult<RequestSystemResponse>> RejectSystemUserRequest(int party, Guid requestId, CancellationToken cancellationToken = default)
     {
@@ -670,6 +687,7 @@ public class RequestSystemUserController : ControllerBase
     /// <returns>Status response model CreateRequestSystemUserResponse</returns>
     [Authorize(Policy = AuthzConstants.POLICY_SCOPE_PORTAL)]
     [Authorize(Policy = AuthzConstants.POLICY_ACCESS_MANAGEMENT_WRITE)]
+    [Produces("application/json")]
     [HttpGet("{party}/{orgno}/pending")]
     public async Task<ActionResult<List<RequestSystemResponse>>> GetPendingStandardRequests(int party, string orgno, CancellationToken cancellationToken = default)
     {
@@ -697,6 +715,7 @@ public class RequestSystemUserController : ControllerBase
     /// <returns>Status response model CreateRequestSystemUserResponse</returns>
     [Authorize(Policy = AuthzConstants.POLICY_SCOPE_PORTAL)]
     [Authorize(Policy = AuthzConstants.POLICY_ACCESS_MANAGEMENT_WRITE)]
+    [Produces("application/json")]
     [HttpGet("agent/{party}/{orgno}/pending")]
     public async Task<ActionResult<List<AgentRequestSystemResponse>>> GetPendingAgentRequests(int party, string orgno, CancellationToken cancellationToken = default)
     {
@@ -723,6 +742,7 @@ public class RequestSystemUserController : ControllerBase
     /// <param name="cancellationToken">The cancellation token</param>
     /// <returns>Status response model CreateRequestSystemUserResponse</returns>
     [Authorize(Policy = AuthzConstants.POLICY_ACCESS_MANAGEMENT_WRITE)]
+    [Produces("application/json")]
     [HttpPost("agent/{party}/{requestId}/reject")]
     public async Task<ActionResult<bool>> RejectAgentSystemUserRequest(int party, Guid requestId, CancellationToken cancellationToken = default)
     {
@@ -746,6 +766,7 @@ public class RequestSystemUserController : ControllerBase
     /// </summary>
     /// <returns></returns>
     [Authorize(Policy = AuthzConstants.POLICY_SCOPE_SYSTEMUSERREQUEST_WRITE)]
+    [Produces("application/json")]
     [HttpDelete("vendor/{requestId}")]
     public async Task<ActionResult<RequestSystemResponse>> DeleteRequestByRequestId(Guid requestId)
     {

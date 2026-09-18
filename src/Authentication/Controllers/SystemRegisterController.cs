@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Security.Claims;
@@ -46,6 +46,7 @@ public class SystemRegisterController : ControllerBase
     /// <returns></returns>    
     [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
     [Authorize(Policy = AuthzConstants.POLICY_SCOPE_PORTAL)]
+    [Produces("application/json")]
     [HttpGet]
     public async Task<ActionResult<List<RegisteredSystemDTO>>> GetListOfRegisteredSystems(CancellationToken cancellationToken = default)
     {
@@ -70,6 +71,7 @@ public class SystemRegisterController : ControllerBase
     /// <returns></returns>    
     [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
     [Authorize(Policy = AuthzConstants.POLICY_SCOPE_SYSTEMREGISTER_WRITE)]
+    [Produces("application/json")]
     [HttpGet("vendor")]
     public async Task<ActionResult<List<RegisteredSystemDTO>>> GetListOfRegisteredSystemsForVendor(CancellationToken cancellationToken = default)
     {
@@ -108,6 +110,7 @@ public class SystemRegisterController : ControllerBase
     /// <param name="cancellationToken">The cancellation token</param>
     /// <returns></returns>
     [Authorize(Policy = AuthzConstants.POLICY_SCOPE_PORTAL)]
+    [Produces("application/json")]
     [HttpGet("{systemId}")]
     public async Task<ActionResult<RegisteredSystemDTO>> GetRegisteredSystemDto(string systemId, CancellationToken cancellationToken = default)
     {
@@ -130,6 +133,7 @@ public class SystemRegisterController : ControllerBase
     /// <param name="cancellationToken">The cancellation token</param>
     /// <returns></returns>
     [Authorize(Policy = AuthzConstants.POLICY_SCOPE_SYSTEMREGISTER_WRITE)]
+    [Produces("application/json")]
     [HttpGet("vendor/{systemId}")]
     public async Task<ActionResult<RegisteredSystemResponse>> GetRegisteredSystemInfo(string systemId, CancellationToken cancellationToken = default)
     {
@@ -157,6 +161,7 @@ public class SystemRegisterController : ControllerBase
     /// <returns></returns>
     [Authorize(Policy = AuthzConstants.POLICY_SCOPE_SYSTEMREGISTER_WRITE)]
     [HttpPut("vendor/{systemId}")]
+    [Produces("text/plain", "application/json")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -232,6 +237,7 @@ public class SystemRegisterController : ControllerBase
     /// <param name="cancellationToken">The cancellation token</param>
     /// <returns></returns>
     [Authorize(Policy = AuthzConstants.POLICY_SCOPE_PORTAL)]
+    [Produces("application/json")]
     [HttpGet("{systemId}/rights")]
     public async Task<ActionResult<List<Right>>> GetRightsForRegisteredSystem(string systemId, [FromQuery] bool useOldFormatForApp = false, CancellationToken cancellationToken = default)
     {
@@ -263,6 +269,7 @@ public class SystemRegisterController : ControllerBase
     /// <param name="cancellationToken">The cancellation token</param>
     /// <returns></returns>
     [Authorize(Policy = AuthzConstants.POLICY_SCOPE_PORTAL)]
+    [Produces("application/json")]
     [HttpGet("{systemId}/accesspackages")]
     public async Task<ActionResult<List<AccessPackage>>> GetAccessPackagesForRegisteredSystem(string systemId, [FromQuery] bool useOldFormatForApp = false, CancellationToken cancellationToken = default)
     {
@@ -277,6 +284,7 @@ public class SystemRegisterController : ControllerBase
     /// <param name="registerNewSystem">The descriptor model of a new Registered System</param>
     /// <param name="cancellationToken">The Cancellationtoken</param>
     /// <returns></returns>
+    [Produces("application/json")]
     [HttpPost("vendor")]
     [Authorize(Policy = AuthzConstants.POLICY_SCOPE_SYSTEMREGISTER_WRITE)]
     [ServiceFilter(typeof(TrimStringsActionFilter))]
@@ -336,6 +344,7 @@ public class SystemRegisterController : ControllerBase
     /// <param name="systemId">The human readable string id</param>
     /// <param name="cancellationToken">a cancellation token</param>
     /// <returns>true if changed</returns>
+    [Produces("text/plain", "application/json")]
     [HttpPut("vendor/{systemId}/rights")]
     [Authorize(Policy = AuthzConstants.POLICY_SCOPE_SYSTEMREGISTER_WRITE)]
     public async Task<ActionResult<SystemRegisterUpdateResult>> UpdateRightsOnRegisteredSystem([FromBody] List<Right> rights, string systemId, CancellationToken cancellationToken = default)
@@ -375,6 +384,7 @@ public class SystemRegisterController : ControllerBase
     /// <param name="systemId">The human readable string id</param>
     /// <param name="cancellationToken">The cancellation token</param>
     /// <returns>true if changed</returns>
+    [Produces("text/plain", "application/json")]
     [HttpPut("vendor/{systemId}/accesspackages")]
     [Authorize(Policy = AuthzConstants.POLICY_SCOPE_SYSTEMREGISTER_WRITE)]
     public async Task<ActionResult<SystemRegisterUpdateResult>> UpdateAccessPackagesOnRegisteredSystem([FromBody] List<AccessPackage> accessPackages, string systemId, CancellationToken cancellationToken = default)
@@ -411,6 +421,7 @@ public class SystemRegisterController : ControllerBase
     /// </summary>
     /// <param name="systemId">The human readable string id</param>
     /// <returns>true if changed</returns>
+    [Produces("application/json")]
     [HttpDelete("vendor/{systemId}")]
     [Authorize(Policy = AuthzConstants.POLICY_SCOPE_SYSTEMREGISTER_WRITE)]
     public async Task<ActionResult<SystemRegisterUpdateResult>> SetDeleteOnRegisteredSystem(string systemId, CancellationToken cancellationToken = default)
@@ -443,6 +454,7 @@ public class SystemRegisterController : ControllerBase
     /// <param name="systemId">the system internal id</param>
     /// <param name="cancellationToken">the cancellation token</param>
     /// <returns></returns>
+    [Produces("text/plain", "application/json")]
     [HttpGet("vendor/{systemId}/changelog")]
     [Authorize(Policy = AuthzConstants.POLICY_SCOPE_SYSTEMREGISTER_WRITE)]
     public async Task<ActionResult<List<SystemChangeLog>>> GetChangeLogAsync(string systemId, CancellationToken cancellationToken = default)
