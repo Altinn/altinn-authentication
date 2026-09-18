@@ -1,3 +1,5 @@
+using System;
+using System.Linq;
 using Altinn.Authorization.ServiceDefaults;
 using Altinn.Platform.Authentication;
 using Microsoft.AspNetCore.Builder;
@@ -30,13 +32,14 @@ if (app.Environment.IsDevelopment() || app.Environment.IsStaging())
         var logger = context.RequestServices.GetRequiredService<ILogger<Program>>();
         var config = context.RequestServices.GetRequiredService<IOptionsMonitor<AltinnClusterInfo>>();
         logger.LogWarning(
-            "Request {method} {scheme}://{host}{path} from {ip}. Trusted proxies: {TrustedProxies}",
+            "Request {method} {scheme}://{host}{path} from {ip}. Trusted proxies: {TrustedProxies}. Headers: {headers}",
             context.Request.Method,
             context.Request.Scheme,
             context.Request.Host,
             context.Request.Path,
             context.Connection?.RemoteIpAddress,
-            config.CurrentValue.TrustedProxies);
+            config.CurrentValue.TrustedProxies,
+            string.Join(", ", context.Request.Headers.Select(h => $"{h.Key}: {h.Value}")));
         return next(context);
     });
 }
