@@ -35,7 +35,7 @@ if (app.Environment.IsDevelopment() || app.Environment.IsStaging())
             context.Request.Scheme,
             context.Request.Host,
             context.Request.Path,
-            context.Connection?.RemoteIpAddress,
+            context.Connection.RemoteIpAddress,
             config.CurrentValue.TrustedProxies);
         return next(context);
     });
@@ -55,7 +55,7 @@ if (app.Environment.IsDevelopment() || app.Environment.IsStaging())
             context.Request.Scheme,
             context.Request.Host,
             context.Request.Path,
-            context.Connection?.RemoteIpAddress);
+            context.Connection.RemoteIpAddress);
         return next(context);
     });
 }
