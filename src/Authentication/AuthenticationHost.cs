@@ -102,6 +102,12 @@ internal static class AuthenticationHost
         // Configure OIDC providers used by authentication
         services.ConfigureOidcProviders("OidcProviders");
 
+        // Configure ForwardLimit to null to allow for unlimited number of forwarded headers.
+        services.Configure<ForwardedHeadersOptions>(options =>
+        {
+            options.ForwardLimit = null;
+        });
+
         services.ConfigureDataProtection(builder.Environment.IsDevelopment(), config.GetSection("AzureStorageConfiguration").Get<AzureStorageConfiguration>());
         services.AddAuthentication(JwtCookieDefaults.AuthenticationScheme)
              .AddJwtCookie(JwtCookieDefaults.AuthenticationScheme, options =>
