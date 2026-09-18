@@ -126,4 +126,10 @@ public static class ValidationErrors
     /// </summary>
     public static ValidationErrorDescriptor SystemRegister_IsVisible_With_NonAssignable_AccessPackage { get; }
         = _factory.Create(18, "Access packages meant for system user for client relations can't be used in combination with the flag isVisible: true");
+
+    /// <summary>
+    /// Gets a validation error descriptor if the resource is marked as not delegable in the resource registry
+    /// </summary>
+    public static ValidationErrorDescriptor SystemRegister_ResourceId_ResourceNotDelegable { get; }
+        = _factory.Create(19, "One or more resources specified in rights is marked as not delegable in the resource registry.");
 }

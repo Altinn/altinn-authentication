@@ -1,0 +1,40 @@
+{
+  "identifier": "app_ttd_a1-nondelegable",
+  "title": {
+    "en": "Migrated Altinn 2 service",
+    "nb": "Migrert Altinn 2-tjeneste",
+    "nn": "Migrert Altinn 2-teneste"
+  },
+  "resourceReferences": [
+    {
+      "referenceSource": "Altinn3",
+      "reference": "ttd/a1-nondelegable",
+      "referenceType": "ApplicationId"
+    }
+  ],
+  "delegable": false,
+  "visible": false,
+  "hasCompetentAuthority": {
+    "name": {
+      "en": "Test Ministry",
+      "nn": "Testdepartementet",
+      "nb": "Testdepartementet"
+    },
+    "organization": "991825827",
+    "orgcode": "ttd"
+  },
+  "accessListMode": "Disabled",
+  "selfIdentifiedUserEnabled": false,
+  "enterpriseUserEnabled": false,
+  "resourceType": "AltinnApp",
+  "authorizationReference": [
+    {
+      "id": "urn:altinn:org",
+      "value": "ttd"
+    },
+    {
+      "id": "urn:altinn:app",
+      "value": "a1-nondelegable"
+    }
+  ]
+}

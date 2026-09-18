@@ -554,7 +554,7 @@ public class ChangeRequestSystemUserService(
 
         if (validateSet.RequiredRights is not null && validateSet.RequiredRights.Count > 0)
         {
-            Result<bool> valRights = systemUserService.ValidateRights(validateSet.RequiredRights, systemInfo);
+            Result<bool> valRights = await systemUserService.ValidateRights(validateSet.RequiredRights, systemInfo);
             if (valRights.IsProblem)
             {
                 return valRights.Problem;

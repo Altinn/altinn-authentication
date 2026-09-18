@@ -151,11 +151,12 @@ namespace Altinn.Platform.Authentication.Services
         }
 
         /// <inheritdoc/>
-        public async Task<(List<string> InvalidFormatResourceIds, List<string> NotFoundResourceIds, List<string> NotDelegableResourceIds)> GetInvalidResourceIdsDetailed(List<Right> rights, CancellationToken cancellationToken)
+        public async Task<(List<string> InvalidFormatResourceIds, List<string> NotFoundResourceIds, List<string> UnsupportedResourceTypeIds, List<string> NotDelegableResourceIds)> GetInvalidResourceIdsDetailed(List<Right> rights, CancellationToken cancellationToken)
         {
             ServiceResource? resource = null;
             var invalidFormatResourceIds = new List<string>();
             var notFoundResourceIds = new List<string>();
+            var unsupportedResourceTypeIds = new List<string>();
             var notDelegableResourceIds = new List<string>();
             foreach (Right right in rights)
             {
@@ -175,13 +176,17 @@ namespace Altinn.Platform.Authentication.Services
                         }
                         else if (!WhitelistedResourceTypes.Contains(resource.ResourceType))
                         {
+                            unsupportedResourceTypeIds.Add(resourceId.Value);
+                        }
+                        else if (!resource.Delegable)
+                        {
                             notDelegableResourceIds.Add(resourceId.Value);
                         }
                     }
                 }
             }
 
-            return (invalidFormatResourceIds, notFoundResourceIds, notDelegableResourceIds);
+            return (invalidFormatResourceIds, notFoundResourceIds, unsupportedResourceTypeIds, notDelegableResourceIds);
         }
 
         /// <inheritdoc/>

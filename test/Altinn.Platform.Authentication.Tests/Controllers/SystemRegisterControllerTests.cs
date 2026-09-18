@@ -264,6 +264,52 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
         }
 
         [Fact]
+        public async Task SystemRegister_Create_NotDelegableResource_BadRequest()
+        {
+            // Arrange
+            string dataFileName = "Data/SystemRegister/Json/SystemRegisterNotDelegableResource.json";
+            HttpClient client = GetAuthenticatedClient(Admin, ValidOrg);
+            HttpResponseMessage response = await SystemRegisterTestHelper.CreateSystemRegister(client, dataFileName);
+            Assert.Equal(System.Net.HttpStatusCode.BadRequest, response.StatusCode);
+            AltinnValidationProblemDetails? problemDetails = await response.Content.ReadFromJsonAsync<AltinnValidationProblemDetails>();
+            Assert.NotNull(problemDetails);
+            Assert.Single(problemDetails.Errors);
+            AltinnValidationError error = problemDetails.Errors.Single(e => e.ErrorCode == ValidationErrors.SystemRegister_ResourceId_ResourceNotDelegable.ErrorCode);
+            Assert.Equal("/registersystemrequest/rights/resource", error.Paths.Single(p => p.Equals("/registersystemrequest/rights/resource")));
+            Assert.Equal(ValidationErrors.SystemRegister_ResourceId_ResourceNotDelegable.Title, error.Title);
+            string? notDelegableExtensionValue = error.Extensions["Resources Not Delegable : "]?.ToString();
+            Assert.Equal("app_ttd_a1-nondelegable", notDelegableExtensionValue);
+        }
+
+        [Fact]
+        public async Task SystemRegister_Update_NotDelegableResource_BadRequest()
+        {
+            string dataFileName = "Data/SystemRegister/Json/SystemRegister.json";
+            HttpClient createClient = GetAuthenticatedClient(Admin, ValidOrg);
+            HttpResponseMessage response = await SystemRegisterTestHelper.CreateSystemRegister(createClient, dataFileName);
+            Assert.True(response.IsSuccessStatusCode);
+
+            HttpClient client = GetAuthenticatedClient(Admin, ValidOrg);
+
+            // Arrange
+            Stream dataStream = File.OpenRead("Data/SystemRegister/Json/UpdateRightNotDelegableResource.json");
+            StreamContent content = new StreamContent(dataStream);
+            content.Headers.ContentType = new MediaTypeHeaderValue("application/json");
+
+            string systemID = "991825827_the_matrix";
+            HttpRequestMessage request = new(HttpMethod.Put, $"/authentication/api/v1/systemregister/vendor/{systemID}/rights");
+            request.Content = content;
+            HttpResponseMessage updateResponse = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead);
+
+            Assert.Equal(System.Net.HttpStatusCode.BadRequest, updateResponse.StatusCode);
+            AltinnValidationProblemDetails? problemDetails = await updateResponse.Content.ReadFromJsonAsync<AltinnValidationProblemDetails>();
+            Assert.NotNull(problemDetails);
+            AltinnValidationError error = problemDetails.Errors.Single(e => e.ErrorCode == ValidationErrors.SystemRegister_ResourceId_ResourceNotDelegable.ErrorCode);
+            Assert.Equal("/registersystemrequest/rights/resource", error.Paths.Single(p => p.Equals("/registersystemrequest/rights/resource")));
+            Assert.Equal(ValidationErrors.SystemRegister_ResourceId_ResourceNotDelegable.Title, error.Title);
+        }
+
+        [Fact]
         public async Task SystemRegister_Create_InvalidAccessPackages_BadRequest()
         {
             // Arrange
