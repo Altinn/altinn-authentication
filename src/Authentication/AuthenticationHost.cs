@@ -102,7 +102,7 @@ internal static class AuthenticationHost
         // Configure OIDC providers used by authentication
         services.ConfigureOidcProviders("OidcProviders");
 
-        // Configure ForwardLimit to null to allow for unlimited number of forwarded headers.
+        // Configure ForwardLimit to null to allow for unlimited number of x-forwarded-for header values.
         services.Configure<ForwardedHeadersOptions>(options =>
         {
             options.ForwardLimit = null;
