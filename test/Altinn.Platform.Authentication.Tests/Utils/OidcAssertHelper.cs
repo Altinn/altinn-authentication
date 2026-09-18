@@ -91,7 +91,7 @@ namespace Altinn.Platform.Authentication.Tests.Utils
             Assert.Equal(now, createdTx.CreatedAt);
         }
 
-        public static string AssertHasAltinnStudioRuntimeCookie(HttpResponseMessage resp, OidcTestScenario testScenario,   DateTimeOffset now)
+        public static string AssertHasAltinnStudioRuntimeCookie(HttpResponseMessage resp, OidcTestScenario testScenario, DateTimeOffset now)
         {
             Assert.True(resp.Headers.TryGetValues("Set-Cookie", out var setCookies), "Response missing Set-Cookie headers.");
 
@@ -211,7 +211,7 @@ namespace Altinn.Platform.Authentication.Tests.Utils
             Assert.Equal(testScenario.Amr?.OrderBy(s => s).ToList(), oidcSession.Amr?.OrderBy(s => s).ToList());
 
             foreach (string scope in testScenario.Scopes)
-            { 
+            {
                 Assert.Contains(scope, oidcSession.Scopes);
             }
 

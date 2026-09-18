@@ -34,12 +34,12 @@ namespace Altinn.Platform.Authentication.Core.Models.ResourceRegistry
         /// <summary>
         /// Description explaining the rights a recipient will receive if given access to the resource
         /// </summary>
-        public Dictionary<string, string> RightDescription { get; set;  }
+        public Dictionary<string, string> RightDescription { get; set; }
 
         /// <summary>
         /// The homepage
         /// </summary>
-        public string? Homepage { get; set; }    
+        public string? Homepage { get; set; }
 
         /// <summary>
         /// The status
@@ -50,7 +50,7 @@ namespace Altinn.Platform.Authentication.Core.Models.ResourceRegistry
         /// spatial coverage
         /// This property represents that area(s) a Public Service is likely to be available only within, typically the area(s) covered by a particular public authority.
         /// </summary>
-        public List<string>? Spatial { get; set;  }
+        public List<string>? Spatial { get; set; }
 
         /// <summary>
         /// List of possible contact points
@@ -60,7 +60,7 @@ namespace Altinn.Platform.Authentication.Core.Models.ResourceRegistry
         /// <summary>
         /// Linkes to the outcome of a public service
         /// </summary>
-        public List<string>? Produces { get; set;  }
+        public List<string>? Produces { get; set; }
 
         /// <summary>
         /// IsPartOf
@@ -75,17 +75,17 @@ namespace Altinn.Platform.Authentication.Core.Models.ResourceRegistry
         /// <summary>
         /// ResourceReference
         /// </summary>
-        public List<ResourceReference>? ResourceReferences { get; set;  }
+        public List<ResourceReference>? ResourceReferences { get; set; }
 
         /// <summary>
         /// Is this resource possible to delegate to others or not
         /// </summary>
         public bool Delegable { get; set; } = true;
-        
+
         /// <summary>
         /// The visibility of the resource
         /// </summary>
-        public bool Visible { get; set; } = true; 
+        public bool Visible { get; set; } = true;
 
         /// <summary>
         /// HasCompetentAuthority

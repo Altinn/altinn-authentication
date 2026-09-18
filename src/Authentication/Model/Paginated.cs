@@ -46,7 +46,7 @@ public record PaginatedLinks(
 {
     [ExcludeFromCodeCoverage]
     private sealed class SchemaFilter : ISchemaFilter
-    {        
+    {
         public void Apply(IOpenApiSchema schema, SchemaFilterContext context)
         {
             if (schema is OpenApiSchema openApiSchema)

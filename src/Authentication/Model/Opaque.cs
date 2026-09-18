@@ -26,7 +26,7 @@ public static partial class Opaque
     /// <typeparam name="T">The type of the inner value</typeparam>
     /// <param name="value">The inner value</param>
     /// <returns>A new opaque value.</returns>
-    public static Opaque<T> Create<T>(T value) 
+    public static Opaque<T> Create<T>(T value)
         => new(value);
 
     /// <summary>
@@ -75,9 +75,9 @@ public static partial class Opaque
 [SwaggerSchemaFilter(typeof(Opaque.OpaqueSchemaFilter))]
 [JsonConverter(typeof(Opaque.OpaqueJsonConverter))]
 public class Opaque<T>(T value)
-    : IParsable<Opaque<T>>
-    , ISpanParsable<Opaque<T>>
-    , IUtf8SpanParsable<Opaque<T>>
+    : IParsable<Opaque<T>>,
+    ISpanParsable<Opaque<T>>,
+    IUtf8SpanParsable<Opaque<T>>
 {
     /// <summary>
     /// Gets the inner value.
@@ -131,7 +131,7 @@ public class Opaque<T>(T value)
     {
         byte[] buff = null!;
         var binaryLength = Base64UrlEncoder.GetMaxDecodedLength(s.Length);
-        try 
+        try
         {
             buff = ArrayPool<byte>.Shared.Rent(binaryLength);
             if (!Base64UrlEncoder.TryDecode(s, buff, out var written))
@@ -279,7 +279,7 @@ public static partial class Opaque
                     buff = ArrayPool<byte>.Shared.Rent((int)seq.Length);
                     seq.CopyTo(buff);
                     utf8Data = buff.AsSpan(0, (int)seq.Length);
-                } 
+                }
                 else
                 {
                     utf8Data = reader.ValueSpan;

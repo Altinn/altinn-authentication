@@ -148,7 +148,7 @@ public interface IRequestSystemUser
     /// <param name="vendorOrgNo">the orgno for the Vendor</param>
     /// <returns>A <see cref="Task{TResult}"/> representing the result of the asynchronous operation.</returns>
     Task<Result<AgentRequestSystemResponse>> CreateAgentRequest(CreateAgentRequestSystemUser createAgentRequest, OrganisationNumber vendorOrgNo);
-    
+
     /// <summary>
     /// Gets the status based on the External Request Id 
     /// 

@@ -78,13 +78,13 @@ public class ChangeRequestSystemUserController(
     /// <param name="createRequest">REQUIRED: The request model</param>
     /// <param name="cancellationToken">The cancellation token</param>
     /// <returns>Response model for a ChangeRequest</returns>
-    [Authorize(Policy = AuthzConstants.POLICY_SCOPE_SYSTEMUSERREQUEST_WRITE)]    
+    [Authorize(Policy = AuthzConstants.POLICY_SCOPE_SYSTEMUSERREQUEST_WRITE)]
     [HttpPost("vendor")]
     [ServiceFilter(typeof(TrimStringsActionFilter))]
     public async Task<ActionResult<ChangeRequestResponse>> CreateChangeRequest(
         [FromQuery(Name = "correlation-id")] Guid correllationId,
         [FromQuery(Name = "system-user-id")] Guid systemUserId,
-        [FromBody] ChangeRequestSystemUser createRequest, 
+        [FromBody] ChangeRequestSystemUser createRequest,
         CancellationToken cancellationToken = default)
     {
         if (correllationId == Guid.Empty)
@@ -98,13 +98,13 @@ public class ChangeRequestSystemUserController(
         // Only the Vendor of the Registered System the SystemUser is based on have the authority to ask for a Change Request
         string platform = _generalSettings.PlatformEndpoint;
         OrganisationNumber? vendorOrgNo = RetrieveOrgNoFromToken();
-        if (vendorOrgNo is null || vendorOrgNo == OrganisationNumber.Empty()) 
+        if (vendorOrgNo is null || vendorOrgNo == OrganisationNumber.Empty())
         {
             return Unauthorized();
-        }        
+        }
 
-        systemUser = await systemUserService.GetSingleSystemUserById((Guid)systemUserId);         
-        
+        systemUser = await systemUserService.GetSingleSystemUserById((Guid)systemUserId);
+
         if (systemUser is null)
         {
             return Core.Problems.Problem.SystemUserNotFound.ToActionResult();
@@ -140,7 +140,7 @@ public class ChangeRequestSystemUserController(
                 SystemId = systemUser.SystemId,
                 SystemUserId = systemUserId,
                 PartyOrgNo = systemUser.ReporteeOrgNo
-            };        
+            };
 
             return Ok(emptyResponse);
         }
@@ -155,7 +155,7 @@ public class ChangeRequestSystemUserController(
 
         // This is a new Request, create and persist, return the Customer's ConfirmationPageUrl to the Vendor
         response = await changeRequestService.CreateChangeRequest(createRequest, vendorOrgNo, systemUser, correllationId);
-        
+
         if (response.IsSuccess)
         {
             string fullCreatedUri = platform + CREATEDURIMIDSECTION + response.Value.Id;
@@ -255,12 +255,12 @@ public class ChangeRequestSystemUserController(
         };
 
         Result<ChangeRequestResponse> response = await changeRequestService.GetChangeRequestByExternalRef(externalRequestId, vendorOrgNo);
-        
+
         if (response.IsProblem)
         {
             return response.Problem.ToActionResult();
         }
-        
+
         if (response.IsSuccess)
         {
             response.Value.ConfirmUrl = CONFIRMURL1 + _generalSettings.HostName + CONFIRMURL2 + response.Value.Id + REPORTEESELECTIONPARAMETER;

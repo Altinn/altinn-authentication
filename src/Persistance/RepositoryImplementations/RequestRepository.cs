@@ -33,7 +33,7 @@ public class RequestRepository : IRequestRepository
         TimeProvider timeProvider)
     {
         _dataSource = npgsqlDataSource;
-        _systemUserRepository = systemUserRepository;   
+        _systemUserRepository = systemUserRepository;
         _logger = logger;
         _timeProvider = timeProvider;
     }
@@ -293,7 +293,7 @@ public class RequestRepository : IRequestRepository
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Authentication // RequestRepository // GetRequestByInternalId // Exception"); 
+            _logger.LogError(ex, "Authentication // RequestRepository // GetRequestByInternalId // Exception");
             throw;
         }
     }
@@ -355,18 +355,18 @@ public class RequestRepository : IRequestRepository
 
         try
         {
-            await using NpgsqlCommand command = new NpgsqlCommand(QUERY, conn); 
+            await using NpgsqlCommand command = new NpgsqlCommand(QUERY, conn);
 
             command.Parameters.AddWithValue("requestId", requestId);
             command.Parameters.AddWithValue("request_status", RequestStatus.Accepted.ToString());
             command.Parameters.AddWithValue("changed_by", changed_by);
 
             bool isUpdated = await command.ExecuteNonQueryAsync(cancellationToken) > 0;
-                        
+
             return isUpdated;
         }
         catch (Exception ex)
-        {            
+        {
             _logger.LogError(ex, "Authentication // RequestRepository // ApproveAndCreateSystemUser // Exception");
             throw;
         }
@@ -415,7 +415,7 @@ public class RequestRepository : IRequestRepository
                 last_changed = CURRENT_TIMESTAMP,
                 changed_by = @changed_by
             WHERE business_application.request.id = @requestId
-            """;       
+            """;
 
         try
         {
@@ -467,7 +467,7 @@ public class RequestRepository : IRequestRepository
             Created = reader.GetFieldValue<DateTime>("created"),
             RedirectUrl = redirect_url
         };
-        
+
         var now = _timeProvider.GetUtcNow().DateTime;
 
         if (response.Created < _timeProvider.GetUtcNow().UtcDateTime.AddDays(-REQUEST_TIMEOUT_DAYS))
@@ -515,7 +515,7 @@ public class RequestRepository : IRequestRepository
 
         if (response.Created < _timeProvider.GetUtcNow().UtcDateTime.AddDays(-REQUEST_TIMEOUT_DAYS))
         {
-            response.TimedOut = true;   
+            response.TimedOut = true;
         }
 
         return response;
@@ -589,7 +589,7 @@ public class RequestRepository : IRequestRepository
         {
             await using NpgsqlCommand command = _dataSource.CreateCommand(QUERY);
 
-            command.Parameters.AddWithValue("party_org_no", party_org_no);            
+            command.Parameters.AddWithValue("party_org_no", party_org_no);
             command.Parameters.Add<SystemUserType>("systemuser_type").TypedValue = SystemUserType.Standard;
             command.Parameters.AddWithValue("request_status", RequestStatus.New.ToString());
 
@@ -752,12 +752,12 @@ public class RequestRepository : IRequestRepository
 
         try
         {
-            await using NpgsqlCommand command = _dataSource.CreateCommand(QUERY);        
+            await using NpgsqlCommand command = _dataSource.CreateCommand(QUERY);
 
             command.Parameters.AddWithValue("archive_timeout", DateTime.UtcNow.AddDays(-days));
 
-            int res = await command.ExecuteNonQueryAsync();   
-            
+            int res = await command.ExecuteNonQueryAsync();
+
             int res2 = await DeleteArchivedAndDeleted(-days);
 
             if (res != res2)

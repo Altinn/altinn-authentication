@@ -34,24 +34,24 @@ namespace Altinn.Platform.Authentication.Clients
             {
                 UriBuilder uriBuilder = new UriBuilder(oidcClient.FrontchannelLogoutUri);
                 System.Collections.Specialized.NameValueCollection query = HttpUtility.ParseQueryString(uriBuilder.Query);
-                
+
                 if (!string.IsNullOrEmpty(sessionId))
                 {
                     query["sid"] = sessionId;
                 }
-                
+
                 if (!string.IsNullOrEmpty(iss))
                 {
                     query["iss"] = iss;
                 }
-                
+
                 uriBuilder.Query = query.ToString();
                 Uri logoutUri = uriBuilder.Uri;
 
                 _logger.LogDebug("Calling front channel logout for client {ClientId} at {LogoutUri}", oidcClient.ClientId, logoutUri);
 
                 using HttpResponseMessage response = await _httpClient.GetAsync(logoutUri, cancellationToken);
-                
+
                 if (response.IsSuccessStatusCode)
                 {
                     _logger.LogDebug("Front channel logout succeeded for client {ClientId}", oidcClient.ClientId);
@@ -59,7 +59,7 @@ namespace Altinn.Platform.Authentication.Clients
                     return true;
                 }
                 else
-                {                                               
+                {
                     _logger.LogWarning("Front channel logout failed for client {ClientId} with status {StatusCode}", oidcClient.ClientId, response.StatusCode);
                     response.Dispose();
                     return false;

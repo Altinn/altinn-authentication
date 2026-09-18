@@ -20,7 +20,7 @@ namespace Altinn.Platform.Authentication.Tests.Mocks
         /// The Constructor
         /// </summary>
         public ChangeRequestSystemUserServiceMock()
-        {    
+        {
         }
 
         public Task<Result<bool>> ApproveAndDelegateChangeOnSystemUser(Guid requestId, int partyId, int userId, CancellationToken cancellationToken)

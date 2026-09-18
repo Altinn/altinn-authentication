@@ -44,7 +44,7 @@
         /// xacml string that represents organization number 
         /// </summary>
         public const string OrganizationNumberAttribute = "urn:altinn:organizationnumber";
-        
+
         /// <summary>
         /// xacml string that represents user
         /// </summary>
@@ -54,7 +54,7 @@
         /// xacml string that represents role
         /// </summary>
         public const string RoleAttribute = "urn:altinn:rolecode";
-        
+
         /// <summary>
         /// xacml string that represents resource
         /// </summary>

@@ -19,7 +19,7 @@ namespace Altinn.Platform.Authentication.Core.Models.Rights
         /// party id
         /// </summary>
         ////public required string PartyId { get; set; }
-        
+
         /// <summary>
         /// Display name of the party
         /// </summary>

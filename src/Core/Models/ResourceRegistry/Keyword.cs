@@ -14,7 +14,7 @@ namespace Altinn.Platform.Authentication.Core.Models.ResourceRegistry
         /// <summary>
         /// The key word
         /// </summary>
-        public string Word { get; set; } 
+        public string Word { get; set; }
 
         /// <summary>
         /// Language of the key word
