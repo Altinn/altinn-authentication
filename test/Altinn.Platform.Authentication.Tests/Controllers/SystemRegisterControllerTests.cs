@@ -117,6 +117,23 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
         }
 
         [Fact]
+        public async Task SystemRegister_Create_NameOnlyProvidedInNorwegian_BadRequest()
+        {
+            // Arrange
+            string dataFileName = "Data/SystemRegister/Json/SystemRegisterWithoutEnglishName.json";
+            HttpClient client = GetAuthenticatedClient(Admin, ValidOrg);
+            HttpResponseMessage response = await SystemRegisterTestHelper.CreateSystemRegister(client, dataFileName);
+            Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+
+            AltinnValidationProblemDetails? problemDetails = await response.Content.ReadFromJsonAsync<AltinnValidationProblemDetails>();
+            Assert.NotNull(problemDetails);
+
+            AltinnValidationError error = problemDetails.Errors.First(e => e.ErrorCode == ValidationErrors.SystemRegister_Name_Not_Provided_In_All_Languages.ErrorCode);
+            Assert.Equal(ValidationErrors.SystemRegister_Name_Not_Provided_In_All_Languages.Title, error.Title);
+            Assert.Contains("/registersystemrequest/name", error.Paths);
+        }
+
+        [Fact]
         public async Task SystemRegister_Create_WithApp_Success()
         {
             // Arrange
@@ -374,6 +391,43 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
                 HttpClient getClient = GetAuthenticatedClient(Write, ValidOrg);
                 await SystemRegisterTestHelper.GetAndAssertSystemChangeLog(getClient, systemID, "ChangeLogRightsUpdate");
             }
+        }
+
+        [Fact]
+        public async Task SystemRegister_Update_Name_NameNotProvidedInAllLanguages_BadRequest()
+        {
+            string dataFileName = "Data/SystemRegister/Json/SystemRegister.json";
+            HttpClient createClient = GetAuthenticatedClient(Admin, ValidOrg);
+            HttpResponseMessage response = await SystemRegisterTestHelper.CreateSystemRegister(createClient, dataFileName);
+            Assert.True(response.IsSuccessStatusCode);
+
+            HttpClient client = CreateClient();
+            string[] prefixes = ["altinn", "digdir"];
+            string token = PrincipalUtil.GetOrgToken("digdir", "991825827", "altinn:authentication/systemregister.admin", prefixes, TestTime);
+            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+            JsonSerializerOptions options = new JsonSerializerOptions()
+            {
+                PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+            };
+
+            // Arrange
+            Stream dataStream = File.OpenRead("Data/SystemRegister/Json/SystemRegisterUpdatedRemoveName.json");
+            StreamContent content = new StreamContent(dataStream);
+            content.Headers.ContentType = new MediaTypeHeaderValue("application/json");
+
+            string systemId = "991825827_the_matrix";
+            HttpRequestMessage request = new(HttpMethod.Put, $"/authentication/api/v1/systemregister/vendor/{systemId}");
+            request.Content = content;
+            HttpResponseMessage updateResponse = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead);
+
+            // Assert
+            Assert.Equal(HttpStatusCode.BadRequest, updateResponse.StatusCode);
+            AltinnValidationProblemDetails? problemDetails = await updateResponse.Content.ReadFromJsonAsync<AltinnValidationProblemDetails>();
+            Assert.NotNull(problemDetails);
+
+            AltinnValidationError error = problemDetails.Errors.First(e => e.ErrorCode == ValidationErrors.SystemRegister_Name_Not_Provided_In_All_Languages.ErrorCode);
+            Assert.Equal(ValidationErrors.SystemRegister_Name_Not_Provided_In_All_Languages.Title, error.Title);
+            Assert.Contains("/registersystemrequest/name", error.Paths);
         }
 
         [Fact]
