@@ -40,7 +40,7 @@ if (app.Environment.IsDevelopment() || app.Environment.IsStaging())
             context.Connection.RemoteIpAddress,
             config.CurrentValue.TrustedProxies,
             string.Join(", ", context.Request.Headers
-                .Where(h => new[] { "X-Forwarded-For", "X-Forwarded-Proto", "X-Forwarded-Host", "X-Real-IP", "Host" }
+                .Where(h => new[] { "X-Forwarded-For", "X-Forwarded-Proto", "X-Forwarded-Host" }
                     .Contains(h.Key, StringComparer.OrdinalIgnoreCase))
                 .Select(h => $"{h.Key}: {h.Value}")));
         return next(context);
@@ -56,12 +56,16 @@ if (app.Environment.IsDevelopment() || app.Environment.IsStaging())
     {
         var logger = context.RequestServices.GetRequiredService<ILogger<Program>>();
         logger.LogWarning(
-            "Debug Request {method} {scheme}://{host}{path} from {ip}.",
+            "Debug Request {method} {scheme}://{host}{path} from {ip}. Headers: {headers}",
             context.Request.Method,
             context.Request.Scheme,
             context.Request.Host,
             context.Request.Path,
-            context.Connection.RemoteIpAddress);
+            context.Connection.RemoteIpAddress,
+            string.Join(", ", context.Request.Headers
+                .Where(h => new[] { "X-Forwarded-For", "X-Forwarded-Proto", "X-Forwarded-Host" }
+                    .Contains(h.Key, StringComparer.OrdinalIgnoreCase))
+                .Select(h => $"{h.Key}: {h.Value}")));
         return next(context);
     });
 }
