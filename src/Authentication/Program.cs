@@ -24,51 +24,7 @@ else
     app.UseExceptionHandler("/authentication/api/v1/error");
 }
 
-// For debugging purposes, will be removed before production.
-if (app.Environment.IsDevelopment() || app.Environment.IsStaging())
-{
-    app.Use(next => context =>
-    {
-        var logger = context.RequestServices.GetRequiredService<ILogger<Program>>();
-        var config = context.RequestServices.GetRequiredService<IOptionsMonitor<AltinnClusterInfo>>();
-        logger.LogWarning(
-            "Debug Request {method} {scheme}://{host}{path} from {ip}. Trusted proxies: {TrustedProxies}. Headers: {headers}",
-            context.Request.Method,
-            context.Request.Scheme,
-            context.Request.Host,
-            context.Request.Path,
-            context.Connection.RemoteIpAddress,
-            config.CurrentValue.TrustedProxies,
-            string.Join(", ", context.Request.Headers
-                .Where(h => new[] { "X-Forwarded-For", "X-Forwarded-Proto", "X-Forwarded-Host" }
-                    .Contains(h.Key, StringComparer.OrdinalIgnoreCase))
-                .Select(h => $"{h.Key}: {h.Value}")));
-        return next(context);
-    });
-}
-
 app.UseForwardedHeaders();
-
-// For debugging purposes, will be removed before production.
-if (app.Environment.IsDevelopment() || app.Environment.IsStaging())
-{
-    app.Use(next => context =>
-    {
-        var logger = context.RequestServices.GetRequiredService<ILogger<Program>>();
-        logger.LogWarning(
-            "Debug Request {method} {scheme}://{host}{path} from {ip}. Headers: {headers}",
-            context.Request.Method,
-            context.Request.Scheme,
-            context.Request.Host,
-            context.Request.Path,
-            context.Connection.RemoteIpAddress,
-            string.Join(", ", context.Request.Headers
-                .Where(h => new[] { "X-Forwarded-For", "X-Forwarded-Proto", "X-Forwarded-Host" }
-                    .Contains(h.Key, StringComparer.OrdinalIgnoreCase))
-                .Select(h => $"{h.Key}: {h.Value}")));
-        return next(context);
-    });
-}
 
 app.UseSwagger(o => o.RouteTemplate = "authentication/swagger/{documentName}/swagger.json");
 
