@@ -29,7 +29,7 @@ if (app.Environment.IsDevelopment() || app.Environment.IsStaging())
     {
         var logger = context.RequestServices.GetRequiredService<ILogger<Program>>();
         var config = context.RequestServices.GetRequiredService<IOptionsMonitor<AltinnClusterInfo>>();
-        logger.LogWarning(
+        logger.LogInformation(
             "Request {method} {scheme}://{host}{path} from {ip}. Trusted proxies: {TrustedProxies}",
             context.Request.Method,
             context.Request.Scheme,
@@ -49,7 +49,7 @@ if (app.Environment.IsDevelopment() || app.Environment.IsStaging())
     app.Use(next => context =>
     {
         var logger = context.RequestServices.GetRequiredService<ILogger<Program>>();
-        logger.LogWarning(
+        logger.LogInformation(
             "Request {method} {scheme}://{host}{path} from {ip}.",
             context.Request.Method,
             context.Request.Scheme,
