@@ -19,7 +19,7 @@ public interface IChangeRequestRepository
     /// </summary>
     /// <param name="id">Request guid</param>
     /// <returns>Create Request model</returns>
-    Task<ChangeRequestResponse?> GetChangeRequestById (Guid id);
+    Task<ChangeRequestResponse?> GetChangeRequestById(Guid id);
 
     /// <summary>
     /// Gets a ChangeRequest model by the three external references
@@ -41,9 +41,11 @@ public interface IChangeRequestRepository
     /// Retrieves a list of Status-Response-model for all ChangeRequests that the Vendor has
     /// </summary>    
     /// <param name="systemId">The chosen system</param>
+    /// <param name="continueFrom">The id of the first ChangeRequest to return; <see cref="Guid.Empty"/> for the first page</param>
+    /// <param name="pageSize">The page size</param>
     /// <param name="cancellationToken">The cancellationToken</param>
     /// <returns></returns>
-    Task<List<ChangeRequestResponse>> GetAllChangeRequestsBySystem(string systemId, CancellationToken cancellationToken);
+    Task<List<ChangeRequestResponse>> GetAllChangeRequestsBySystem(string systemId, Guid continueFrom, int pageSize, CancellationToken cancellationToken);
 
     /// <summary>
     /// Rejects the system user ChangeRequest

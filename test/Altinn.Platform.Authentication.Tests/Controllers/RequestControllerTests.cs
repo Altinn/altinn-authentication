@@ -3252,22 +3252,30 @@ public class RequestControllerTests(
         // Get the Request
         HttpClient client2 = CreateClient();
         string token2 = AddSystemUserRequesReadTestTokenToClient(client2);
-        string endpoint2 = $"/authentication/api/v1/systemuser/request/vendor/bysystem/{systemId}";
+        string testEndpoint = $"/authentication/api/v1/systemuser/request/vendor/bysystem/{systemId}";
 
-        HttpResponseMessage message2 = await client2.GetAsync(endpoint2);
-        Assert.Equal(HttpStatusCode.OK, message2.StatusCode);
-        Paginated<RequestSystemResponse>? res2 = await message2.Content.ReadFromJsonAsync<Paginated<RequestSystemResponse>>();
-        Assert.True(res2 is not null);
-        var list = res2.Items.ToList();
+        HttpResponseMessage message = await client2.GetAsync(testEndpoint);
+        Assert.Equal(HttpStatusCode.OK, message.StatusCode);
+        Paginated<RequestSystemResponse>? res = await message.Content.ReadFromJsonAsync<Paginated<RequestSystemResponse>>();
+        Assert.True(res is not null);
+        var list = res.Items.ToList();
         Assert.NotEmpty(list);
         Assert.Equal(_paginationSize, list.Count);
         Assert.Contains(list, x => x.PartyOrgNo == "910493353");
-        Assert.NotNull(res2.Links.Next);
+        Assert.NotNull(res.Links.Next);
 
-        HttpResponseMessage message3 = await client2.GetAsync(res2.Links.Next);
-        Assert.Equal(HttpStatusCode.OK, message3.StatusCode);
-        Paginated<RequestSystemResponse>? res3 = await message3.Content.ReadFromJsonAsync<Paginated<RequestSystemResponse>>();
-        Assert.True(res3 is not null);
+        HttpResponseMessage message2 = await client2.GetAsync(res.Links.Next);
+        Assert.Equal(HttpStatusCode.OK, message2.StatusCode);
+        Paginated<RequestSystemResponse>? res2 = await message2.Content.ReadFromJsonAsync<Paginated<RequestSystemResponse>>();
+        Assert.True(res2 is not null);
+
+        var list2 = res2.Items.ToList();
+        Assert.Single(list2);
+        Assert.Null(res2.Links.Next);
+
+        // No Request is duplicated across or lost between the pages
+        List<Guid> allIds = [.. list.Select(x => x.Id), .. list2.Select(x => x.Id)];
+        Assert.Equal(_paginationSize + 1, allIds.Distinct().Count());
     }
 
     [Fact]
@@ -3288,22 +3296,30 @@ public class RequestControllerTests(
         // Get the Request
         HttpClient client2 = CreateClient();
         string token2 = AddSystemUserRequesReadTestTokenToClient(client2);
-        string endpoint2 = $"/authentication/api/v1/systemuser/request/vendor/agent/bysystem/{systemId}";
+        string testEndpoint = $"/authentication/api/v1/systemuser/request/vendor/agent/bysystem/{systemId}";
 
-        HttpResponseMessage message2 = await client2.GetAsync(endpoint2);
-        Assert.Equal(HttpStatusCode.OK, message2.StatusCode);
-        Paginated<AgentRequestSystemResponse>? res2 = await message2.Content.ReadFromJsonAsync<Paginated<AgentRequestSystemResponse>>();
-        Assert.True(res2 is not null);
-        var list = res2.Items.ToList();
+        HttpResponseMessage message = await client2.GetAsync(testEndpoint);
+        Assert.Equal(HttpStatusCode.OK, message.StatusCode);
+        Paginated<AgentRequestSystemResponse>? res = await message.Content.ReadFromJsonAsync<Paginated<AgentRequestSystemResponse>>();
+        Assert.True(res is not null);
+        var list = res.Items.ToList();
         Assert.NotEmpty(list);
         Assert.Equal(_paginationSize, list.Count);
         Assert.Contains(list, x => x.PartyOrgNo == "910493353");
-        Assert.NotNull(res2.Links.Next);
+        Assert.NotNull(res.Links.Next);
 
-        HttpResponseMessage message3 = await client2.GetAsync(res2.Links.Next);
-        Assert.Equal(HttpStatusCode.OK, message3.StatusCode);
-        Paginated<AgentRequestSystemResponse>? res3 = await message3.Content.ReadFromJsonAsync<Paginated<AgentRequestSystemResponse>>();
-        Assert.True(res3 is not null);
+        HttpResponseMessage message2 = await client2.GetAsync(res.Links.Next);
+        Assert.Equal(HttpStatusCode.OK, message2.StatusCode);
+        Paginated<AgentRequestSystemResponse>? res2 = await message2.Content.ReadFromJsonAsync<Paginated<AgentRequestSystemResponse>>();
+        Assert.True(res2 is not null);
+
+        var list2 = res2.Items.ToList();
+        Assert.Single(list2);
+        Assert.Null(res2.Links.Next);
+
+        // No agent Request is duplicated across or lost between the pages
+        List<Guid> allIds = [.. list.Select(x => x.Id), .. list2.Select(x => x.Id)];
+        Assert.Equal(_paginationSize + 1, allIds.Distinct().Count());
     }
 
     /// <summary>
@@ -3347,6 +3363,14 @@ public class RequestControllerTests(
         Paginated<AgentRequestSystemResponse>? res3 = await message3.Content.ReadFromJsonAsync<Paginated<AgentRequestSystemResponse>>();
         Assert.True(res3 is not null);
 
+        var agentPage2 = res3.Items.ToList();
+        Assert.Single(agentPage2);
+        Assert.Null(res3.Links.Next);
+
+        // No agent Request is duplicated across or lost between the pages
+        List<Guid> allAgentIds = [.. list.Select(x => x.Id), .. agentPage2.Select(x => x.Id)];
+        Assert.Equal(_paginationSize + 1, allAgentIds.Distinct().Count());
+
         // Get the Paginated Standard Requests
         HttpClient client3 = CreateClient();
         string token3 = AddSystemUserRequesReadTestTokenToClient(client3);
@@ -3366,6 +3390,14 @@ public class RequestControllerTests(
         Assert.Equal(HttpStatusCode.OK, message5.StatusCode);
         Paginated<RequestSystemResponse>? res5 = await message5.Content.ReadFromJsonAsync<Paginated<RequestSystemResponse>>();
         Assert.True(res5 is not null);
+
+        var standardPage2 = res5.Items.ToList();
+        Assert.Single(standardPage2);
+        Assert.Null(res5.Links.Next);
+
+        // No Request is duplicated across or lost between the pages
+        List<Guid> allStandardIds = [.. list2.Select(x => x.Id), .. standardPage2.Select(x => x.Id)];
+        Assert.Equal(_paginationSize + 1, allStandardIds.Distinct().Count());
     }
 
     [Fact]
