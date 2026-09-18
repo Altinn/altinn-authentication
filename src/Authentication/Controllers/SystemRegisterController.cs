@@ -207,6 +207,13 @@ public class SystemRegisterController : ControllerBase
             ]);
         }
 
+        if (!AuthenticationHelper.IsValidRedirectUrl(proposedUpdateToSystem.AllowedRedirectUrls))
+        {
+            errors.Add(ValidationErrors.SystemRegister_InValid_RedirectUrlFormat, [
+                ErrorPathConstant.ALLOWEDREDIRECT_URLS
+            ]);
+        }
+
         List<string> allClientIds = CombineClientIds(currentSystem.ClientId, proposedUpdateToSystem.ClientId);
         List<MaskinPortenClientInfo> allClientIdUsages = await _systemRegisterService.GetMaskinportenClients(allClientIds, cancellationToken);
 
