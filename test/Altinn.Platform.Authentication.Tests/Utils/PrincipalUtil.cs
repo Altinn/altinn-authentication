@@ -101,21 +101,21 @@ namespace Altinn.Platform.Authentication.Tests.Utils
             return token;
         }
 
-        public static string GetOrgToken(string org, string orgNumber = "991825827", string? scope = null, string[]? prefixes = null, DateTimeOffset? now = null)
+        public static string GetOrgToken(string org, string orgNumber = "991825827", string? scope = null, string[]? prefixes = null, DateTimeOffset? now = null, string? clientId = null)
         {
             if (now == null)
             {
                 now = DateTimeOffset.UtcNow;
             }
 
-            ClaimsPrincipal principal = GetClaimsPrincipal(org, orgNumber, scope, prefixes);
+            ClaimsPrincipal principal = GetClaimsPrincipal(org, orgNumber, scope, prefixes, clientId);
 
             string token = JwtTokenMock.GenerateToken(principal, new TimeSpan(1, 1, 1), now);
 
             return token;
         }
 
-        public static ClaimsPrincipal GetClaimsPrincipal(string org, string orgNumber, string? scope = null, string[]? prefixes = null)
+        public static ClaimsPrincipal GetClaimsPrincipal(string org, string orgNumber, string? scope = null, string[]? prefixes = null, string? clientId = null)
         {
             string issuer = "www.altinn.no";
 
@@ -142,6 +142,11 @@ namespace Altinn.Platform.Authentication.Tests.Utils
             claims.Add(new Claim(AltinnCoreClaimTypes.AuthenticateMethod, "Mock", ClaimValueTypes.String, issuer));
             claims.Add(new Claim(AltinnCoreClaimTypes.AuthenticationLevel, "3", ClaimValueTypes.Integer32, issuer));
             claims.Add(new Claim("consumer", GetOrgNoObject(orgNumber)));
+
+            if (!string.IsNullOrEmpty(clientId))
+            {
+                claims.Add(new Claim("client_id", clientId, ClaimValueTypes.String, "maskinporten"));
+            }
 
             ClaimsIdentity identity = new("mock-org");
             identity.AddClaims(claims);

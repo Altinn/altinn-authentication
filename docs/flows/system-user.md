@@ -32,6 +32,7 @@ flowchart LR
 | **System user request** | `systemuser/request` | A vendor requests that a specific customer org set up a (standard or **agent**) system user; the customer's authorised person approves/rejects it; on approval the system user + its delegated rights are created. |
 | **Change request** | `systemuser/changerequest` | Request a change to the rights of an existing system user (same approve/reject lifecycle). |
 | **System user management** | `systemuser`, `enduser/systemuser` | List / get / delete system users for a party; vendor lookups (by system, by query, by external id); an internal change stream; and agent-system-user **client delegation** management. |
+| **Standalone ("own system")** | `systemuser/own` | Creates a Registered System and a **standalone** SystemUser together, for an organisation building a system for its own use — see below. |
 
 ## The request → approval lifecycle
 
@@ -58,6 +59,28 @@ sequenceDiagram
 - **Status:** a request moves from a pending state to `Accepted` / `Rejected` (see `RequestStatus`). The vendor reads status via the `vendor/...` GET endpoints; the customer approves/rejects via the `{party}/{requestId}/approve|reject` endpoints.
 - **Confirmation URL:** built from the host + request id (with the `DONTCHOOSEREPORTEE` parameter for the portal), this is where the customer is sent to approve. The portal redirects through to the Access Management UI.
 
+## Standalone system users ("own system")
+
+A **standalone** system user is for an organisation building a system purely for its own use: the
+organisation is simultaneously the vendor and the customer. Unlike the standard/agent flows above,
+there is no vendor/customer split and no pre-declared `Rights`/`AccessPackages`:
+
+- `POST systemuser/own` creates the Registered System and the SystemUser **together, in one call**
+  — no separate `systemregister/vendor` registration step, and no request/approve lifecycle (approving
+  your own request would be a no-op).
+- The vendor org number and Maskinporten `ClientId` are **not** part of the request body — both are
+  read from the caller's own Maskinporten access token (the `consumer` and `client_id` claims). The
+  caller must already hold the `altinn:authentication/systemregister.write` scope, same as the
+  vendor-facing System Register endpoints.
+- The created Registered System has empty `Rights`/`AccessPackages` and `IsVisible = false` (it must
+  never appear in another org's "pick a system" catalog browsing — it's private to its creator).
+- Rights/access packages are **not** declared at creation time. The SystemUser is pushed to Access
+  Management immediately (same as any other system user), so it's already a valid delegation target —
+  the organisation delegates whatever it needs afterwards through the Access Management UI, the same
+  way any other delegation works.
+- See [ADR-0005](../adr/0005-standalone-systemuser-for-own-systems.md) for why this bypasses the
+  request/approve lifecycle and skips pre-declared rights.
+
 ## Agent system users & client delegation
 
 An **agent** system user acts on behalf of **multiple clients** — the classic case being an accountant/auditor firm whose system manages many customers. Beyond the standard flow:
@@ -67,7 +90,7 @@ An **agent** system user acts on behalf of **multiple clients** — the classic 
 
 ## Where to look in code
 
-- **Models:** `src/Core/Models/SystemUsers/` (e.g. `CreateRequestSystemUser`, `CreateAgentRequestSystemUser`, `RequestStatus`, `ExternalRequestId`, `AgentDelegation*`, `ClientDto`) and `src/Core/Models/SystemRegisters/`.
+- **Models:** `src/Core/Models/SystemUsers/` (e.g. `CreateRequestSystemUser`, `CreateAgentRequestSystemUser`, `CreateOwnSystemUserRequest`, `RequestStatus`, `ExternalRequestId`, `AgentDelegation*`, `ClientDto`) and `src/Core/Models/SystemRegisters/`.
 - **Services:** `SystemUserService` (large — a decomposition candidate, see [#2074](https://github.com/Altinn/altinn-authentication/issues/2074)), `SystemRegisterService`, `RequestSystemUserService`, `ChangeRequestSystemUserService`.
 - **Persistence:** repositories + migrations under `src/Persistance` (the `systemuserprofile` / system-register tables).
 
