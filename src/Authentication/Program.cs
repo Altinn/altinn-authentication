@@ -1,3 +1,5 @@
+using System;
+using System.Linq;
 using Altinn.Authorization.ServiceDefaults;
 using Altinn.Platform.Authentication;
 using Microsoft.AspNetCore.Builder;
@@ -30,13 +32,17 @@ if (app.Environment.IsDevelopment() || app.Environment.IsStaging())
         var logger = context.RequestServices.GetRequiredService<ILogger<Program>>();
         var config = context.RequestServices.GetRequiredService<IOptionsMonitor<AltinnClusterInfo>>();
         logger.LogWarning(
-            "Request {method} {scheme}://{host}{path} from {ip}. Trusted proxies: {TrustedProxies}",
+            "Debug Request {method} {scheme}://{host}{path} from {ip}. Trusted proxies: {TrustedProxies}. Headers: {headers}",
             context.Request.Method,
             context.Request.Scheme,
             context.Request.Host,
             context.Request.Path,
             context.Connection.RemoteIpAddress,
-            config.CurrentValue.TrustedProxies);
+            config.CurrentValue.TrustedProxies,
+            string.Join(", ", context.Request.Headers
+                .Where(h => new[] { "X-Forwarded-For", "X-Forwarded-Proto", "X-Forwarded-Host", "X-Real-IP", "Host" }
+                    .Contains(h.Key, StringComparer.OrdinalIgnoreCase))
+                .Select(h => $"{h.Key}: {h.Value}")));
         return next(context);
     });
 }
@@ -50,7 +56,7 @@ if (app.Environment.IsDevelopment() || app.Environment.IsStaging())
     {
         var logger = context.RequestServices.GetRequiredService<ILogger<Program>>();
         logger.LogWarning(
-            "Request {method} {scheme}://{host}{path} from {ip}.",
+            "Debug Request {method} {scheme}://{host}{path} from {ip}.",
             context.Request.Method,
             context.Request.Scheme,
             context.Request.Host,
