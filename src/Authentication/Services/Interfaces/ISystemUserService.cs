@@ -139,12 +139,25 @@ public interface ISystemUserService
     /// Returns a list of the Delegations (of clients) to an Agent SystemUser,
     /// retrieved in turn from the AccessManagement db.
     /// </summary>
-    /// <param name="party">int party</param>
-    /// <param name="facilitator">the guid id of the logged in user, representing the Facilitator</param>
+    /// <param name="facilitator">the partyUuid of the Facilitator</param>
     /// <param name="systemUserId">The Guid for the Agent SystemUser</param>
     /// <param name="client">The Guid for the client</param>
     /// <returns>List of Client Delegations</returns>
-    Task<Result<List<DelegationResponse>>> GetListOfDelegationsForAgentSystemUser(int party, Guid facilitator, Guid systemUserId, Guid? client = null);
+    Task<Result<List<DelegationResponse>>> GetListOfDelegationsForAgentSystemUser(Guid facilitator, Guid systemUserId, Guid? client = null);
+
+    /// <summary>
+    /// Verifies that the given facilitator partyUuid identifies the same party as the given partyId.
+    /// </summary>
+    /// <remarks>
+    /// Only needed where partyId and facilitator arrive as independent inputs. Endpoints that resolve
+    /// both from the same party lookup do not need this, and callers holding only the partyUuid must
+    /// not use it: the lookup by partyId requires a user context and is unavailable to system users.
+    /// </remarks>
+    /// <param name="partyId">The party id the caller was authorized on.</param>
+    /// <param name="facilitator">The partyUuid the delegations will be looked up by.</param>
+    /// <param name="cancellationToken">CancellationToken</param>
+    /// <returns>True when both identify the same party.</returns>
+    Task<Result<bool>> VerifyFacilitatorMatchesParty(int partyId, Guid facilitator, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Revokes a client/customer from an Agent SystemUser.
