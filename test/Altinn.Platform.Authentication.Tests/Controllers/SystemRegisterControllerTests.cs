@@ -14,6 +14,7 @@ using Altinn.Authorization.ProblemDetails;
 using Altinn.Common.AccessToken.Services;
 using Altinn.Platform.Authentication.Clients.Interfaces;
 using Altinn.Platform.Authentication.Configuration;
+using Altinn.Platform.Authentication.Constants;
 using Altinn.Platform.Authentication.Core.Errors;
 using Altinn.Platform.Authentication.Core.Models;
 using Altinn.Platform.Authentication.Core.Models.AccessPackages;
@@ -1611,7 +1612,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
         }
 
         [Fact]
-        public async Task SystemRegister_Rollback_Test()
+        public async Task SystemRegister_Update_InvalidRedirectUrl_BadRequest()
         {
             const string systemId = "991825827_the_matrix";
             List<string> clientIdsInFirstSystem = [Guid.NewGuid().ToString()];
@@ -1627,15 +1628,20 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             // Invalid redirectUrl and trying to set "InVisible: true"
             RegisterSystemRequest updateIsVisibleTrue = CreateSystemRegisterRequest(systemId, validClientIds, true, "htts://vg.no");
             var resp = await PutSystemRegisterAsync(updateIsVisibleTrue, systemId);
-            var stringResp = await resp.Content.ReadAsStringAsync();
 
-            // make sure we noticed it failed on postgres update
-            Assert.Contains("Npgsql.PostgresException", stringResp);
+            // The update is rejected by validation, before anything is written
+            Assert.Equal(HttpStatusCode.BadRequest, resp.StatusCode);
+
+            AltinnValidationProblemDetails? problemDetails = await resp.Content.ReadFromJsonAsync<AltinnValidationProblemDetails>();
+            Assert.NotNull(problemDetails);
+            AltinnValidationError error = problemDetails.Errors.Single(e => e.ErrorCode == ValidationErrors.SystemRegister_InValid_RedirectUrlFormat.ErrorCode);
+            Assert.Equal(ValidationErrors.SystemRegister_InValid_RedirectUrlFormat.Title, error.Title);
+            Assert.Equal(ErrorPathConstant.ALLOWEDREDIRECT_URLS, error.Paths.Single());
 
             HttpResponseMessage getSystemResponse = await GetSystemRegister(systemId);
             Assert.Equal(HttpStatusCode.OK, getSystemResponse.StatusCode);
 
-            // verify the second one failed and did not update isVisible = true
+            // verify the update was not applied
             RegisteredSystemResponse? noneUpdatedSystem = JsonSerializer.Deserialize<RegisteredSystemResponse>(await getSystemResponse.Content.ReadAsStringAsync(), _options);
             Assert.NotNull(noneUpdatedSystem);
             Assert.False(noneUpdatedSystem.IsVisible);
