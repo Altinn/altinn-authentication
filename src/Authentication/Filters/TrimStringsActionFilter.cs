@@ -39,7 +39,7 @@ namespace Altinn.Platform.Authentication.Filters
         /// This implementation does nothing.
         /// </summary>
         /// <param name="context">The action executed context.</param>
-        public void OnActionExecuted(ActionExecutedContext context) 
+        public void OnActionExecuted(ActionExecutedContext context)
         {
         }
 

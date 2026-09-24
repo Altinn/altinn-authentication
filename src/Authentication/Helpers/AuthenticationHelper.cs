@@ -195,7 +195,7 @@ namespace Altinn.Platform.Authentication.Helpers
                 if (provider.ProviderClaims != null && provider.ProviderClaims.Contains(claim.Type))
                 {
                     // Needs to special handle sub claim Since we are using it already. Prefixes it.
-                    string claimTypeName = claim.Type.ToString(); 
+                    string claimTypeName = claim.Type.ToString();
                     if (claimTypeName.Equals("sub"))
                     {
                         claimTypeName = "provider:sub";

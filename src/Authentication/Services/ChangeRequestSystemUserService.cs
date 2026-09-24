@@ -75,14 +75,14 @@ public class ChangeRequestSystemUserService(
             RequiredAccessPackages = createRequest.RequiredAccessPackages,
             UnwantedAccessPackages = createRequest.UnwantedAccessPackages,
             Status = RequestStatus.New.ToString(),
-            RedirectUrl = createRequest.RedirectUrl           
+            RedirectUrl = createRequest.RedirectUrl
         };
 
         Result<RegisteredSystemResponse> regSystem = await ValidateChangeRequest(created, vendorOrgNo, createNew: true);
         if (regSystem.IsProblem)
         {
             return regSystem.Problem;
-        }        
+        }
 
         Result<bool> res = await changeRequestRepository.CreateChangeRequest(created);
         if (res.IsProblem)
@@ -104,7 +104,7 @@ public class ChangeRequestSystemUserService(
     /// <returns>Result or Problem</returns>
     private async Task<Result<bool>> ValidateStatus(Guid correllationId, bool createNew)
     {
-        ChangeRequestResponse? res = await changeRequestRepository.GetChangeRequestById(correllationId);        
+        ChangeRequestResponse? res = await changeRequestRepository.GetChangeRequestById(correllationId);
 
         // Attempting to Create a new Change Request, but a pending Request exists, with the same Correllation-Id
         if (createNew && res is not null && res.Status == RequestStatus.New.ToString() && res.Id == correllationId)
@@ -362,7 +362,7 @@ public class ChangeRequestSystemUserService(
             return verifiedUnwantedAccessPackages.Problem;
         }
 
-        DelegationCheckResult delegationCheckFinalResult = new(CanDelegate:false, RightResponses:[], errors:[]);
+        DelegationCheckResult delegationCheckFinalResult = new(CanDelegate: false, RightResponses: [], errors: []);
 
         // Check Single Rights to be added 
         if (systemUserChangeRequest.RequiredRights?.Count > 0)
@@ -382,7 +382,7 @@ public class ChangeRequestSystemUserService(
         if (verifiedRequiredAccessPackages.Value?.Count > 0)
         {
             Result<AccessPackageDelegationCheckResult> checkAccessPackages = await delegationHelper.ValidateDelegationRightsForAccessPackages(partyUuid, regSystem.Id, verifiedRequiredAccessPackages.Value, fromBff: false, cancellationToken);
-            if (checkAccessPackages.IsProblem)   
+            if (checkAccessPackages.IsProblem)
             {
                 return checkAccessPackages.Problem;
             }
@@ -393,7 +393,7 @@ public class ChangeRequestSystemUserService(
                         partyUuid,
                         toBeChanged,
                         checkAccessPackages.Value.AccessPackages,
-                        cancellationToken);                                                      
+                        cancellationToken);
 
                 if (delegationResult.IsProblem)
                 {
@@ -513,7 +513,7 @@ public class ChangeRequestSystemUserService(
     }
 
     private async Task<Result<RegisteredSystemResponse>> ValidateChangeRequest(ChangeRequestResponse validateSet, OrganisationNumber vendorOrgNo, bool createNew)
-    {   
+    {
         Result<bool> valRef = await ValidateStatus(validateSet.Id, createNew);
         if (valRef.IsProblem)
         {
@@ -614,7 +614,7 @@ public class ChangeRequestSystemUserService(
         return new ChangeRequestResponse()
         {
             Id = Guid.NewGuid(),
-            ExternalRef = verifyRequest.ExternalRef, 
+            ExternalRef = verifyRequest.ExternalRef,
             SystemId = verifyRequest.SystemId,
             SystemUserId = Guid.Parse(systemUser.Id),
             PartyOrgNo = verifyRequest.PartyOrgNo,
@@ -641,9 +641,9 @@ public class ChangeRequestSystemUserService(
         // The result is stored here, we are looking for the difference between what is required and what is current
         List<AccessPackage> diff = [];
         Result<List<AccessPackage>> currentAccessPackages = await delegationHelper.GetAccessPackagesForSystemUser(partyUuid, new Guid(systemUser.Id), cancellationToken);
-        if (currentAccessPackages.IsProblem) 
-        { 
-            return currentAccessPackages.Problem; 
+        if (currentAccessPackages.IsProblem)
+        {
+            return currentAccessPackages.Problem;
         }
 
         foreach (AccessPackage accessPackage in accessPackages)
@@ -671,7 +671,7 @@ public class ChangeRequestSystemUserService(
     /// </summary>
     /// <returns>true or false</returns>
     private async Task<Result<List<Right>>> VerifySingleRightsWithPDP(List<Right> rights, SystemUserInternalDTO systemUser, bool required)
-    {        
+    {
         List<PolicyRightsDTO> requiredPolicyRights = [];
 
         // Need this since the Result type cant init from [] directly
@@ -710,7 +710,7 @@ public class ChangeRequestSystemUserService(
             if (MapPDPResponseNonePermit(res.Value))
             {
                 return empty;
-            }            
+            }
         }
 
         // A change is needed, return the list of Rights
@@ -760,12 +760,12 @@ public class ChangeRequestSystemUserService(
     {
         bool allRequiredRightsAreDelegated = true;
 
-        foreach (XacmlJsonResult result in res.Response) 
+        foreach (XacmlJsonResult result in res.Response)
         {
             if (result.Decision != XacmlContextDecision.Permit.ToString())
             {
                 allRequiredRightsAreDelegated = false;
-            }           
+            }
         }
 
         return allRequiredRightsAreDelegated;
@@ -797,14 +797,14 @@ public class ChangeRequestSystemUserService(
         XacmlJsonCategory xacmlUser = new()
         {
             Id = "s1",
-            Attribute = 
+            Attribute =
             [
                 new XacmlJsonAttribute
                 {
                     AttributeId = "urn:altinn:systemuser:uuid",
                     Value = systemUser.Id
                 }
-            ] 
+            ]
         };
 
         List<XacmlJsonCategory> accessSubject = [xacmlUser];
@@ -816,7 +816,7 @@ public class ChangeRequestSystemUserService(
         List<XacmlJsonCategory> resourceList = [];
 
         int counter = 0;
-        foreach (PolicyRightsDTO right in rights) 
+        foreach (PolicyRightsDTO right in rights)
         {
             counter++;
             XacmlJsonCategory xamlAction = new()
@@ -833,7 +833,7 @@ public class ChangeRequestSystemUserService(
             };
 
             actionList.Add(xamlAction);
-                        
+
             List<XacmlJsonAttribute> resourceAttributes = [];
 
             foreach (var res in right.Resource)
@@ -844,7 +844,7 @@ public class ChangeRequestSystemUserService(
                     Value = res.Value.ValueSpan.ToString()
                 };
 
-                resourceAttributes.Add(newres); 
+                resourceAttributes.Add(newres);
             }
 
             // Add the resource owner, that in this case will be the partyId for the user
@@ -869,7 +869,7 @@ public class ChangeRequestSystemUserService(
                 ReferenceId = [xacmlUser.Id, xamlAction.Id, xamlResource.Id]
             };
 
-            multiRequests.Add(reqref);            
+            multiRequests.Add(reqref);
         }
 
         XacmlJsonRequestRoot request = new()
@@ -879,7 +879,7 @@ public class ChangeRequestSystemUserService(
                 ReturnPolicyIdList = true,
                 AccessSubject = accessSubject,
                 Action = actionList,
-                Resource = resourceList,   
+                Resource = resourceList,
 
                 MultiRequests = new XacmlJsonMultiRequests()
                 {
@@ -935,7 +935,7 @@ public class ChangeRequestSystemUserService(
                 return checkAccessPackages.Problem;
             }
 
-            if (checkAccessPackages.IsSuccess && checkAccessPackages.Value?.AccessPackages?.Count > 0) 
+            if (checkAccessPackages.IsSuccess && checkAccessPackages.Value?.AccessPackages?.Count > 0)
             {
                 requiredAccessPackages = checkAccessPackages.Value.AccessPackages;
             }
@@ -963,6 +963,6 @@ public class ChangeRequestSystemUserService(
             };
         }
 
-        return Problem.Request_UserIsNotAccessManager;        
+        return Problem.Request_UserIsNotAccessManager;
     }
 }

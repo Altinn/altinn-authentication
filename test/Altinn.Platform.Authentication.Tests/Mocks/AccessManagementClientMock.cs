@@ -34,7 +34,7 @@ namespace Altinn.Authentication.Tests.Mocks;
 /// <summary>
 /// Mock class for <see cref="IPartiesClient"></see> interface
 /// </summary>
-public class AccessManagementClientMock: IAccessManagementClient    
+public class AccessManagementClientMock : IAccessManagementClient
 {
     private readonly ILogger _logger;
     private readonly HttpClient _client;
@@ -140,7 +140,7 @@ public class AccessManagementClientMock: IAccessManagementClient
             }
         }
     }
-   
+
     public async IAsyncEnumerable<Result<AccessPackageDto.Check>> CheckDelegationAccessForAccessPackage(Guid partyId, string[] requestedPackages, [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
         string dataFileName = string.Empty;
@@ -192,7 +192,7 @@ public class AccessManagementClientMock: IAccessManagementClient
         else
         {
             return true;
-        }            
+        }
     }
 
     public async Task<Result<bool>> DeleteSingleAccessPackageFromSystemUser(Guid partyUuId, Guid systemUserId, string urn, CancellationToken cancellationToken)
@@ -206,13 +206,13 @@ public class AccessManagementClientMock: IAccessManagementClient
         if (partyUuId == new Guid("39c4f60a-d432-4672-820d-2825c4a0d881"))
         {
             dataFileName = "Data/Delegation/AccessPackagesForSystemUser.json";
-        }        
+        }
         else if (partyUuId == new Guid("c8987f17-a1b5-49f3-8ec5-7b58e2e33f43"))
         {
             ProblemInstance problemInstance = ProblemInstance.Create(Problem.AccessPackage_DelegationCheckFailed);
             yield return new Result<PackagePermission>(problemInstance);
             yield break;
-        }       
+        }
         else
         {
             dataFileName = "Data/Delegation/AccessPackagesForSystemUser.json";
@@ -256,31 +256,31 @@ public class AccessManagementClientMock: IAccessManagementClient
             return null;
         }
 
-        return new() 
-        { 
-            Resource = new ResourceDto() 
-            { 
+        return new()
+        {
+            Resource = new ResourceDto()
+            {
                 Id = Guid.NewGuid(),
-            }, 
-            Rights = 
+            },
+            Rights =
             [
-                new RightCheckDto() 
-                { 
+                new RightCheckDto()
+                {
                     Right = new()
                     {
                         Key = "right1"
-                    }, 
-                    Result = true 
-                }, 
-                new RightCheckDto() 
-                { 
+                    },
+                    Result = true
+                },
+                new RightCheckDto()
+                {
                     Right = new()
                     {
                         Key = "right2"
                     },
-                    Result = false 
+                    Result = false
                 }
-            ]        
+            ]
         };
     }
 
@@ -473,7 +473,7 @@ public class AccessManagementClientMock: IAccessManagementClient
     {
         return
         [
-            new() 
+            new()
             {
                 Client = new CompactEntityDto
                 {
@@ -487,7 +487,7 @@ public class AccessManagementClientMock: IAccessManagementClient
                 },
                 Access =
                 [
-                    new() 
+                    new()
                     {
                         Role = new CompactRoleDto
                         {
@@ -497,7 +497,7 @@ public class AccessManagementClientMock: IAccessManagementClient
                             LegacyUrn = "urn:altinn:rolecode:regn"
                         },
                         Packages = [
-                        
+
                             new CompactPackageDto
                             {
                                 Id = Guid.Parse("a5f7f72a-9b89-445d-85bb-06f678a3d4d1"),
@@ -590,7 +590,7 @@ public class AccessManagementClientMock: IAccessManagementClient
                             }
                         ]
                     }
-                ]                
+                ]
             },
             new ClientDelegationDto
             {
@@ -606,7 +606,7 @@ public class AccessManagementClientMock: IAccessManagementClient
                 },
                 Access =
                 [
-                    new() 
+                    new()
                     {
                         Role = new CompactRoleDto
                         {

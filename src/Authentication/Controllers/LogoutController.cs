@@ -97,7 +97,7 @@ namespace Altinn.Platform.Authentication.Controllers
         {
             string logoutInfoCookie = Request.Cookies[_generalSettings.AltinnLogoutInfoCookieName];
             CookieOptions opt = new CookieOptions() { Domain = _generalSettings.HostName, Secure = true, HttpOnly = true };
-            
+
             Dictionary<string, string> cookieValues = logoutInfoCookie?.Split('?')
                 .Select(x => x.Split(['='], 2))
                 .ToDictionary(x => x[0], x => x[1]);

@@ -27,7 +27,7 @@
         /// Gets the authentication method used for the token endpoint. Defaults to client_secret_basic. 
         /// </summary>
         public TokenEndpointAuthMethod TokenEndpointAuthMethod { get; init; } = TokenEndpointAuthMethod.ClientSecretBasic;
-       
+
         /// <summary>Absolute redirect URIs.</summary>
         public required IReadOnlyCollection<Uri> RedirectUris { get; init; }
 

@@ -23,7 +23,7 @@ public sealed class Archiver(IRequestRepository requestRepository) : BackgroundS
     {
         while (!stoppingToken.IsCancellationRequested)
         {
-            await Task.Delay(10000, stoppingToken);        
+            await Task.Delay(10000, stoppingToken);
             await requestRepository.SetDeleteTimedoutRequests(SOFT_DELETE_TIMEOUT_DAYS);
             await Task.Delay(10000, stoppingToken);
             await requestRepository.CopyOldRequestsToArchive(COPY_ARCHIVE_TIMEOUT_DAYS);

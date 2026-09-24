@@ -69,7 +69,7 @@ internal static class AuthenticationHost
         var services = builder.Services;
         var config = builder.Configuration;
         var descriptor = services.GetAltinnServiceDescriptor();
-        
+
         MapPostgreSqlConfiguration(builder, descriptor);
 
         services.AddAutoMapper(cfg => { }, typeof(Program));

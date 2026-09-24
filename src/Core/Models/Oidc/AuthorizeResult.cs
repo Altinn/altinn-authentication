@@ -39,9 +39,9 @@ namespace Altinn.Platform.Authentication.Core.Models.Oidc
 
         // Common metadata (helpful for logs/tracing)
         public Guid? RequestId { get; init; }            // login_transaction.request_id
-        
+
         public string? CorrelationId { get; init; }      // if you generate/propagate one
-        
+
         public IReadOnlyList<CookieInstruction> Cookies { get; init; } = Array.Empty<CookieInstruction>();
 
         // ========== RedirectUpstream payload ==========

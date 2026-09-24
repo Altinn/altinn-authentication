@@ -48,9 +48,9 @@ public class PartiesClient : IPartiesClient
     /// <param name="platformSettings">the platform setttings</param>
     /// <param name="accessTokenGenerator">An instance of the AccessTokenGenerator service.</param>
     public PartiesClient(
-        HttpClient httpClient, 
-        ILogger<PartiesClient> logger, 
-        IHttpContextAccessor httpContextAccessor, 
+        HttpClient httpClient,
+        ILogger<PartiesClient> logger,
+        IHttpContextAccessor httpContextAccessor,
         IOptions<PlatformSettings> platformSettings,
         IAccessTokenGenerator accessTokenGenerator)
     {
@@ -81,7 +81,7 @@ public class PartiesClient : IPartiesClient
             {
                 return JsonSerializer.Deserialize<Party>(responseContent, _serializerOptions);
             }
-            
+
             _logger.LogError("Authentication // PartiesClient // GetPartyAsync // Unexpected HttpStatusCode: {StatusCode}\n {responseContent}", response.StatusCode, responseContent);
             return null;
         }
@@ -152,7 +152,7 @@ public class PartiesClient : IPartiesClient
 
     // register/api/v1/organizations/{orgNr}
     /// <inheritdoc/>
-    public async Task<Organization?> GetOrganizationAsync (string orgNo, CancellationToken cancellationToken = default)
+    public async Task<Organization?> GetOrganizationAsync(string orgNo, CancellationToken cancellationToken = default)
     {
         try
         {

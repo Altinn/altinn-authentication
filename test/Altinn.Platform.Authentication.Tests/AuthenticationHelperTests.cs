@@ -348,7 +348,7 @@ namespace Altinn.Platform.Authentication.Tests
             Assert.False(result.Value);
             Assert.Equal(Problem.NoRedirectUrisFoundOnSystem, result.Problem);
         }
-        
+
         [Theory]
         [InlineData("validId", false)]
         [InlineData("id with space", true)]

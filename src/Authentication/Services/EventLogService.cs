@@ -64,11 +64,11 @@ namespace Altinn.Platform.Authentication.Services
         /// <param name="ipadress">The ip adress of the caller</param>
         /// <param name="externalSessionId">the external session id</param>
         public async Task CreateAuthenticationEventAsync(
-            IFeatureManager featureManager, 
-            string jwtToken, 
-            AuthenticationEventType eventType, 
+            IFeatureManager featureManager,
+            string jwtToken,
+            AuthenticationEventType eventType,
             System.Net.IPAddress ipadress,
-            string? externalSessionId = null) 
+            string? externalSessionId = null)
         {
             if (await featureManager.IsEnabledAsync(FeatureFlags.AuditLog))
             {

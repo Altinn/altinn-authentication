@@ -853,7 +853,7 @@ namespace Altinn.Platform.Authentication.Services
         /// <inheritdoc/>
         public async Task<Result<List<DelegationResponse>>> DelegateToAgentSystemUser(SystemUserInternalDTO systemUser, Guid provider, Guid client, int userId, CancellationToken cancellationToken)
         {
-            List<AccessPackage> packages = systemUser.AccessPackages ?? [];             
+            List<AccessPackage> packages = systemUser.AccessPackages ?? [];
 
             // 1 Check that the system user is of type Agent and has a list of AP, if not return error
             if (systemUser.UserType != Core.Enums.SystemUserType.Agent)
@@ -1009,14 +1009,14 @@ namespace Altinn.Platform.Authentication.Services
             {
                 return Problem.SystemIdNotFound;
             }
-      
+
             // Even if we want to delegate to an agent system user, validate accesspackages are delegable for a Standard SystemUser, for themselves. (Ie not Revisor, etc ...)
-            Result<bool> validatedRequestedPackages = await ValidateAccessPackages(systemUser.AccessPackages, regSystem, isAgentRequest:false);
+            Result<bool> validatedRequestedPackages = await ValidateAccessPackages(systemUser.AccessPackages, regSystem, isAgentRequest: false);
             if (validatedRequestedPackages.IsProblem)
             {
                 return validatedRequestedPackages.Problem;
             }
-           
+
             return await DelegateAccessPackagesToSystemUser(Guid.Parse(systemUser.PartyUuId), systemUser, systemUser.AccessPackages!, cancellationToken);
         }
 
@@ -1376,6 +1376,6 @@ namespace Altinn.Platform.Authentication.Services
                     accessPackages.Add(accessPackage);
                 }
             }
-        }       
+        }
     }
 }

@@ -31,7 +31,7 @@ namespace Altinn.Platform.Authentication.Tests.Utils
             claims.Add(new Claim(AltinnCoreClaimTypes.PartyID, userId.ToString(), ClaimValueTypes.Integer32, issuer));
             claims.Add(new Claim(AltinnCoreClaimTypes.AuthenticateMethod, "AltinnPIN", ClaimValueTypes.String, issuer));
             claims.Add(new Claim(AltinnCoreClaimTypes.AuthenticationLevel, authenticationLevel.ToString(), ClaimValueTypes.Integer32, issuer));
-            
+
             if (addPortalScope)
             {
                 claims.Add(new(AuthzConstants.CLAIM_SCOPE, "altinn:portal/enduser", ClaimValueTypes.String, issuer));
@@ -65,7 +65,7 @@ namespace Altinn.Platform.Authentication.Tests.Utils
         }
 
         public static string GetSelfIdentifiedUserToken(
-            string username, string partyId,  string userId)
+            string username, string partyId, string userId)
         {
             List<Claim> claims = [];
             string issuer = "www.altinn.no";

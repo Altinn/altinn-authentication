@@ -28,7 +28,7 @@ public sealed class OidcSessionRepository(NpgsqlDataSource ds, ILogger<OidcSessi
     public async Task<OidcSession> CreateSession(OidcSessionCreate create, CancellationToken cancellationToken = default)
     {
         if (string.IsNullOrEmpty(create.Sid))
-        { 
+        {
             throw new ArgumentException("Sid is required", nameof(create.Sid));
         }
 
@@ -260,7 +260,7 @@ public sealed class OidcSessionRepository(NpgsqlDataSource ds, ILogger<OidcSessi
     {
         public static Metrics Create(Meter meter) => new(meter);
 
-        private readonly Counter<int> _sessionsCreated 
+        private readonly Counter<int> _sessionsCreated
             = meter.CreateCounter<int>(
                     name: "altinn.authentication.oidc.sessions_created",
                     description: "Number of OIDC sessions created");

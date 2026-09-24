@@ -20,7 +20,7 @@ namespace Altinn.Platform.Authentication.Persistance.RepositoryImplementations.O
         public async Task<Guid> GetOrCreateFamilyAsync(string clientId, string subjectId, string opSid, CancellationToken cancellationToken)
         {
             await using var conn = await _dataSource.OpenConnectionAsync(cancellationToken);
-       
+
             // Try find an existing, non-revoked family for (client, subject, opSid)
             const string selectSql =
                 /*strpsql*/"""
@@ -46,7 +46,7 @@ namespace Altinn.Platform.Authentication.Persistance.RepositoryImplementations.O
 
                 SELECT family_id
                 FROM inserted
-                """;    
+                """;
 
             await using (var cmd = new NpgsqlCommand(selectSql, conn))
             {

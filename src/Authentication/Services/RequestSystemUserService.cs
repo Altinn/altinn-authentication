@@ -45,7 +45,7 @@ public class RequestSystemUserService(
     /// Used to limit the number of items returned in a paginated list
     /// </summary>
     private int _paginationSize = _paginationOption.Value.Size;
-    
+
     /// <inheritdoc/>
     public async Task<Result<RequestSystemResponse>> CreateRequest(CreateRequestSystemUser createRequest, OrganisationNumber vendorOrgNo)
     {
@@ -133,7 +133,7 @@ public class RequestSystemUserService(
             if (valPackages.IsProblem)
             {
                 return valPackages.Problem;
-            }                        
+            }
         }
 
         // Set an empty ExternalRef to be equal to the PartyOrgNo
@@ -327,8 +327,8 @@ public class RequestSystemUserService(
     /// <param name="partyOrgNo">the PartyOrgNo for the Customer</param>
     /// <returns>Result or Problem</returns>
     private async Task<Result<bool>> ValidateCustomerOrgNo(string partyOrgNo)
-    {        
-        if (partyOrgNo == null) 
+    {
+        if (partyOrgNo == null)
         {
             return Problem.Reportee_Orgno_NotFound;
         }
@@ -387,7 +387,7 @@ public class RequestSystemUserService(
         if (check.IsProblem)
         {
             return check.Problem;
-        }                
+        }
 
         return new RequestSystemResponse()
         {
@@ -534,7 +534,7 @@ public class RequestSystemUserService(
     public async Task<Result<bool>> ApproveAndCreateSystemUser(Guid requestId, int partyId, int userId, CancellationToken cancellationToken)
     {
         Result<bool> validatePartyRequest = await ValidatePartyRequest(partyId, requestId, SystemUserType.Standard, cancellationToken);
-        if (validatePartyRequest.IsProblem) 
+        if (validatePartyRequest.IsProblem)
         {
             return validatePartyRequest.Problem;
         }
@@ -668,7 +668,7 @@ public class RequestSystemUserService(
     {
         SystemUserInternalDTO? toBeInserted = null;
         regSystem.Name.TryGetValue("nb", out string? systemName);
-        if (systemName is null) 
+        if (systemName is null)
         {
             return Problem.SystemNameNotFound;
         }
@@ -753,7 +753,7 @@ public class RequestSystemUserService(
         foreach (var data in rightResponse)
         {
             if (data.Status != "Delegable")
-            { 
+            {
                 errors.AddRange(data.Details);
                 canDelegate = false;
             }
@@ -786,11 +786,11 @@ public class RequestSystemUserService(
         {
             nextId = continueRequest.ContinuationToken;
         }
-        
+
         List<RequestSystemResponse>? theList = await requestRepository.GetAllRequestsBySystem(systemId, nextId, cancellationToken);
         theList ??= [];
 
-        return Page.Create(theList, _paginationSize, static theList => theList.Id); 
+        return Page.Create(theList, _paginationSize, static theList => theList.Id);
     }
 
     /// <inheritdoc/>
@@ -978,22 +978,22 @@ public class RequestSystemUserService(
         }
 
         return new RequestSystemResponseInternal()
-            {
-                Id = request.Id,
-                ExternalRef = request.ExternalRef,
-                SystemId = request.SystemId,
-                PartyOrgNo = request.PartyOrgNo,
-                PartyId = validatedParty.Value.Party.PartyId,
-                PartyUuid = (Guid)validatedParty.Value.Party.PartyUuid!,
-                Rights = request.Rights,
-                AccessPackages = request.AccessPackages,
-                Status = request.Status,
-                ConfirmUrl = request.ConfirmUrl,
-                Escalated = request.Escalated,
-                Created = request.Created,
-                RedirectUrl = request.RedirectUrl,
-                UserMayEscalateButNotApprove = validatedParty.Value.HasRelationButNotApprove
-            };       
+        {
+            Id = request.Id,
+            ExternalRef = request.ExternalRef,
+            SystemId = request.SystemId,
+            PartyOrgNo = request.PartyOrgNo,
+            PartyId = validatedParty.Value.Party.PartyId,
+            PartyUuid = (Guid)validatedParty.Value.Party.PartyUuid!,
+            Rights = request.Rights,
+            AccessPackages = request.AccessPackages,
+            Status = request.Status,
+            ConfirmUrl = request.ConfirmUrl,
+            Escalated = request.Escalated,
+            Created = request.Created,
+            RedirectUrl = request.RedirectUrl,
+            UserMayEscalateButNotApprove = validatedParty.Value.HasRelationButNotApprove
+        };
     }
 
     private async Task<Result<bool>> ValidatePartyRequest(int partyId, Guid requestId, SystemUserType userType, CancellationToken cancellationToken)
@@ -1057,7 +1057,7 @@ public class RequestSystemUserService(
         }
 
         return false;
-    }    
+    }
 
     /// <inheritdoc/>
     public async Task<Result<bool>> EscalateApprovalAgentSystemUser(Guid requestId, int party, int userId, CancellationToken cancellationToken)
@@ -1070,7 +1070,7 @@ public class RequestSystemUserService(
     public async Task<Result<List<RequestSystemResponse>>> GetPendingStandardRequests(string orgno, int userId, CancellationToken cancellationToken)
     {
         List<RequestSystemResponse> theList = [];
-        Result<List<RequestSystemResponse>> result = await requestRepository.GetAllPendingStandardRequests(orgno,cancellationToken);
+        Result<List<RequestSystemResponse>> result = await requestRepository.GetAllPendingStandardRequests(orgno, cancellationToken);
         if (result.IsSuccess)
         {
             return result.Value;

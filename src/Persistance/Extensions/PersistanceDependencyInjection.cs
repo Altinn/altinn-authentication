@@ -34,7 +34,7 @@ public static class PersistanceDependencyInjection
 
         services.Add(Marker.Descriptor);
         AddPostgreSqlDatabase(builder);
-        AddSystemUserRepository(services);        
+        AddSystemUserRepository(services);
         AddSystemRegisterRepository(services);
         AddRequestRepository(services);
         AddChangeRequestRepository(services);
@@ -85,7 +85,7 @@ public static class PersistanceDependencyInjection
     /// Extension method for DI
     /// </summary>
     /// <param name="services">IServiceCollection for parent DI</param>
-    private static void AddSystemUserRepository(this IServiceCollection services) 
+    private static void AddSystemUserRepository(this IServiceCollection services)
     {
         services.TryAddTransient<ISystemUserRepository, SystemUserRepository>();
     }

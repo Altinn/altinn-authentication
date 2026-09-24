@@ -22,7 +22,7 @@ namespace Altinn.Platform.Authentication.Services
     public sealed class TokenService(
         IOidcServerClientRepository clientRepo,
         ITokenIssuer tokenIssuer,
-        IAuthorizationCodeRepository authorizationCodeRepository, 
+        IAuthorizationCodeRepository authorizationCodeRepository,
         TimeProvider time,
         ILogger<TokenService> logger,
         IOptions<GeneralSettings> generalSettings,
@@ -84,7 +84,7 @@ namespace Altinn.Platform.Authentication.Services
 
             // 3) Update OP session (slide expiry, touch last seen)
             await _oidcSessionRepository.SlideExpiryToAsync(oidcSession!.Sid, exchangeTime.AddMinutes(_generalSettings.JwtValidityMinutes), ct);
-            
+
             return TokenResult.Success(accessToken, idToken, _generalSettings.OidcTokenValidityMinutes * 60, string.Join(" ", row.Scopes), refreshToken, _generalSettings.OidcRefreshTokenValidityMinutes * 60);
         }
 
@@ -93,7 +93,7 @@ namespace Altinn.Platform.Authentication.Services
         {
             // 1) Basic checks
             DateTimeOffset now = time.GetUtcNow();
-           
+
             (TokenResult? value, OidcClient? client, byte[]? serverPepper, RefreshTokenRow? row, string[]? resultingScopes) = await ValidateRefreshRequest(refreshRequest, now, ct);
             if (value != null)
             {
@@ -179,8 +179,8 @@ namespace Altinn.Platform.Authentication.Services
         /// <inheritdoc/>
         public Task<string> CreateCookieToken(OidcSession oidcSession, CancellationToken ct)
         {
-           ClaimsPrincipal principal = ClaimsPrincipalBuilder.GetClaimsPrincipal(oidcSession, _generalSettings.AltinnOidcIssuerUrl, _acrValueCatalog, isIDToken: false, isAuthCookie: true);
-           return tokenIssuer.CreateAccessTokenAsync(principal, time.GetUtcNow().AddMinutes(_generalSettings.JwtValidityMinutes),  cancellationToken: ct);
+            ClaimsPrincipal principal = ClaimsPrincipalBuilder.GetClaimsPrincipal(oidcSession, _generalSettings.AltinnOidcIssuerUrl, _acrValueCatalog, isIDToken: false, isAuthCookie: true);
+            return tokenIssuer.CreateAccessTokenAsync(principal, time.GetUtcNow().AddMinutes(_generalSettings.JwtValidityMinutes), cancellationToken: ct);
         }
 
         private async Task<(TokenResult? Value, OidcClient? Client, byte[]? ServerPepper, RefreshTokenRow? Row, string[]? ResultingScopes)> ValidateRefreshRequest(RefreshTokenRequest request, DateTimeOffset now, CancellationToken ct)
@@ -420,7 +420,7 @@ namespace Altinn.Platform.Authentication.Services
 
                     // Not supported yet
                     _logger.LogWarning(
-                        "private_key_jwt authentication attempted but not yet supported for client {ClientId}", 
+                        "private_key_jwt authentication attempted but not yet supported for client {ClientId}",
                         auth.ClientId == null ? null : auth.ClientId.Replace("\r", string.Empty).Replace("\n", string.Empty));
                     return (null, TokenResult.InvalidClient("private_key_jwt authentication not supported"));
 
@@ -433,7 +433,7 @@ namespace Altinn.Platform.Authentication.Services
 
                     // We dont support public clients. Client is required to authenticate
                     return (null, TokenResult.InvalidClient("Client authentication required"));
-                   
+
                 case TokenClientAuthType.Missing:
                     return (null, TokenResult.InvalidClient("Client authentication missing"));
             }

@@ -85,7 +85,7 @@ namespace Altinn.Platform.Authentication.Services
         private async Task<List<X509Certificate2>> GetAllCertificateVersions(string keyVaultUrl, string certificateName)
         {
             List<X509Certificate2> certificates = new List<X509Certificate2>();
-            
+
             KeyVaultClient client = KeyVaultSettings.GetClient(_keyVaultSettings.ClientId, _keyVaultSettings.ClientSecret);
 
             // Get the first page of certificates

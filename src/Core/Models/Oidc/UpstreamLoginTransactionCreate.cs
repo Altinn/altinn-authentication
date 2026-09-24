@@ -16,7 +16,7 @@ namespace Altinn.Platform.Authentication.Core.Models.Oidc
         // which upstream we target
         public required string Provider { get; init; }            // e.g., "idporten"
         public required string UpstreamClientId { get; init; }
-       
+
         // our upstream callback
         public required Uri UpstreamRedirectUri { get; init; }
 

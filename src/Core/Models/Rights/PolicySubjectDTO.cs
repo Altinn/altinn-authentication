@@ -7,8 +7,8 @@ namespace Altinn.Platform.Authentication.Core.Models.Rights;
 /// </summary>
 public class PolicySubjectDTO
 {
-        /// <summary>
-        /// Subject attributes that defines the subject
-        /// </summary>
-        public required IReadOnlyList<UrnJsonTypeValue> SubjectAttributes { get; init; }
+    /// <summary>
+    /// Subject attributes that defines the subject
+    /// </summary>
+    public required IReadOnlyList<UrnJsonTypeValue> SubjectAttributes { get; init; }
 }

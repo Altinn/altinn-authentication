@@ -31,7 +31,7 @@ namespace Altinn.Platform.Authentication.Tests.Mocks
 
             if (resourceId == "ske-krav-og-betalinger-subres")
             {
-                dataFileName = "Data/ResourceRegistry/kravogbetaling.json";              
+                dataFileName = "Data/ResourceRegistry/kravogbetaling.json";
             }
 
             if (resourceId == "app_ttd_endring-av-navn-v2")

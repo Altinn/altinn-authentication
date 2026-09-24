@@ -47,13 +47,13 @@ public class SystemUserRegisterDTO
     /// Last changed data time
     /// </summary>
     [JsonPropertyName("lastChanged")]
-    public DateTime LastChanged {  get; set; }
+    public DateTime LastChanged { get; set; }
 
     /// <summary>
     /// Created date time
     /// </summary>
     [JsonPropertyName("created")]
-    public DateTime Created { get; set; } 
+    public DateTime Created { get; set; }
 
     /// <summary>
     /// Used internally when paginating
