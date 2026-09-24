@@ -58,6 +58,20 @@ dotnet test test/Altinn.Platform.Authentication.Tests/Altinn.Platform.Authentica
 
 See [docs/development.md](docs/development.md) for details — note that a passing local build does **not** substitute for the Docker-backed test suite.
 
+### Running tests with Podman on Windows
+
+Integration tests use Testcontainers. If tests fail with
+`ResourceReaperException: Initialization has been cancelled`, check your Podman version.
+Podman 6.0.2 has a known port-forwarding bug ([podman#29377](https://github.com/podman-container-tools/podman/issues/29377)).
+
+Upgrade to 6.1.2 or later (or lower), then recreate the machine so the server version matches the client:
+
+```powershell
+podman machine reset -f
+podman machine init --rootful
+podman machine start
+podman version   # Client and Server should show the same version
+```
 ## Contributing
 
 - Branch per change; open a pull request.
