@@ -14,6 +14,13 @@ namespace Altinn.Platform.Authentication.Tests
     public static class JwtTokenMock
     {
         /// <summary>
+        /// macOS does not support <see cref="X509KeyStorageFlags.EphemeralKeySet"/> when loading PKCS#12 files,
+        /// so fall back to the default key set there.
+        /// </summary>
+        private static readonly X509KeyStorageFlags KeyStorageFlags =
+            OperatingSystem.IsMacOS() ? X509KeyStorageFlags.DefaultKeySet : X509KeyStorageFlags.EphemeralKeySet;
+
+        /// <summary>
         /// Generates a token with a self signed certificate included in the integration test project.
         /// </summary>
         /// <param name="principal">The claims principal to include in the token.</param>
@@ -218,7 +225,7 @@ namespace Altinn.Platform.Authentication.Tests
             {
                 ValidateIssuerSigningKey = true,
                 IssuerSigningKey = key,
-                TokenDecryptionKey = new X509SecurityKey(X509CertificateLoader.LoadPkcs12FromFile("selfSignedEncryptionTestCertificate.pfx", "qwer1234", X509KeyStorageFlags.EphemeralKeySet)),
+                TokenDecryptionKey = new X509SecurityKey(X509CertificateLoader.LoadPkcs12FromFile("selfSignedEncryptionTestCertificate.pfx", "qwer1234", KeyStorageFlags)),
                 ValidateIssuer = false,
                 ValidateAudience = false,
                 RequireExpirationTime = true,
@@ -232,7 +239,7 @@ namespace Altinn.Platform.Authentication.Tests
 
         private static SigningCredentials GetSigningCredentials()
         {
-            X509Certificate2 cert = X509CertificateLoader.LoadPkcs12FromFile("selfSignedTestCertificate.pfx", "qwer1234", X509KeyStorageFlags.EphemeralKeySet);
+            X509Certificate2 cert = X509CertificateLoader.LoadPkcs12FromFile("selfSignedTestCertificate.pfx", "qwer1234", KeyStorageFlags);
             return new X509SigningCredentials(cert, SecurityAlgorithms.RsaSha256);
         }
 
