@@ -1657,7 +1657,13 @@ namespace Altinn.Platform.Authentication.Services
             {
                 userProfile = await _profileService.GetUserProfile(new UserProfileLookup { Ssn = userAuthenticationModel.SSN });
 
-                if (userProfile?.Party?.Person?.DateOfDeath is not null)
+                if (userProfile is null)
+                {
+                    _logger.LogError("Profile lookup returned no user profile; sign-in cannot complete.");
+                    return null;
+                }
+
+                if (userProfile.Party?.Person?.DateOfDeath is not null)
                 {
                     _logger.LogInformation("Sign-in refused: person is deceased.");
                     return null;
@@ -1747,7 +1753,13 @@ namespace Altinn.Platform.Authentication.Services
             {
                 userProfile = await _profileService.GetUserProfile(new UserProfileLookup { UserId = userAuthenticationModel.UserID.Value });
 
-                if (userProfile?.Party?.Person?.DateOfDeath is not null)
+                if (userProfile is null)
+                {
+                    _logger.LogError("Profile lookup returned no user profile; sign-in cannot complete.");
+                    return null;
+                }
+
+                if (userProfile.Party?.Person?.DateOfDeath is not null)
                 {
                     _logger.LogInformation("Sign-in refused: person is deceased.");
                     return null;

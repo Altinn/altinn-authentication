@@ -48,6 +48,8 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
     {
         private const string OrganisationIdentity = "OrganisationLogin";
 
+        private static readonly JsonSerializerOptions _options = new(JsonSerializerDefaults.Web);
+
         private readonly Mock<IUserProfileService> _userProfileService = new();
         private readonly Mock<IGuidService> guidService = new();
         private readonly Mock<IEventsQueueClient> _eventQueue = new();
@@ -451,7 +453,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
                   "user": { "userId": 20000, "username": "steph", "userIds": [ 20000 ] }
                 }
                 """,
-                new System.Text.Json.JsonSerializerOptions(System.Text.Json.JsonSerializerDefaults.Web));
+                _options);
 
             Assert.NotNull(party);
 
@@ -527,7 +529,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
                   "user": { "userId": 20000, "username": "steph", "userIds": [ 20000 ] }
                 }
                 """,
-                new System.Text.Json.JsonSerializerOptions(System.Text.Json.JsonSerializerDefaults.Web));
+                _options);
 
             Assert.NotNull(party);
 
@@ -631,7 +633,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
                   "user": { "userId": 20000, "username": "steph", "userIds": [ 20000 ] }
                 }
                 """,
-                new System.Text.Json.JsonSerializerOptions(System.Text.Json.JsonSerializerDefaults.Web));
+                _options);
 
             Assert.NotNull(party);
 
@@ -764,7 +766,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
                   "user": { "userId": 20875912, "username": null, "userIds": [ 20875912 ] }
                 }
                 """,
-                new JsonSerializerOptions(JsonSerializerDefaults.Web));
+                _options);
 
             Assert.NotNull(deceased);
 
@@ -898,7 +900,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
                   "user": { "userId": 20000, "username": "steph", "userIds": [ 20000 ] }
                 }
                 """,
-                new System.Text.Json.JsonSerializerOptions(System.Text.Json.JsonSerializerDefaults.Web));
+                _options);
 
             Assert.NotNull(party);
 
