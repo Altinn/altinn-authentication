@@ -2637,6 +2637,35 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
             Assert.False(callbackResp.Headers.Contains("Set-Cookie"), "No session cookie may be issued when no identity could be established.");
         }
 
+        /// <summary>
+        /// A person whose Register data carries a date of death must not be signed in (issue #2143).
+        /// </summary>
+        [Fact]
+        public async Task TC19_Auth_DeceasedPerson_FailsClosed_NoSession()
+        {
+            using HttpClient client = CreateClientWithHeaders();
+            OidcTestScenario testScenario = OidcScenarioHelper.GetScenario("Deceased_Person");
+
+            OidcClientCreate create = OidcServerTestUtils.NewClientCreate(testScenario);
+            _ = await Repository.InsertClientAsync(create);
+
+            string url = testScenario.GetAuthorizationRequestUrl();
+            HttpResponseMessage authorizationRequestResponse = await client.GetAsync(url);
+
+            (string upstreamState, UpstreamLoginTransaction createdUpstreamLogingTransaction) =
+                await AssertAutorizeRequestResult(testScenario, authorizationRequestResponse, _fakeTime.GetUtcNow());
+
+            _fakeTime.Advance(TimeSpan.FromMinutes(1));
+
+            ConfigureMockProviderTokenResponse(testScenario, createdUpstreamLogingTransaction, _fakeTime.GetUtcNow());
+
+            string callbackUrl = $"/authentication/api/v1/upstream/callback?code={Uri.EscapeDataString(testScenario.GetUpstreamProviderCode())}&state={Uri.EscapeDataString(upstreamState!)}";
+            HttpResponseMessage callbackResp = await client.GetAsync(callbackUrl);
+
+            Assert.Equal(HttpStatusCode.InternalServerError, callbackResp.StatusCode);
+            Assert.False(callbackResp.Headers.Contains("Set-Cookie"), "No session cookie may be issued for a deceased person.");
+        }
+
         private async Task<(string UpstreamState, UpstreamLoginTransaction CreatedUpstreamLogingTransaction)> AssertAutorizeRequestResult(OidcTestScenario testScenario, HttpResponseMessage authorizationRequestResponse, DateTimeOffset now)
         {
             OidcAssertHelper.AssertAuthorizeResponse(authorizationRequestResponse);

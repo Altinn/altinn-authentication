@@ -574,6 +574,12 @@ namespace Altinn.Platform.Authentication.Controllers
                     return Unauthorized();
                 }
 
+                if (party is RegisterContracts.Person person && person.DateOfDeath.HasValue)
+                {
+                    _logger.LogInformation("ID-porten exchange: person is deceased.");
+                    return Unauthorized();
+                }
+
                 int userId = (int)party.User.Value.UserId.Value;
                 string userName = party.User.Value.Username.HasValue ? party.User.Value.Username.Value : string.Empty;
                 int partyId = (int)party.PartyId.Value;

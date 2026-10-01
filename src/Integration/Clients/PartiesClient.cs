@@ -209,7 +209,7 @@ public class PartiesClient : IPartiesClient
             // include 'user' - querying by person-id only auto-includes the person identifier, not
             // the associated user object (UserId/UserName).
             string baseInternal = _platformSettings.ApiRegisterInternalEndpoint.TrimEnd('/');
-            string endpointUrl = $"{baseInternal}/parties/query?fields=uuid,id,user";
+            string endpointUrl = $"{baseInternal}/parties/query?fields=uuid,id,user,person";
 
             PartyQueryRequest queryRequest = new([personUrn]);
             JsonContent requestBody = JsonContent.Create(queryRequest, options: _registerQueryOptions);
