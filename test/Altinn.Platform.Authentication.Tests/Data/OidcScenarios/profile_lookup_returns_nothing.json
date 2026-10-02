@@ -1,0 +1,18 @@
+{
+  "ScenarioId": "Profile_Lookup_Returns_Nothing",
+  "Title": "Arbeidsflate - profile lookup returns nothing",
+  "Description": "The profile lookup returns no user profile for this ssn, so no Altinn identity can be established and the sign-in must be aborted.",
+  "Ssn": "01015499999",
+  "DownstreamClientCallbackUrl": "https://af.altinn.no/api/cb",
+  "Scopes": [
+    "openid",
+    "altinn:portal/enduser"
+  ],
+  "AllowedScopes": [
+    "openid",
+    "altinn:portal/enduser"
+  ],
+  "RedirectUris": [
+    "https://af.altinn.no/api/cb"
+  ]
+}

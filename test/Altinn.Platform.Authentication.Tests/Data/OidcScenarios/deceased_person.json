@@ -1,0 +1,21 @@
+{
+  "ScenarioId": "Deceased_Person",
+  "Title": "Arbeidsflate - deceased person",
+  "Description": "A person whose Register data carries a dateOfDeath must not be signed in",
+  "Ssn": "17899198255",
+  "UserId": 20875912,
+  "PartyId": 50459464,
+  "UserName": "stilling",
+  "DownstreamClientCallbackUrl": "https://af.altinn.no/api/cb",
+  "Scopes": [
+    "openid",
+    "altinn:portal/enduser"
+  ],
+  "AllowedScopes": [
+    "openid",
+    "altinn:portal/enduser"
+  ],
+  "RedirectUris": [
+    "https://af.altinn.no/api/cb"
+  ]
+}

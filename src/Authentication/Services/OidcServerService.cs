@@ -1656,6 +1656,19 @@ namespace Altinn.Platform.Authentication.Services
             if (!string.IsNullOrEmpty(userAuthenticationModel!.SSN))
             {
                 userProfile = await _profileService.GetUserProfile(new UserProfileLookup { Ssn = userAuthenticationModel.SSN });
+
+                if (userProfile is null)
+                {
+                    _logger.LogError("Profile lookup returned no user profile; sign-in cannot complete.");
+                    return null;
+                }
+
+                if (userProfile.Party?.Person?.DateOfDeath is not null)
+                {
+                    _logger.LogInformation("Sign-in refused: person is deceased.");
+                    return null;
+                }
+
                 userAuthenticationModel.PartyUuid = userProfile.UserUuid;
                 if (userProfile.PartyId != 0)
                 {
@@ -1739,6 +1752,19 @@ namespace Altinn.Platform.Authentication.Services
             else if (userAuthenticationModel.UserID.HasValue && userAuthenticationModel.UserID.Value > 0)
             {
                 userProfile = await _profileService.GetUserProfile(new UserProfileLookup { UserId = userAuthenticationModel.UserID.Value });
+
+                if (userProfile is null)
+                {
+                    _logger.LogError("Profile lookup returned no user profile; sign-in cannot complete.");
+                    return null;
+                }
+
+                if (userProfile.Party?.Person?.DateOfDeath is not null)
+                {
+                    _logger.LogInformation("Sign-in refused: person is deceased.");
+                    return null;
+                }
+
                 userAuthenticationModel.PartyUuid = userProfile.UserUuid;
                 if (userProfile.PartyId != 0)
                 {

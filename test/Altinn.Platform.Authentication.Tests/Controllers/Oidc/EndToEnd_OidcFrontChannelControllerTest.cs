@@ -92,7 +92,20 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
             services.AddSingleton<IJwtSigningCertificateProvider, JwtSigningCertificateProviderStub>();
             services.AddSingleton<IPostConfigureOptions<JwtCookieOptions>, JwtCookiePostConfigureOptionsStub>();
             services.AddSingleton<IPublicSigningKeyProvider, SigningKeyResolverStub>();
-            services.AddSingleton<IProfile, ProfileFileMock>();
+
+            // IProfile still resolves from UserProfiles.json via ProfileFileMock for every lookup,
+            // except ProfileLookupReturnsNullSsn, which returns nothing. ProfileFileMock always yields a
+            // profile (a default one when the ssn is unknown), so without this there is no way to reach
+            // the null-profile guard in IdentifyOrCreateAltinnUser. Behaviour is unchanged for every
+            // other ssn, and so for every other test in this class.
+            ProfileFileMock profileFileMock = new();
+            Mock<IProfile> profileMock = new();
+            profileMock
+                .Setup(p => p.GetUserProfile(It.IsAny<UserProfileLookup>()))
+                .Returns((UserProfileLookup lookup) => lookup.Ssn == ProfileLookupReturnsNullSsn
+                    ? Task.FromResult<UserProfile>(null!)
+                    : profileFileMock.GetUserProfile(lookup));
+            services.AddSingleton(profileMock.Object);
             services.AddSingleton<IUserProfileService>(_userProfileService.Object);
             services.AddSingleton<IRegisterUserProvisioningClient>(_registerUserProvisioningClient.Object);
             services.AddSingleton<IOidcDownstreamLogout>(_downstreamLogoutClient.Object);
@@ -2637,6 +2650,65 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
             Assert.False(callbackResp.Headers.Contains("Set-Cookie"), "No session cookie may be issued when no identity could be established.");
         }
 
+        /// <summary>
+        /// A person whose Register data carries a date of death must not be signed in (issue #2143).
+        /// </summary>
+        [Fact]
+        public async Task TC19_Auth_DeceasedPerson_FailsClosed_NoSession()
+        {
+            using HttpClient client = CreateClientWithHeaders();
+            OidcTestScenario testScenario = OidcScenarioHelper.GetScenario("Deceased_Person");
+
+            OidcClientCreate create = OidcServerTestUtils.NewClientCreate(testScenario);
+            _ = await Repository.InsertClientAsync(create);
+
+            string url = testScenario.GetAuthorizationRequestUrl();
+            HttpResponseMessage authorizationRequestResponse = await client.GetAsync(url);
+
+            (string upstreamState, UpstreamLoginTransaction createdUpstreamLogingTransaction) =
+                await AssertAutorizeRequestResult(testScenario, authorizationRequestResponse, _fakeTime.GetUtcNow());
+
+            _fakeTime.Advance(TimeSpan.FromMinutes(1));
+
+            ConfigureMockProviderTokenResponse(testScenario, createdUpstreamLogingTransaction, _fakeTime.GetUtcNow());
+
+            string callbackUrl = $"/authentication/api/v1/upstream/callback?code={Uri.EscapeDataString(testScenario.GetUpstreamProviderCode())}&state={Uri.EscapeDataString(upstreamState!)}";
+            HttpResponseMessage callbackResp = await client.GetAsync(callbackUrl);
+
+            Assert.Equal(HttpStatusCode.InternalServerError, callbackResp.StatusCode);
+            Assert.False(callbackResp.Headers.Contains("Set-Cookie"), "No session cookie may be issued for a deceased person.");
+        }
+
+        /// <summary>
+        /// The profile lookup returning nothing must abort the sign-in rather than continue with an
+        /// unresolved identity. Before the guard was added this dereferenced null and threw.
+        /// </summary>
+        [Fact]
+        public async Task TC20_Auth_ProfileLookupReturnsNothing_FailsClosed_NoSession()
+        {
+            using HttpClient client = CreateClientWithHeaders();
+            OidcTestScenario testScenario = OidcScenarioHelper.GetScenario("Profile_Lookup_Returns_Nothing");
+
+            OidcClientCreate create = OidcServerTestUtils.NewClientCreate(testScenario);
+            _ = await Repository.InsertClientAsync(create);
+
+            string url = testScenario.GetAuthorizationRequestUrl();
+            HttpResponseMessage authorizationRequestResponse = await client.GetAsync(url);
+
+            (string upstreamState, UpstreamLoginTransaction createdUpstreamLogingTransaction) =
+                await AssertAutorizeRequestResult(testScenario, authorizationRequestResponse, _fakeTime.GetUtcNow());
+
+            _fakeTime.Advance(TimeSpan.FromMinutes(1));
+
+            ConfigureMockProviderTokenResponse(testScenario, createdUpstreamLogingTransaction, _fakeTime.GetUtcNow());
+
+            string callbackUrl = $"/authentication/api/v1/upstream/callback?code={Uri.EscapeDataString(testScenario.GetUpstreamProviderCode())}&state={Uri.EscapeDataString(upstreamState!)}";
+            HttpResponseMessage callbackResp = await client.GetAsync(callbackUrl);
+
+            Assert.Equal(HttpStatusCode.InternalServerError, callbackResp.StatusCode);
+            Assert.False(callbackResp.Headers.Contains("Set-Cookie"), "No session cookie may be issued when the profile lookup returned nothing.");
+        }
+
         private async Task<(string UpstreamState, UpstreamLoginTransaction CreatedUpstreamLogingTransaction)> AssertAutorizeRequestResult(OidcTestScenario testScenario, HttpResponseMessage authorizationRequestResponse, DateTimeOffset now)
         {
             OidcAssertHelper.AssertAuthorizeResponse(authorizationRequestResponse);
@@ -2796,6 +2868,13 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
 
             return client;
         }
+
+        /// <summary>
+        /// A reserved ssn the profile lookup returns nothing for, used by
+        /// <see cref="TC20_Auth_ProfileLookupReturnsNothing_FailsClosed_NoSession"/>. No scenario or
+        /// UserProfiles.json entry uses it.
+        /// </summary>
+        private const string ProfileLookupReturnsNullSsn = "01015499999";
 
         private Task ConfigureProfileMock(OidcTestScenario oidcTestScenario)
         {
