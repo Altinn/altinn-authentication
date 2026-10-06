@@ -135,6 +135,23 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
         }
 
         [Fact]
+        public async Task SystemRegister_Create_DescriptionOnlyProvidedInNorwegian_BadRequest()
+        {
+            // Arrange
+            string dataFileName = "Data/SystemRegister/Json/SystemRegisterWithoutEnglishDescription.json";
+            HttpClient client = GetAuthenticatedClient(Admin, ValidOrg);
+            HttpResponseMessage response = await SystemRegisterTestHelper.CreateSystemRegister(client, dataFileName);
+            Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+
+            AltinnValidationProblemDetails? problemDetails = await response.Content.ReadFromJsonAsync<AltinnValidationProblemDetails>();
+            Assert.NotNull(problemDetails);
+
+            AltinnValidationError error = problemDetails.Errors.First(e => e.ErrorCode == ValidationErrors.SystemRegister_Description_Not_Provided_In_All_Languages.ErrorCode);
+            Assert.Equal(ValidationErrors.SystemRegister_Description_Not_Provided_In_All_Languages.Title, error.Title);
+            Assert.Contains(ErrorPathConstant.SYSTEM_DESCRIPTION, error.Paths);
+        }
+
+        [Fact]
         public async Task SystemRegister_Create_WithApp_Success()
         {
             // Arrange
@@ -429,6 +446,39 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             AltinnValidationError error = problemDetails.Errors.First(e => e.ErrorCode == ValidationErrors.SystemRegister_Name_Not_Provided_In_All_Languages.ErrorCode);
             Assert.Equal(ValidationErrors.SystemRegister_Name_Not_Provided_In_All_Languages.Title, error.Title);
             Assert.Contains("/registersystemrequest/name", error.Paths);
+        }
+
+        [Fact]
+        public async Task SystemRegister_Update_Description_DescriptionNotProvidedInAllLanguages_BadRequest()
+        {
+            string dataFileName = "Data/SystemRegister/Json/SystemRegister.json";
+            HttpClient createClient = GetAuthenticatedClient(Admin, ValidOrg);
+            HttpResponseMessage response = await SystemRegisterTestHelper.CreateSystemRegister(createClient, dataFileName);
+            Assert.True(response.IsSuccessStatusCode);
+
+            HttpClient client = CreateClient();
+            string[] prefixes = ["altinn", "digdir"];
+            string token = PrincipalUtil.GetOrgToken("digdir", "991825827", "altinn:authentication/systemregister.admin", prefixes, TestTime);
+            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+
+            // Arrange: description is missing "en", every other field is complete.
+            Stream dataStream = File.OpenRead("Data/SystemRegister/Json/SystemRegisterUpdatedRemoveDescription.json");
+            StreamContent content = new StreamContent(dataStream);
+            content.Headers.ContentType = new MediaTypeHeaderValue("application/json");
+
+            string systemId = "991825827_the_matrix";
+            HttpRequestMessage request = new(HttpMethod.Put, $"/authentication/api/v1/systemregister/vendor/{systemId}");
+            request.Content = content;
+            HttpResponseMessage updateResponse = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead);
+
+            // Assert: rejected by validation, not by a database constraint further down.
+            Assert.Equal(HttpStatusCode.BadRequest, updateResponse.StatusCode);
+            AltinnValidationProblemDetails? problemDetails = await updateResponse.Content.ReadFromJsonAsync<AltinnValidationProblemDetails>();
+            Assert.NotNull(problemDetails);
+
+            AltinnValidationError error = problemDetails.Errors.First(e => e.ErrorCode == ValidationErrors.SystemRegister_Description_Not_Provided_In_All_Languages.ErrorCode);
+            Assert.Equal(ValidationErrors.SystemRegister_Description_Not_Provided_In_All_Languages.Title, error.Title);
+            Assert.Contains(ErrorPathConstant.SYSTEM_DESCRIPTION, error.Paths);
         }
 
         [Fact]

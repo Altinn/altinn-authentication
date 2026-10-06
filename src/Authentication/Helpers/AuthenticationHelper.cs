@@ -869,6 +869,16 @@ namespace Altinn.Platform.Authentication.Helpers
         }
 
         /// <summary>
+        /// Check if the system description is provided for all languages
+        /// </summary>
+        /// <param name="description">The description of the system</param>
+        /// <returns>True if the system has description in all languages</returns>
+        public static bool HasDescriptionInAllLanguages(IDictionary<string, string> description)
+        {
+            return description is not null && RequiredLanguages.All(lang => description.TryGetValue(lang, out var value) && !string.IsNullOrWhiteSpace(value));
+        }
+
+        /// <summary>
         /// check if the system id contains space
         /// </summary>
         /// <param name="systemId">the id of the system</param>
