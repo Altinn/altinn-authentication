@@ -44,11 +44,11 @@ public interface IPartiesClient
 
     /// <summary>
     /// Looks up a person party in Register by national identity number (SSN), returning a minimal
-    /// party populated with only its identifiers (<c>PartyId</c>/<c>PartyUuid</c>) and the associated
-    /// Altinn user (<c>UserId</c>/<c>UserName</c>).
+    /// party populated with only its identifiers (<c>PartyId</c>/<c>PartyUuid</c>), the associated
+    /// Altinn user (<c>UserId</c>/<c>UserName</c>) and the person's date of death.
     /// </summary>
     /// <remarks>
-    /// Backed by <c>POST register/api/v2/internal/parties/query</c> with <c>fields=uuid,id,user</c>.
+    /// Backed by <c>POST register/api/v2/internal/parties/query</c> with <c>fields=uuid,id,user,person.date-of-death</c>.
     /// Intended as the Register-based replacement for the SBL Bridge user lookup
     /// (<c>profile/users/</c>) in the ID-porten token exchange. Note the returned party may have an
     /// unset <see cref="RegisterContracts.PartyUser"/> when the person has no associated Altinn user.

@@ -295,7 +295,12 @@ namespace Altinn.Platform.Authentication.Services
                 return await BuildUpstreamIdentityFailedResult(upstreamTx, cancellationToken);
             }
 
-            UserAuthenticationModel? identifiedUser = await IdentifyOrCreateAltinnUser(userIdenity, provider, cancellationToken);
+            (UserAuthenticationModel? identifiedUser, bool isDeceased) = await IdentifyOrCreateAltinnUser(userIdenity, provider, cancellationToken);
+            if (isDeceased)
+            {
+                return await BuildSignInFailedResult(upstreamTx, "access_denied", "Sign-in was refused for this user.", 403, cancellationToken);
+            }
+
             if (identifiedUser is null)
             {
                 // Either self-identified provisioning (via register) failed, or the upstream token
@@ -840,13 +845,28 @@ namespace Altinn.Platform.Authentication.Services
 
         /// <summary>
         /// Builds the callback result for a sign-in that could not be completed because the upstream
-        /// token exchange or the upstream token validation failed. Prefers an OIDC error redirect back
-        /// to the downstream client, so the user lands on a real error page rather than an unhandled 500.
+        /// token exchange or the upstream token validation failed.
         /// </summary>
-        private async Task<UpstreamCallbackResult> BuildUpstreamIdentityFailedResult(UpstreamLoginTransaction upstreamTx, CancellationToken cancellationToken)
-        {
-            const string ErrorDescription = "Could not complete sign-in with the upstream identity provider.";
+        private Task<UpstreamCallbackResult> BuildUpstreamIdentityFailedResult(UpstreamLoginTransaction upstreamTx, CancellationToken cancellationToken)
+            => BuildSignInFailedResult(upstreamTx, "temporarily_unavailable", "Could not complete sign-in with the upstream identity provider.", 502, cancellationToken);
 
+        /// <summary>
+        /// Builds the callback result for a sign-in that stops after the upstream callback. Prefers an OIDC
+        /// error redirect back to the downstream client, so the user lands on a real error page rather
+        /// than an unhandled 500.
+        /// </summary>
+        /// <param name="upstreamTx">The upstream login transaction.</param>
+        /// <param name="error">The OIDC error code sent to the downstream client.</param>
+        /// <param name="errorDescription">The error description, sent to the client or used as the local error message.</param>
+        /// <param name="localStatusCode">The status code used when there is no client to redirect back to.</param>
+        /// <param name="cancellationToken">The cancellation token.</param>
+        private async Task<UpstreamCallbackResult> BuildSignInFailedResult(
+            UpstreamLoginTransaction upstreamTx,
+            string error,
+            string errorDescription,
+            int localStatusCode,
+            CancellationToken cancellationToken)
+        {
             if (upstreamTx.RequestId is not null)
             {
                 LoginTransaction? loginTx = await _loginTxRepo.GetByRequestIdAsync(upstreamTx.RequestId.Value, cancellationToken);
@@ -859,8 +879,8 @@ namespace Altinn.Platform.Authentication.Services
                         Kind = UpstreamCallbackResultKind.ErrorRedirectToClient,
                         ClientRedirectUri = loginTx.RedirectUri,
                         ClientState = loginTx.State,
-                        Error = "temporarily_unavailable",
-                        ErrorDescription = ErrorDescription
+                        Error = error,
+                        ErrorDescription = errorDescription
                     };
                 }
             }
@@ -870,8 +890,8 @@ namespace Altinn.Platform.Authentication.Services
             return new UpstreamCallbackResult
             {
                 Kind = UpstreamCallbackResultKind.LocalError,
-                StatusCode = 502,
-                LocalErrorMessage = ErrorDescription
+                StatusCode = localStatusCode,
+                LocalErrorMessage = errorDescription
             };
         }
 
@@ -1642,13 +1662,27 @@ namespace Altinn.Platform.Authentication.Services
             return q;
         }
 
-        private async Task<UserAuthenticationModel?> IdentifyOrCreateAltinnUser(UserAuthenticationModel userAuthenticationModel, OidcProvider? provider, CancellationToken cancellationToken)
+        /// <summary>
+        /// Resolves the Altinn user (UserID/PartyID/PartyUuid) for an upstream identity, provisioning a
+        /// self-identified user via Register where needed.
+        /// </summary>
+        /// <returns>
+        /// The identified user, or <c>User</c> = <see langword="null"/> when sign-in cannot complete.
+        /// <c>IsDeceased</c> is <see langword="true"/> when the user was refused because Register carries a
+        /// date of death: a deliberate refusal rather than a failure, which the caller reports differently.
+        /// </returns>
+        /// <remarks>
+        /// Returns early, without a profile lookup, when the upstream token already carries UserID, PartyID
+        /// and PartyUuid (Altinn claims). The date-of-death check does not run on that path. Neither ID-porten
+        /// nor HelseID issue such tokens today.
+        /// </remarks>
+        private async Task<(UserAuthenticationModel? User, bool IsDeceased)> IdentifyOrCreateAltinnUser(UserAuthenticationModel userAuthenticationModel, OidcProvider? provider, CancellationToken cancellationToken)
         {
             ArgumentNullException.ThrowIfNull(userAuthenticationModel);
 
             if (userAuthenticationModel.UserID != null && userAuthenticationModel.PartyID != null && userAuthenticationModel.PartyUuid != null)
             {
-                return userAuthenticationModel;
+                return (userAuthenticationModel, false);
             }
 
             UserProfile userProfile;
@@ -1660,13 +1694,13 @@ namespace Altinn.Platform.Authentication.Services
                 if (userProfile is null)
                 {
                     _logger.LogError("Profile lookup returned no user profile; sign-in cannot complete.");
-                    return null;
+                    return (null, false);
                 }
 
                 if (userProfile.Party?.Person?.DateOfDeath is not null)
                 {
                     _logger.LogInformation("Sign-in refused: person is deceased.");
-                    return null;
+                    return (null, true);
                 }
 
                 userAuthenticationModel.PartyUuid = userProfile.UserUuid;
@@ -1712,7 +1746,7 @@ namespace Altinn.Platform.Authentication.Services
                 {
                     // Provisioning failed - signal the caller to fail the callback rather than
                     // continuing with an incomplete identity.
-                    return null;
+                    return (null, false);
                 }
 
                 userAuthenticationModel.UserID = (int)provisioned.User.Value.UserId.Value;
@@ -1721,7 +1755,7 @@ namespace Altinn.Platform.Authentication.Services
                 userAuthenticationModel.Username = provisioned.User.Value.Username.Value;
                 userAuthenticationModel.Amr = ["SelfIdentified"];
                 userAuthenticationModel.Acr = "Selfidentified";
-                return userAuthenticationModel;
+                return (userAuthenticationModel, false);
             }
             else if (userAuthenticationModel.Acr != null && userAuthenticationModel.Acr.Equals("selfregistered-email") && !string.IsNullOrEmpty(userAuthenticationModel.Email))
             {
@@ -1740,14 +1774,14 @@ namespace Altinn.Platform.Authentication.Services
                 {
                     // Provisioning failed - signal the caller to fail the callback rather than
                     // continuing with an incomplete identity.
-                    return null;
+                    return (null, false);
                 }
 
                 userAuthenticationModel.UserID = (int)provisioned.User.Value.UserId.Value;
                 userAuthenticationModel.PartyID = (int)provisioned.PartyId.Value;
                 userAuthenticationModel.PartyUuid = provisioned.Uuid;
                 userAuthenticationModel.Username = provisioned.User.Value.Username.Value;
-                return userAuthenticationModel;
+                return (userAuthenticationModel, false);
             }
             else if (userAuthenticationModel.UserID.HasValue && userAuthenticationModel.UserID.Value > 0)
             {
@@ -1756,13 +1790,13 @@ namespace Altinn.Platform.Authentication.Services
                 if (userProfile is null)
                 {
                     _logger.LogError("Profile lookup returned no user profile; sign-in cannot complete.");
-                    return null;
+                    return (null, false);
                 }
 
                 if (userProfile.Party?.Person?.DateOfDeath is not null)
                 {
                     _logger.LogInformation("Sign-in refused: person is deceased.");
-                    return null;
+                    return (null, true);
                 }
 
                 userAuthenticationModel.PartyUuid = userProfile.UserUuid;
@@ -1771,7 +1805,7 @@ namespace Altinn.Platform.Authentication.Services
                     userAuthenticationModel.PartyID = userProfile.PartyId;
                     userAuthenticationModel.PartyUuid = userProfile.Party.PartyUuid;
                     userAuthenticationModel.SSN = userProfile.Party.SSN;
-                    return userAuthenticationModel;
+                    return (userAuthenticationModel, false);
                 }
             }
 
@@ -1801,10 +1835,10 @@ namespace Altinn.Platform.Authentication.Services
                     provider?.IssuerKey,
                     provider?.ClaimMappings?.Pid ?? "pid");
 
-                return null;
+                return (null, false);
             }
 
-            return userAuthenticationModel;
+            return (userAuthenticationModel, false);
         }
 
         private async Task<SelfIdentifiedUser?> GetOrCreateSelfIdentifiedUserViaRegister(

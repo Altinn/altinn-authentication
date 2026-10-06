@@ -28,7 +28,7 @@ namespace Altinn.Platform.Authentication.Tests.Clients
         private const string Ssn = "17899198255";
 
         [Fact]
-        public async Task GetPartyIdentifiersAndUsernameByPersonIdentifier_RequestsPersonField()
+        public async Task GetPartyIdentifiersAndUsernameByPersonIdentifier_RequestsDateOfDeathField()
         {
             // Arrange
             HttpRequestMessage? captured = null;
@@ -38,8 +38,8 @@ namespace Altinn.Platform.Authentication.Tests.Clients
             // Act
             await client.GetPartyIdentifiersAndUsernameByPersonIdentifier(Ssn, CancellationToken.None);
 
-            // Assert: without 'person' in the field list Register omits dateOfDeath, and any
-            // date-of-death check downstream silently evaluates every person as alive.
+            // Assert: without 'person.date-of-death' in the field list Register omits dateOfDeath, and the
+            // exchange rejects every person. Only the date of death is requested, not the whole person object.
             Assert.NotNull(captured);
             string query = captured.RequestUri!.Query.TrimStart('?');
             string fields = query.Split('&')
@@ -47,7 +47,8 @@ namespace Altinn.Platform.Authentication.Tests.Clients
                 .Substring("fields=".Length);
             string[] requested = fields.Split(',');
 
-            Assert.Contains("person", requested);
+            Assert.Contains("person.date-of-death", requested);
+            Assert.DoesNotContain("person", requested);
             Assert.Contains("user", requested);
         }
 
@@ -95,8 +96,8 @@ namespace Altinn.Platform.Authentication.Tests.Clients
         [Fact]
         public async Task GetPartyIdentifiersAndUsernameByPersonIdentifier_PersonFieldNotReturned_DateOfDeathIsUnset()
         {
-            // Arrange: what Register sends when 'person' is absent from the field list. Kept as a test so
-            // the difference between "not requested" and "alive" stays visible.
+            // Arrange: what Register sends when 'person.date-of-death' is absent from the field list. Kept as
+            // a test so the difference between "not requested" and "alive" stays visible.
             PartiesClient client = CreateClient(
                 CreateHttpClient(HttpStatusCode.OK, PartyResponse(MinimalPersonJson)));
 

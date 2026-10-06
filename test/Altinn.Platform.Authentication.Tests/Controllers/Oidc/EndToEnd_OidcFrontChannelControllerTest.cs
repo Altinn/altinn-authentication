@@ -2652,9 +2652,11 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
 
         /// <summary>
         /// A person whose Register data carries a date of death must not be signed in (issue #2143).
+        /// This is a deliberate refusal, not a server error, so the user is sent back to the client
+        /// with <c>access_denied</c> rather than getting a 500.
         /// </summary>
         [Fact]
-        public async Task TC19_Auth_DeceasedPerson_FailsClosed_NoSession()
+        public async Task TC19_Auth_DeceasedPerson_AccessDeniedRedirectToClient_NoSession()
         {
             using HttpClient client = CreateClientWithHeaders();
             OidcTestScenario testScenario = OidcScenarioHelper.GetScenario("Deceased_Person");
@@ -2675,7 +2677,49 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
             string callbackUrl = $"/authentication/api/v1/upstream/callback?code={Uri.EscapeDataString(testScenario.GetUpstreamProviderCode())}&state={Uri.EscapeDataString(upstreamState!)}";
             HttpResponseMessage callbackResp = await client.GetAsync(callbackUrl);
 
-            Assert.Equal(HttpStatusCode.InternalServerError, callbackResp.StatusCode);
+            Assert.Equal(HttpStatusCode.Redirect, callbackResp.StatusCode);
+            Assert.False(callbackResp.Headers.Contains("Set-Cookie"), "No session cookie may be issued for a deceased person.");
+
+            Uri location = callbackResp.Headers.Location!; // asserted by the status code above
+            Assert.StartsWith(testScenario.DownstreamClientCallbackUrl, location.ToString());
+
+            System.Collections.Specialized.NameValueCollection query = HttpUtility.ParseQueryString(location.Query);
+            Assert.Equal("access_denied", query["error"]);
+            Assert.Equal(testScenario.GetDownstreamState(), query["state"]);
+            Assert.Null(query["code"]);
+        }
+
+        /// <summary>
+        /// HelseID does not check date of death itself, so this is where the check in the OIDC flow
+        /// matters (issue #2143). In the unregistered-client (goto) flow there is no client to send an
+        /// error back to, so the refusal is a local 403 rather than a 500.
+        /// </summary>
+        [Fact]
+        public async Task TC19B_HelseIdAuth_DeceasedPerson_Forbidden_NoSession()
+        {
+            using HttpClient client = CreateClientWithHeaders();
+            OidcTestScenario testScenario = OidcScenarioHelper.GetScenario("HelseId_Deceased_Person");
+
+            OidcClientCreate create = OidcServerTestUtils.NewClientCreate(testScenario);
+            _ = await Repository.InsertClientAsync(create);
+
+            HttpResponseMessage appRedirectResponse = await client.GetAsync(
+                "/authentication/api/v1/authentication?iss=helseid&goto=https%3A%2F%2Fhelse.apps.localhost%2Fsykemelding%2Finstance%2F51441547");
+            Assert.Equal(HttpStatusCode.Redirect, appRedirectResponse.StatusCode);
+
+            (string? upstreamState, UpstreamLoginTransaction? createdUpstreamLogingTransaction) =
+                await AssertAutorizeRequestResult(testScenario, appRedirectResponse, _fakeTime.GetUtcNow());
+            Debug.Assert(createdUpstreamLogingTransaction != null);
+
+            _fakeTime.Advance(TimeSpan.FromMinutes(1));
+
+            ConfigureMockHelseIdProviderTokenResponse(testScenario, createdUpstreamLogingTransaction, _fakeTime.GetUtcNow());
+            await ConfigureProfileMock(testScenario);
+
+            string callbackUrl = $"/authentication/api/v1/upstream/callback?code={Uri.EscapeDataString(testScenario.GetUpstreamProviderCode()!)}&state={Uri.EscapeDataString(upstreamState!)}";
+            HttpResponseMessage callbackResp = await client.GetAsync(callbackUrl);
+
+            Assert.Equal(HttpStatusCode.Forbidden, callbackResp.StatusCode);
             Assert.False(callbackResp.Headers.Contains("Set-Cookie"), "No session cookie may be issued for a deceased person.");
         }
 

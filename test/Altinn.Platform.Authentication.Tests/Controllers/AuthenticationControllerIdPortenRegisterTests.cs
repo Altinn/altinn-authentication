@@ -123,6 +123,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
                   "createdAt": "2020-01-01T00:00:00Z",
                   "modifiedAt": "2020-01-01T00:00:00Z",
                   "isDeleted": false,
+                  "dateOfDeath": null,
                   "user": { "userId": 20000, "username": "steph", "userIds": [ 20000 ] }
                 }
                 """,
