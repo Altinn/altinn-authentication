@@ -311,6 +311,14 @@ public class ChangeRequestSystemUserService(
             return Problem.RequestNotFound;
         }
 
+        Result<Party> ownerResult = await GetPartyOwningChangeRequest(partyId, systemUserChangeRequest, cancellationToken);
+        if (ownerResult.IsProblem)
+        {
+            return ownerResult.Problem;
+        }
+
+        Party party = ownerResult.Value;
+
         if (systemUserChangeRequest.Status != RequestStatus.New.ToString())
         {
             return Problem.RequestStatusNotNew;
@@ -328,13 +336,6 @@ public class ChangeRequestSystemUserService(
         if (toBeChanged is null)
         {
             return Problem.SystemUserNotFound;
-        }
-
-        Party? party = await partiesClient.GetPartyAsync(partyId, cancellationToken);
-
-        if (party is null || string.IsNullOrEmpty(party.OrgNumber))
-        {
-            return Problem.Reportee_Orgno_NotFound;
         }
 
         if (!party.PartyUuid.HasValue)
@@ -442,12 +443,18 @@ public class ChangeRequestSystemUserService(
     }
 
     /// <inheritdoc/>
-    public async Task<Result<bool>> RejectChangeOnSystemUser(Guid requestId, int userId, CancellationToken cancellationToken)
+    public async Task<Result<bool>> RejectChangeOnSystemUser(Guid requestId, int partyId, int userId, CancellationToken cancellationToken)
     {
         ChangeRequestResponse? systemUserRequest = await changeRequestRepository.GetChangeRequestById(requestId);
         if (systemUserRequest is null)
         {
             return Problem.RequestNotFound;
+        }
+
+        Result<Party> ownerResult = await GetPartyOwningChangeRequest(partyId, systemUserRequest, cancellationToken);
+        if (ownerResult.IsProblem)
+        {
+            return ownerResult.Problem;
         }
 
         if (systemUserRequest.Status != RequestStatus.New.ToString())
@@ -456,6 +463,22 @@ public class ChangeRequestSystemUserService(
         }
 
         return await changeRequestRepository.RejectChangeOnSystemUser(requestId, userId, cancellationToken);
+    }
+
+    private async Task<Result<Party>> GetPartyOwningChangeRequest(int partyId, ChangeRequestResponse changeRequest, CancellationToken cancellationToken)
+    {
+        Party? party = await partiesClient.GetPartyAsync(partyId, cancellationToken);
+        if (party is null || string.IsNullOrEmpty(party.OrgNumber))
+        {
+            return Problem.Reportee_Orgno_NotFound;
+        }
+
+        if (party.OrgNumber != changeRequest.PartyOrgNo)
+        {
+            return Problem.PartyId_Request_Mismatch;
+        }
+
+        return party;
     }
 
     /// <inheritdoc/>
