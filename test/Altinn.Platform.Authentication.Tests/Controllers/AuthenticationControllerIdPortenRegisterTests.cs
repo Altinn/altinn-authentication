@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
 using System.Net;
@@ -24,6 +25,7 @@ using AltinnCore.Authentication.JwtCookie;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Microsoft.FeatureManagement;
 using Moq;
@@ -45,6 +47,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
         private readonly Mock<IPartiesClient> _partiesClient = new();
         private readonly Mock<IRegisterUserProvisioningClient> _registerUserProvisioningClient = new();
         private readonly Mock<IFeatureManager> _featureManager = new();
+        private readonly CapturingLogger<AuthenticationController> _controllerLogger = new();
 
         protected override void ConfigureHost(IWebHostBuilder builder)
         {
@@ -91,6 +94,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             services.AddSingleton(_eventQueue.Object);
             services.AddSingleton(_guidService.Object);
             services.AddSingleton<IUserProfileService>(_userProfileService.Object);
+            services.AddSingleton<ILogger<AuthenticationController>>(_controllerLogger);
             _guidService.Setup(q => q.NewGuid()).Returns("eaec330c-1e2d-4acb-8975-5f3eba12b2fb");
         }
 
@@ -243,10 +247,11 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             // "selfregistered-email" maps to SecurityLevel.SelfIdentifed.
             Assert.Equal("0", principal.FindFirstValue("urn:altinn:authlevel"));
 
-            // The email claim is carried over from the upstream token - exactly once, never duplicated
-            // by the enrichment - and no person identifier is leaked into the Altinn token.
+            // The upstream email claim is replaced by the normalized address - exactly once, so the
+            // mixed-case original is gone - matching the email claim a browser login issues for the same
+            // user. No person identifier is leaked into the Altinn token.
             Assert.Single(principal.FindAll("email"));
-            Assert.Equal("Test.Person@Example.COM", principal.FindFirstValue("email"));
+            Assert.Equal("test.person@example.com", principal.FindFirstValue("email"));
             Assert.Null(principal.FindFirstValue("pid"));
 
             // The external identity is the urn the browser sign-in flow provisions under.
@@ -265,7 +270,8 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
 
         /// <summary>
         /// A failing Register provisioning call fails the exchange rather than issuing a token with an
-        /// incomplete identity.
+        /// incomplete identity. The error is logged without the email address or the email-derived
+        /// external identity, so no personal data ends up in the logs.
         /// </summary>
         [Fact]
         public async Task AuthenticateEndUser_SelfRegisteredEmailUser_ProvisioningFails_ReturnsUnauthorized()
@@ -301,6 +307,15 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
 
             // Assert
             Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+
+            CapturingLogger<AuthenticationController>.Entry error = Assert.Single(_controllerLogger.Entries, e => e.Level == LogLevel.Error);
+            Assert.Equal("ID-porten exchange: Register provisioning failed.", error.Message);
+            Assert.All(error.State, kv =>
+            {
+                string? value = kv.Value?.ToString();
+                Assert.DoesNotContain("test.person", value ?? string.Empty, StringComparison.OrdinalIgnoreCase);
+                Assert.DoesNotContain("urn:altinn:person:idporten-email", value ?? string.Empty);
+            });
         }
 
         /// <summary>
@@ -329,6 +344,41 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
 
             _registerUserProvisioningClient.Verify(
                 c => c.GetOrCreateUser(It.IsAny<SelfIdentifiedUserProvisioningRequest>(), It.IsAny<CancellationToken>()),
+                Times.Never);
+        }
+
+        /// <summary>
+        /// With the toggle enabled, a token carrying an <c>email</c> claim but no <c>pid</c> is only exchanged
+        /// when its acr is <c>selfregistered-email</c>; any other acr is rejected and no user is provisioned.
+        /// </summary>
+        [Theory]
+        [InlineData("idporten-loa-low")]
+        [InlineData("idporten-loa-substantial")]
+        [InlineData("idporten-loa-high")]
+        public async Task AuthenticateEndUser_EmailWithoutPid_AcrNotSelfRegisteredEmail_ReturnsUnauthorized(string acr)
+        {
+            // Arrange
+            _featureManager
+                .Setup(f => f.IsEnabledAsync(FeatureFlags.SupportIDTokenExchangeForSelfRegisteredEmailUsers))
+                .ReturnsAsync(true);
+
+            HttpClient client = CreateClientWithExternalToken(
+                new Claim("email", "test.person@example.com"),
+                new Claim("amr", "Minid-PIN"),
+                new Claim("acr", acr),
+                new Claim("scope", "altinn:instances.read"));
+
+            // Act
+            HttpResponseMessage response = await client.GetAsync("/authentication/api/v1/exchange/id-porten");
+
+            // Assert
+            Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+
+            _registerUserProvisioningClient.Verify(
+                c => c.GetOrCreateUser(It.IsAny<SelfIdentifiedUserProvisioningRequest>(), It.IsAny<CancellationToken>()),
+                Times.Never);
+            _partiesClient.Verify(
+                p => p.GetPartyIdentifiersAndUsernameByPersonIdentifier(It.IsAny<string>(), It.IsAny<CancellationToken>()),
                 Times.Never);
         }
 
@@ -492,6 +542,27 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
 
             Assert.NotNull(party);
             return party;
+        }
+
+        /// <summary>
+        /// Records every log call so a test can assert on what was (and was not) logged.
+        /// </summary>
+        private sealed class CapturingLogger<T> : ILogger<T>
+        {
+            public record Entry(LogLevel Level, string Message, IReadOnlyList<KeyValuePair<string, object?>> State);
+
+            public ConcurrentQueue<Entry> Entries { get; } = new();
+
+            public IDisposable? BeginScope<TState>(TState state)
+                where TState : notnull => null;
+
+            public bool IsEnabled(LogLevel logLevel) => true;
+
+            public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception? exception, Func<TState, Exception?, string> formatter)
+            {
+                IReadOnlyList<KeyValuePair<string, object?>> values = state as IReadOnlyList<KeyValuePair<string, object?>> ?? [];
+                Entries.Enqueue(new Entry(logLevel, formatter(state, exception), values));
+            }
         }
 
         private static string GetConfigPath()

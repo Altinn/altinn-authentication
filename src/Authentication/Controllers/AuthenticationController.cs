@@ -574,7 +574,7 @@ namespace Altinn.Platform.Authentication.Controllers
                     authMethod = AuthenticationMethod.NotDefined.ToString();
                 }
 
-                ExchangeSubject? subject = await ResolveExchangeSubject(pid, email, cancellationToken);
+                ExchangeSubject? subject = await ResolveExchangeSubject(pid, email, cancellationToken, authLevel);
 
                 if (subject is null)
                 {
@@ -601,19 +601,24 @@ namespace Altinn.Platform.Authentication.Controllers
         /// The <c>urn:altinn:person:idporten-email:*</c> identity for a self-registered email user,
         /// or <see langword="null"/> for a person user.
         /// </param>
+        /// <param name="Email">
+        /// The normalized (lower-cased) email address for a self-registered email user,
+        /// or <see langword="null"/> for a person user.
+        /// </param>
         private sealed record ExchangeSubject(
             int UserId,
             string UserName,
             int PartyId,
             Guid PartyUuid,
-            string? ExternalIdentity);
+            string? ExternalIdentity,
+            string? Email);
 
         /// <summary>
         /// Resolves the Altinn user behind the incoming token: by person identifier when the token carries a
         /// <c>pid</c>, otherwise by email identifier.
         /// </summary>
         /// <returns>The resolved subject, or <see langword="null"/> when the exchange must be rejected.</returns>
-        private async Task<ExchangeSubject?> ResolveExchangeSubject(string? pid, string? email, CancellationToken cancellationToken)
+        private async Task<ExchangeSubject?> ResolveExchangeSubject(string? pid, string? email, CancellationToken cancellationToken, string authLevel)
         {
             if (!string.IsNullOrWhiteSpace(pid))
             {
@@ -628,12 +633,18 @@ namespace Altinn.Platform.Authentication.Controllers
                     return null;
                 }
 
-                return ToExchangeSubject(party, externalIdentity: null);
+                return ToExchangeSubject(party, externalIdentity: null, email: null);
             }
 
             if (string.IsNullOrWhiteSpace(email))
             {
                 _logger.LogInformation("ID-porten exchange: token carried neither a pid nor an email claim.");
+                return null;
+            }
+
+            if (!string.Equals(authLevel, "selfregistered-email", StringComparison.OrdinalIgnoreCase))
+            {
+                _logger.LogInformation("ID-porten exchange: token carried an email claim but no pid, but the auth level is not selfregistered-email.");
                 return null;
             }
 
@@ -661,22 +672,18 @@ namespace Altinn.Platform.Authentication.Controllers
 
             if (provisioned is null)
             {
-                // Log the external identity (email-derived) verbatim: this is an internal error log for a
-                // failing exchange, and support needs to identify which user is affected.
-                _logger.LogError(
-                    "ID-porten exchange: Register provisioning returned no result for externalIdentity {ExternalIdentity}.",
-                    externalIdentity);
+                _logger.LogError("ID-porten exchange: Register provisioning failed.");
                 return null;
             }
 
-            return ToExchangeSubject(provisioned, externalIdentity);
+            return ToExchangeSubject(provisioned, externalIdentity, normalizedEmail);
         }
 
         /// <summary>
         /// Projects a Register party onto an <see cref="ExchangeSubject"/>, rejecting parties that carry no
         /// associated Altinn user or are missing identifiers.
         /// </summary>
-        private ExchangeSubject? ToExchangeSubject(RegisterContracts.Party party, string? externalIdentity)
+        private ExchangeSubject? ToExchangeSubject(RegisterContracts.Party party, string? externalIdentity, string? email)
         {
             if (!party.User.HasValue || !party.User.Value.UserId.HasValue)
             {
@@ -695,12 +702,13 @@ namespace Altinn.Platform.Authentication.Controllers
                 party.User.Value.Username.HasValue ? party.User.Value.Username.Value : string.Empty,
                 (int)party.PartyId.Value,
                 party.Uuid,
-                externalIdentity);
+                externalIdentity,
+                email);
         }
 
         /// <summary>
         /// Builds and signs the Altinn token for a resolved subject. Identical for person and email users,
-        /// except that an email user also carries its external-identifier claim.
+        /// except that an email user also carries its external-identifier claim and a normalized email claim.
         /// </summary>
         private async Task<ActionResult> IssueExchangedToken(
             JwtSecurityToken token,
@@ -724,13 +732,14 @@ namespace Altinn.Platform.Authentication.Controllers
             ];
 
             claims.AddRange(token.Claims);
-
-            // The upstream token's own email claim is carried over by the AddRange above - it must not be
-            // added a second time here.
             claims.RemoveAll(c => c.Type is "aud" or IssClaimName or "at_hash" or "sid" or "sub");
 
             if (subject.ExternalIdentity is not null)
             {
+                // Replace the upstream email with the normalized address, so an exchange and a browser
+                // login produce the same email claim for the same user (see ClaimsPrincipalBuilder).
+                claims.RemoveAll(c => c.Type == AltinnCoreClaimTypes.Email);
+                claims.Add(new Claim(AltinnCoreClaimTypes.Email, subject.Email!, ClaimValueTypes.String, issuer));
                 claims.Add(new Claim(AltinnCoreClaimTypes.ExternalIdentifier, subject.ExternalIdentity, ClaimValueTypes.String, issuer));
             }
 
