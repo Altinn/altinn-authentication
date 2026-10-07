@@ -1482,6 +1482,44 @@ public class ChangeRequestControllerTest(
     }
 
     /// <summary>
+    /// A user who can manage access for one party must not approve or reject a ChangeRequest that belongs to another party
+    /// </summary>
+    [Theory]
+    [InlineData("approve")]
+    [InlineData("reject")]
+    public async Task ChangeRequest_ApproveOrReject_ForOtherParty_ReturnForbidden(string action)
+    {
+        // Create System used for test
+        string dataFileName = "Data/SystemRegister/Json/SystemRegister2Rights.json";
+        await CreateSystemRegister(dataFileName);
+
+        // The ChangeRequest belongs to 910493353 (party 500000)
+        ChangeRequestResponse changeRequest = await CreateChangeRequest(1, "991825827_the_matrix");
+
+        // The user is permitted for any party, so the check in the service is what stops the call
+        _pdpMock.Setup(p => p.GetDecisionForRequest(It.IsAny<XacmlJsonRequestRoot>())).ReturnsAsync(new XacmlJsonResponse
+        {
+            Response = GetDecisionResultSingle()
+        });
+
+        HttpClient client = CreateClient();
+        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3, now: TestTime));
+
+        // Party 500004 is another organisation (910493354)
+        int otherPartyId = 500004;
+        HttpResponseMessage otherPartyResponse = await client.PostAsync($"/authentication/api/v1/systemuser/changerequest/{otherPartyId}/{changeRequest.Id}/{action}", null);
+        Assert.Equal(HttpStatusCode.Forbidden, otherPartyResponse.StatusCode);
+        ProblemDetails? problemDetails = await otherPartyResponse.Content.ReadFromJsonAsync<ProblemDetails>();
+        Assert.NotNull(problemDetails);
+        Assert.Equal(Problem.PartyId_Request_Mismatch.Title, problemDetails.Title);
+
+        // The ChangeRequest is still New, so the owner can approve or reject it
+        int partyId = 500000;
+        HttpResponseMessage ownerResponse = await client.PostAsync($"/authentication/api/v1/systemuser/changerequest/{partyId}/{changeRequest.Id}/{action}", null);
+        Assert.Equal(HttpStatusCode.OK, ownerResponse.StatusCode);
+    }
+
+    /// <summary>
     /// After having verified that the ChangeRequest is needed, create a ChangeRequest, then delete it
     /// </summary>
     [Fact]
@@ -2456,7 +2494,7 @@ public class ChangeRequestControllerTest(
         await Task.WhenAll(tasks);
     }
 
-    private async Task CreateChangeRequest(int externalRef, string systemId)
+    private async Task<ChangeRequestResponse> CreateChangeRequest(int externalRef, string systemId)
     {
         List<XacmlJsonResult> xacmlJsonResults = GetDecisionResultSingle();
 
@@ -2574,6 +2612,8 @@ public class ChangeRequestControllerTest(
         Assert.NotNull(createdResponse);
         Assert.NotEmpty(createdResponse.RequiredRights);
         Assert.True(DeepCompare(createdResponse.RequiredRights, change.RequiredRights));
+
+        return createdResponse;
     }
 
     private static List<XacmlJsonResult> GetDecisionResultListNotAllPermit()
