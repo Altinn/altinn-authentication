@@ -29,6 +29,8 @@ dotnet test test/Altinn.Platform.Authentication.Tests/Altinn.Platform.Authentica
 
 - **Integration tests need a container runtime.** Most controller tests run through a `WebApplicationFixture` backed by a Testcontainers PostgreSQL instance, applying migrations on startup. They are slow but cover real request/DB behaviour.
 - **A green local `dotnet build` is not enough.** Compilation passing does not mean the tests pass. The authoritative signal is the CI **Build and Test** job (it runs the container-backed suite). When you can't run containers locally, push and watch CI.
+- `test/.../PerformanceTests` holds the **opt-in** k6 suites that hit deployed environments / put on load — not part of the normal loop.
+- **End-to-end tests live in [`Altinn/altinn-platform-validation-tests`](https://github.com/Altinn/altinn-platform-validation-tests)** — k6 suites under `K6/api/tests/authentication` and `K6/api/domain-checks/authentication`, run from that repo against deployed environments.
 
 ### Container runtime
 
@@ -44,7 +46,6 @@ On Windows and macOS, `podman machine start` sets up Docker API forwarding (on W
 ```bash
 export DOCKER_HOST="unix://$(podman info --format '{{.Host.RemoteSocket.Path}}')"
 ```
-- `test/.../SystemIntegrationTests` and `.../PerformanceTests` are **opt-in** suites that hit deployed environments / load — not part of the normal loop.
 
 ### Testing patterns
 

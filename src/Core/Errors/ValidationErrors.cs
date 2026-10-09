@@ -126,4 +126,17 @@ public static class ValidationErrors
     /// </summary>
     public static ValidationErrorDescriptor SystemRegister_IsVisible_With_NonAssignable_AccessPackage { get; }
         = _factory.Create(18, "Access packages meant for system user for client relations can't be used in combination with the flag isVisible: true");
+
+    /// <summary>
+    /// Gets a validation error descriptor when SystemRegister name is not provided in all languages
+    /// </summary>
+    public static ValidationErrorDescriptor SystemRegister_Name_Not_Provided_In_All_Languages { get; }
+        = _factory.Create(19, "The name of system must be provided in all languages: nb, nn, en");
+
+    /// <summary>
+    /// Gets a validation error descriptor when SystemRegister description is not provided in all languages
+    /// </summary>
+    public static ValidationErrorDescriptor SystemRegister_Description_Not_Provided_In_All_Languages { get; }
+        = _factory.Create(20, "The description of system must be provided in all languages: nb, nn, en");
+
 }

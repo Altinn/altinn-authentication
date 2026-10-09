@@ -1482,6 +1482,44 @@ public class ChangeRequestControllerTest(
     }
 
     /// <summary>
+    /// A user who can manage access for one party must not approve or reject a ChangeRequest that belongs to another party
+    /// </summary>
+    [Theory]
+    [InlineData("approve")]
+    [InlineData("reject")]
+    public async Task ChangeRequest_ApproveOrReject_ForOtherParty_ReturnForbidden(string action)
+    {
+        // Create System used for test
+        string dataFileName = "Data/SystemRegister/Json/SystemRegister2Rights.json";
+        await CreateSystemRegister(dataFileName);
+
+        // The ChangeRequest belongs to 910493353 (party 500000)
+        ChangeRequestResponse changeRequest = await CreateChangeRequest(1, "991825827_the_matrix");
+
+        // The user is permitted for any party, so the check in the service is what stops the call
+        _pdpMock.Setup(p => p.GetDecisionForRequest(It.IsAny<XacmlJsonRequestRoot>())).ReturnsAsync(new XacmlJsonResponse
+        {
+            Response = GetDecisionResultSingle()
+        });
+
+        HttpClient client = CreateClient();
+        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3, now: TestTime));
+
+        // Party 500004 is another organisation (910493354)
+        int otherPartyId = 500004;
+        HttpResponseMessage otherPartyResponse = await client.PostAsync($"/authentication/api/v1/systemuser/changerequest/{otherPartyId}/{changeRequest.Id}/{action}", null);
+        Assert.Equal(HttpStatusCode.Forbidden, otherPartyResponse.StatusCode);
+        ProblemDetails? problemDetails = await otherPartyResponse.Content.ReadFromJsonAsync<ProblemDetails>();
+        Assert.NotNull(problemDetails);
+        Assert.Equal(Problem.PartyId_Request_Mismatch.Title, problemDetails.Title);
+
+        // The ChangeRequest is still New, so the owner can approve or reject it
+        int partyId = 500000;
+        HttpResponseMessage ownerResponse = await client.PostAsync($"/authentication/api/v1/systemuser/changerequest/{partyId}/{changeRequest.Id}/{action}", null);
+        Assert.Equal(HttpStatusCode.OK, ownerResponse.StatusCode);
+    }
+
+    /// <summary>
     /// After having verified that the ChangeRequest is needed, create a ChangeRequest, then delete it
     /// </summary>
     [Fact]
@@ -2415,28 +2453,36 @@ public class ChangeRequestControllerTest(
         // Get the Request
         HttpClient client2 = CreateClient();
         string token2 = AddSystemUserRequestReadTestTokenToClient(client2);
-        string endpoint2 = $"/authentication/api/v1/systemuser/request/vendor/bysystem/{systemId}";
+        string testEndpoint = $"/authentication/api/v1/systemuser/changerequest/vendor/bysystem/{systemId}";
 
-        HttpResponseMessage message2 = await client2.GetAsync(endpoint2);
-        Assert.Equal(HttpStatusCode.OK, message2.StatusCode);
-        Paginated<RequestSystemResponse>? res2 = await message2.Content.ReadFromJsonAsync<Paginated<RequestSystemResponse>>();
-        Assert.True(res2 is not null);
-        var list = res2.Items.ToList();
+        HttpResponseMessage message = await client2.GetAsync(testEndpoint);
+        Assert.Equal(HttpStatusCode.OK, message.StatusCode);
+        Paginated<ChangeRequestResponse>? res = await message.Content.ReadFromJsonAsync<Paginated<ChangeRequestResponse>>();
+        Assert.True(res is not null);
+        var list = res.Items.ToList();
         Assert.NotEmpty(list);
 
         Assert.Equal(_paginationSize, list.Count);        
         Assert.Contains(list, x => x.PartyOrgNo == "910493353");
-        Assert.NotNull(res2.Links.Next);
+        Assert.NotNull(res.Links.Next);
 
         _pdpMock.Setup(p => p.GetDecisionForRequest(It.IsAny<XacmlJsonRequestRoot>())).ReturnsAsync(new XacmlJsonResponse
         {
             Response = xacmlJsonResults
         });
 
-        HttpResponseMessage message3 = await client2.GetAsync(res2.Links.Next);
-        Assert.Equal(HttpStatusCode.OK, message3.StatusCode);
-        Paginated<RequestSystemResponse>? res3 = await message3.Content.ReadFromJsonAsync<Paginated<RequestSystemResponse>>();
-        Assert.True(res3 is not null);
+        HttpResponseMessage message2 = await client2.GetAsync(res.Links.Next);
+        Assert.Equal(HttpStatusCode.OK, message2.StatusCode);
+        Paginated<ChangeRequestResponse>? res2 = await message2.Content.ReadFromJsonAsync<Paginated<ChangeRequestResponse>>();
+        Assert.True(res2 is not null);
+
+        var list2 = res2.Items.ToList();
+        Assert.Single(list2);
+        Assert.Null(res2.Links.Next);
+
+        // No ChangeRequest is duplicated across or lost between the pages
+        List<Guid> allIds = [.. list.Select(x => x.Id), .. list2.Select(x => x.Id)];
+        Assert.Equal(_paginationSize + 1, allIds.Distinct().Count());
     }
 
     private async Task CreateSeveralChangeRequest(int paginationSize, string systemId)
@@ -2448,7 +2494,7 @@ public class ChangeRequestControllerTest(
         await Task.WhenAll(tasks);
     }
 
-    private async Task CreateChangeRequest(int externalRef, string systemId)
+    private async Task<ChangeRequestResponse> CreateChangeRequest(int externalRef, string systemId)
     {
         List<XacmlJsonResult> xacmlJsonResults = GetDecisionResultSingle();
 
@@ -2566,6 +2612,8 @@ public class ChangeRequestControllerTest(
         Assert.NotNull(createdResponse);
         Assert.NotEmpty(createdResponse.RequiredRights);
         Assert.True(DeepCompare(createdResponse.RequiredRights, change.RequiredRights));
+
+        return createdResponse;
     }
 
     private static List<XacmlJsonResult> GetDecisionResultListNotAllPermit()

@@ -914,7 +914,7 @@ namespace Altinn.Platform.Authentication.Services
             bool[] outerValidationSet = new bool[packages.Count];
             List<string> packageUrns = [.. packages.Select(p => p.Urn!)];
 
-            Result<List<ClientDelegationDto>> clients = await _accessManagementClient.GetClientsForFacilitator(provider, packageUrns, cancellationToken);
+            Result<List<ClientDelegationDto>> clients = await _accessManagementClient.GetClientsForFacilitator(provider, packageUrns, cancellationToken: cancellationToken);
             if (clients.IsProblem)
             {
                 return clients.Problem;
@@ -1152,19 +1152,20 @@ namespace Altinn.Platform.Authentication.Services
         /// <inheritdoc/>
         public async Task<Result<List<ExternalClientDto>>> GetClientsForFacilitator(Guid facilitator, List<string>? packages, IFeatureManager featureManager, CancellationToken cancellationToken)
         {
-            var res = await _accessManagementClient.GetClientsForFacilitator(facilitator, packages!, cancellationToken);
-            if (res.IsSuccess)
-            {
-                if (packages is not null && packages.Count > 0)
-                {
-                    // If a list of packages to filter on is provided, filter the clients based on those packages before converting to DTOs
-                    var filtered = res.Value.Where(client => client.Access.Any(access => access.Packages.Any(p => p.Urn is not null && packages.Contains(p.Urn)))).ToList();
-                }
+            // The client must hold ALL requested packages (AND), otherwise partially-matching clients are
+            // listed and later fail delegation. v2 does AND via the match=all parameter; v1's enduser
+            // endpoint only supports OR, so use the internal API (which filters with AND) on v1.
+            bool useV2 = await featureManager.IsEnabledAsync(AccessManagementFeatureFlags.ClientDelegationApiV2);
+            Result<List<ClientDelegationDto>> res = useV2
+                ? await _accessManagementClient.GetClientsForFacilitator(facilitator, packages!, matchAllPackages: true, cancellationToken)
+                : await _accessManagementClient.GetClientsForFacilitatorFromInternalApi(facilitator, packages!, cancellationToken);
 
-                return ConvertConnectionDTOToClient(res.Value);
+            if (!res.IsSuccess)
+            {
+                return res.Problem ?? Problem.AgentSystemUser_FailedToGetClients;
             }
 
-            return res.Problem ?? Problem.AgentSystemUser_FailedToGetClients;
+            return ConvertConnectionDTOToClient(res.Value);
         }
 
         /// <inheritdoc/>
@@ -1259,6 +1260,8 @@ namespace Altinn.Platform.Authentication.Services
                     DisplayName = item.Client.Name ?? string.Empty,
                     OrganizationIdentifier = item.Client.OrganizationIdentifier ?? string.Empty,
                     PartyUuid = item.Client.Id,
+                    UnitType = item.Client.Variant,
+                    IsDeleted = item.Client.IsDeleted,
                     Access = ConvertAccessToPrimitive(item.Access)
                 };
                 result.Add(newCustomer);

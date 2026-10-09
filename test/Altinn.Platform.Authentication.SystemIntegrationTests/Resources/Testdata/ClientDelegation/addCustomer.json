@@ -1,4 +1,0 @@
-{
-  "customerId":"{customerPartyUuid}", //hentet fra kundelista
-  "facilitatorId": "{facilitatorPartyUuid}" 
-}

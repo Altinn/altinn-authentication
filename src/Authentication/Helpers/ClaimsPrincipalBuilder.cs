@@ -6,6 +6,7 @@ using System.Linq;
 using System.Security.Claims;
 using System.Text.Json;
 using Altinn.Platform.Authentication.Core.Models.Oidc;
+using Altinn.Platform.Authentication.Core.Services.Interfaces;
 using Altinn.Platform.Authentication.Enum;
 using Altinn.Platform.Authentication.Helpers;
 using Altinn.Urn;
@@ -21,9 +22,29 @@ namespace Altinn.Platform.Authentication.Core.Helpers
         private const string OriginalIssClaimName = "originaliss";
 
         /// <summary>
+        /// Resolves a stored acr value to a security level via the configured catalogue, falling
+        /// back to ID-porten's built-in table.
+        /// </summary>
+        /// <remarks>
+        /// The fallback matters for sessions written before providers became configurable, whose
+        /// stored acr may not be in the catalogue. The catalogue itself is a required argument:
+        /// a call site that omitted it would silently produce level 0 for every provider outside
+        /// ID-porten's vocabulary, which is the exact defect this change exists to fix.
+        /// </remarks>
+        private static SecurityLevel ResolveLevel(string acr, IAcrValueCatalog acrCatalog)
+        {
+            if (acrCatalog.TryGetLevel(acr, out int level))
+            {
+                return (SecurityLevel)level;
+            }
+
+            return AuthenticationHelper.GetAuthenticationLevelForIdPorten(acr);
+        }
+
+        /// <summary>
         /// Based on OidcBindingContextBase, creates a ClaimsPrincipal with relevant claims.
         /// </summary>
-        public static ClaimsPrincipal GetClaimsPrincipal(OidcBindingContextBase oidcBindingContext, string iss, bool isIDToken = false)
+        public static ClaimsPrincipal GetClaimsPrincipal(OidcBindingContextBase oidcBindingContext, string iss, IAcrValueCatalog acrCatalog, bool isIDToken = false)
         {
             List<Claim> claims = new()
             {
@@ -74,7 +95,7 @@ namespace Altinn.Platform.Authentication.Core.Helpers
             if (oidcBindingContext.Acr != null)
             {
                 claims.Add(new Claim("acr", oidcBindingContext.Acr));
-                securityLevel = AuthenticationHelper.GetAuthenticationLevelForIdPorten(oidcBindingContext.Acr);
+                securityLevel = ResolveLevel(oidcBindingContext.Acr, acrCatalog);
             }
 
             if (oidcBindingContext.ProviderClaims != null)
@@ -103,8 +124,15 @@ namespace Altinn.Platform.Authentication.Core.Helpers
                 {
                     string amrJson = JsonSerializer.Serialize(amr); // e.g. ["TestID","pwd"]
                     claims.Add(new Claim("amr", amrJson, JsonClaimValueTypes.JsonArray));
-                    string amrClaim = AuthenticationHelper.GetAuthenticationMethod(amr[0]).ToString();
-                    claims.Add(new Claim(AltinnCoreClaimTypes.AuthenticateMethod, amrClaim));
+
+                    // Always emitted when there is an amr, including as "NotDefined". Omitting it
+                    // for an unresolved value would be a contract change for every consumer of the
+                    // claim, and it would reach ID-porten too: MinIDTOTP is in the enum but in
+                    // neither lookup table. NotDefined is a real, self-describing member, so there
+                    // is nothing to gain by leaving the claim out. The configured mapping reaches
+                    // this point through the Amr normalisation in GetUserFromToken.
+                    AuthenticationMethod method = AuthenticationHelper.GetAuthenticationMethod(amr[0]);
+                    claims.Add(new Claim(AltinnCoreClaimTypes.AuthenticateMethod, method.ToString()));
                 }
             }
 
@@ -138,7 +166,7 @@ namespace Altinn.Platform.Authentication.Core.Helpers
         /// <summary>
         /// Create a ClaimsPrincipal based on an OidcSession for AltinnStudio runtime cookie
         /// </summary>
-        public static ClaimsPrincipal GetClaimsPrincipal(OidcSession oidcSession, string iss, bool isIDToken = false, bool isAuthCookie = false)
+        public static ClaimsPrincipal GetClaimsPrincipal(OidcSession oidcSession, string iss, IAcrValueCatalog acrCatalog, bool isIDToken = false, bool isAuthCookie = false)
         {
             List<Claim> claims = new()
             {
@@ -195,7 +223,7 @@ namespace Altinn.Platform.Authentication.Core.Helpers
             if (oidcSession.Acr != null)
             {
                 claims.Add(new Claim("acr", oidcSession.Acr));
-                securityLevel = AuthenticationHelper.GetAuthenticationLevelForIdPorten(oidcSession.Acr);
+                securityLevel = ResolveLevel(oidcSession.Acr, acrCatalog);
             }
 
             if (oidcSession.ProviderClaims != null)
@@ -224,8 +252,15 @@ namespace Altinn.Platform.Authentication.Core.Helpers
                 {
                     string amrJson = JsonSerializer.Serialize(amr); // e.g. ["TestID","pwd"]
                     claims.Add(new Claim("amr", amrJson, JsonClaimValueTypes.JsonArray));
-                    string amrClaim = AuthenticationHelper.GetAuthenticationMethod(amr[0]).ToString();
-                    claims.Add(new Claim(AltinnCoreClaimTypes.AuthenticateMethod, amrClaim));
+
+                    // Always emitted when there is an amr, including as "NotDefined". Omitting it
+                    // for an unresolved value would be a contract change for every consumer of the
+                    // claim, and it would reach ID-porten too: MinIDTOTP is in the enum but in
+                    // neither lookup table. NotDefined is a real, self-describing member, so there
+                    // is nothing to gain by leaving the claim out. The configured mapping reaches
+                    // this point through the Amr normalisation in GetUserFromToken.
+                    AuthenticationMethod method = AuthenticationHelper.GetAuthenticationMethod(amr[0]);
+                    claims.Add(new Claim(AltinnCoreClaimTypes.AuthenticateMethod, method.ToString()));
                 }
             }
            

@@ -65,7 +65,6 @@ The solution (`Altinn.Platform.Authentication.sln`) is layered:
 | `src/Persistance` | PostgreSQL repositories and SQL migrations (versioned directories under `Migration/`). |
 | `src/jwtcookie` | `Altinn.Common.Authentication` — the shared JWT-cookie authentication handler library. |
 | `test/Altinn.Platform.Authentication.Tests` | Unit + integration tests (integration tests use Testcontainers PostgreSQL — **Docker required**). |
-| `test/Altinn.Platform.Authentication.SystemIntegrationTests` | Live end-to-end tests against deployed environments (opt-in). |
 | `test/Altinn.Platform.Authentication.PerformanceTests` | k6/performance tests. |
 
 **Layering rule:** dependencies point inward — `Authentication` → `Integration` → `Core`, and `Persistance` → `Core`. `Core` depends on nothing in the solution.

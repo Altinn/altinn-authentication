@@ -1,6 +1,7 @@
 ﻿#nullable enable
 using System;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -17,6 +18,27 @@ namespace Altinn.Platform.Authentication.Tests.Mocks
     public sealed class OidcProviderAdvancedMock : IOidcProvider
     {
         private readonly ConcurrentBag<Rule> _rules = new();
+
+        /// <summary>
+        /// Parameters of the last pushed authorization request, so a test can assert what was
+        /// actually pushed rather than only what ended up in the redirect.
+        /// </summary>
+        public IDictionary<string, string>? LastPushedParameters { get; private set; }
+
+        /// <summary>
+        /// The <c>request_uri</c> handed back from a push. Set to null to simulate a refusal.
+        /// </summary>
+        public string? PushedRequestUri { get; set; } = "urn:ietf:params:oauth:request_uri:test";
+
+        /// <inheritdoc />
+        public Task<PushedAuthorizationResponse?> PushAuthorizationRequest(OidcProvider provider, IDictionary<string, string> parameters, CancellationToken cancellationToken = default)
+        {
+            LastPushedParameters = new Dictionary<string, string>(parameters);
+
+            return Task.FromResult(PushedRequestUri is null
+                ? null
+                : new PushedAuthorizationResponse { RequestUri = PushedRequestUri, ExpiresIn = 600 });
+        }
 
         /// <summary>
         /// Configure a successful token response.
@@ -61,7 +83,7 @@ namespace Altinn.Platform.Authentication.Tests.Mocks
         /// <summary>
         /// The method under test: returns a configured response or throws if no matching rule exists.
         /// </summary>
-        public async Task<OidcCodeResponse> GetTokens(
+        public async Task<OidcCodeResponse?> GetTokens(
             string authorizationCode,
             OidcProvider provider,
             string redirect_uri,
@@ -81,7 +103,8 @@ namespace Altinn.Platform.Authentication.Tests.Mocks
                     $"FakeOidcProvider: no rule matched (code='{authorizationCode}', clientId='{provider?.ClientId}', redirect_uri='{redirect_uri}', verifier='{codeVerifier ?? "<null>"}').");
             }
 
-            return (await match.Handler(authorizationCode, provider, redirect_uri, codeVerifier, cancellationToken))!; // failure rules deliberately return null to exercise caller null-handling
+            // Failure rules deliberately return null, matching the real provider's contract.
+            return await match.Handler(authorizationCode, provider, redirect_uri, codeVerifier, cancellationToken);
         }
 
         private sealed record Rule(
