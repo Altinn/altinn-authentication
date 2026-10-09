@@ -75,6 +75,7 @@ public class SystemUserController : ControllerBase
     /// </summary>
     /// <returns>List of SystemUsers</returns>
     [Authorize(Policy = AuthzConstants.POLICY_ACCESS_MANAGEMENT_READ)]
+    [Produces("application/json")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [HttpGet("{party}")]
     public async Task<ActionResult<List<SystemUserInternalDTO>>> GetListOfSystemUsersPartyHas(int party)
@@ -88,6 +89,7 @@ public class SystemUserController : ControllerBase
     /// </summary>
     /// <returns>List of SystemUsers</returns>
     [Authorize(Policy = AuthzConstants.POLICY_SYSTEMUSER_OVERVIEW_READ)]
+    [Produces("application/json")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [HttpGet("agent/{party}")]
     public async Task<ActionResult<List<SystemUserInternalDTO>>> GetListOfAgentSystemUsersPartyHas(int party)
@@ -101,6 +103,7 @@ public class SystemUserController : ControllerBase
     /// </summary>
     /// <returns>List of DelegationResponse</returns>
     [Authorize(Policy = AuthzConstants.POLICY_CLIENT_ADMINISTRATION_READ)]
+    [Produces("application/json")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [HttpGet("agent/{party}/{facilitator}/{systemUserId}/delegations")]
     public async Task<ActionResult<List<DelegationResponse>>> GetListOfDelegationsForAgentSystemUser(int party, Guid facilitator, Guid systemUserId)
@@ -120,6 +123,7 @@ public class SystemUserController : ControllerBase
     /// </summary>
     /// <returns></returns>
     [Authorize(Policy = AuthzConstants.POLICY_SYSTEMUSER_OVERVIEW_READ)]
+    [Produces("application/json")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [HttpGet("{party}/{systemUserId}")]
@@ -146,6 +150,7 @@ public class SystemUserController : ControllerBase
     /// <returns>The SystemUserIntegration model API DTO</returns>
     [Authorize(Policy = AuthzConstants.POLICY_SCOPE_SYSTEMUSERLOOKUP)]
     [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
+    [Produces("application/json")]
     [HttpGet("byExternalId")]
     public async Task<ActionResult> CheckIfPartyHasIntegration(
         [FromQuery] string clientId,
@@ -190,6 +195,7 @@ public class SystemUserController : ControllerBase
     /// </summary>
     /// <returns></returns>
     [Authorize(Policy = AuthzConstants.POLICY_ACCESS_MANAGEMENT_WRITE)]
+    [Produces("application/json")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [HttpDelete("{party}/{systemUserId}")]
@@ -217,6 +223,7 @@ public class SystemUserController : ControllerBase
     /// <param name="request">The DTO describing the updateed SystemUser.</param>
     /// <returns></returns>
     [Authorize(Policy = AuthzConstants.POLICY_ACCESS_MANAGEMENT_WRITE)]
+    [Produces("application/json")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [HttpPut]
@@ -243,6 +250,7 @@ public class SystemUserController : ControllerBase
     /// <param name="cancellationToken">the cancellationtoken</param>
     /// <returns>The SystemUser model</returns>
     [Authorize(Policy = AuthzConstants.POLICY_SCOPE_SYSTEMUSERREQUEST_WRITE)]
+    [Produces("application/json")]
     [HttpGet("vendor/byquery", Name = "vendor/byquery")]
     public async Task<ActionResult<SystemUserExternalDTO>> GetSingleSystemUserForVendor(
         [FromQuery(Name = "system-id")] string systemId,
@@ -282,6 +290,7 @@ public class SystemUserController : ControllerBase
     /// <param name="cancellationToken">The cancellation token</param>
     /// <returns>Status response model CreateRequestSystemUserResponse</returns>
     [Authorize(Policy = AuthzConstants.POLICY_SCOPE_SYSTEMREGISTER_WRITE)]
+    [Produces("application/json")]
     [HttpGet("vendor/bysystem/{systemId}", Name = "vendor/systemusers/bysystem")]
     public async Task<ActionResult<Paginated<SystemUserExternalDTO>>> GetAllSystemUsersByVendorSystem(
         string systemId,
@@ -333,6 +342,7 @@ public class SystemUserController : ControllerBase
     /// <param name="cancellationToken">The cancellation token</param>
     /// <returns>Paginated list of all SystmUsers e</returns>
     [Authorize(Policy = AuthzConstants.POLICY_SCOPE_INTERNAL_OR_PLATFORM_ACCESS)]
+    [Produces("application/json")]
     [HttpGet("internal/systemusers/stream", Name = ROUTE_GET_STREAM)]
     public async Task<ActionResult<ItemStream<SystemUserRegisterDTO>>> GetAllSystemUsers(
         [FromQuery(Name = "token")] Opaque<long>? token = null,
@@ -373,6 +383,7 @@ public class SystemUserController : ControllerBase
     /// <param name="cancellationToken">The cancellation token</param>
     /// <returns>Paginated list of all SystmUsers e</returns>
     [Authorize(Policy = AuthzConstants.POLICY_SCOPE_INTERNAL_OR_PLATFORM_ACCESS)]
+    [Produces("application/json")]
     [HttpGet("internal/systemusers/{id:guid}")]
     public async Task<ActionResult<SystemUserRegisterDTO>> GetSystemUserForRegister(
         Guid id,
@@ -478,6 +489,7 @@ public class SystemUserController : ControllerBase
     /// </summary>
     /// <returns></returns>
     [Authorize(Policy = AuthzConstants.POLICY_CLIENT_ADMINISTRATION_WRITE)]
+    [Produces("application/json")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [HttpDelete("agent/{party}/{systemuser}/client")]
@@ -615,6 +627,7 @@ public class SystemUserController : ControllerBase
     /// </summary>
     /// <returns></returns>
     [Authorize(Policy = AuthzConstants.POLICY_ACCESS_MANAGEMENT_WRITE)]
+    [Produces("application/json")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [HttpDelete("agent/{party}/{systemUserId}")]
@@ -635,6 +648,7 @@ public class SystemUserController : ControllerBase
     /// </summary>
     /// <returns>List of Clients</returns>
     [Authorize(Policy = AuthzConstants.POLICY_CLIENT_ADMINISTRATION_READ)]
+    [Produces("application/json")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [HttpGet("agent/{party}/clients")]
     public async Task<ActionResult<List<Customer>>> GetClientsForFacilitator([FromQuery] Guid facilitator, [FromQuery] List<string> packages = null, CancellationToken cancellationToken = default)
@@ -654,6 +668,7 @@ public class SystemUserController : ControllerBase
     /// </summary>
     /// <returns>List of DelegationResponse</returns>
     [Authorize(Policy = AuthzConstants.POLICY_ACCESS_MANAGEMENT_READ)]
+    [Produces("application/json")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [HttpGet("{party}/{systemUserId}/delegations")]
     public async Task<ActionResult<StandardSystemUserDelegations>> GetListOfDelegationsForStandardSystemUser(int party, Guid systemUserId, CancellationToken cancellationToken = default)
