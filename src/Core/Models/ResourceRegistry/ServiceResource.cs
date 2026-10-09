@@ -1,20 +1,25 @@
-﻿#nullable enable
-using System.Diagnostics.CodeAnalysis;
+﻿using System.Diagnostics.CodeAnalysis;
 using System.Text.Json.Serialization;
-using Altinn.Platform.Authentication.Core.Models.ResourceRegistry;
 
 namespace Altinn.Platform.Authentication.Core.Models.ResourceRegistry
 {
     /// <summary>
-    /// Model describing a complete resource from the resrouce registry
+    /// Model describing a complete resource from the resource registry.
     /// </summary>
+    /// <remarks>
+    /// A partial mirror of the Resource Registry contract. This service reads only
+    /// <see cref="ResourceType"/> and whether the lookup returned anything at all, so the
+    /// nullability below is taken from the payloads themselves (see the fixtures under
+    /// test/../Data/ResourceRegistry): a member is non-nullable only where every observed
+    /// resource carries it.
+    /// </remarks>
     [ExcludeFromCodeCoverage]
     public class ServiceResource
     {
         /// <summary>
-        /// The identifier of the resource
+        /// The identifier of the resource. Present on every observed resource.
         /// </summary>
-        public string Identifier { get; set; }
+        public string Identifier { get; set; } = null!;
 
         /// <summary>
         /// The version of the resource
@@ -22,19 +27,20 @@ namespace Altinn.Platform.Authentication.Core.Models.ResourceRegistry
         public string? Version { get; set; }
 
         /// <summary>
-        /// The title of service
+        /// The title of service. Present on every observed resource.
         /// </summary>
-        public Dictionary<string, string> Title { get; set; }
+        public Dictionary<string, string> Title { get; set; } = null!;
 
         /// <summary>
-        /// Description
+        /// Description. Omitted for some resources, for instance Altinn apps.
         /// </summary>
-        public Dictionary<string, string> Description { get; set; }
+        public Dictionary<string, string>? Description { get; set; }
 
         /// <summary>
-        /// Description explaining the rights a recipient will receive if given access to the resource
+        /// Description explaining the rights a recipient will receive if given access to the
+        /// resource. Only set on some resources.
         /// </summary>
-        public Dictionary<string, string> RightDescription { get; set;  }
+        public Dictionary<string, string>? RightDescription { get; set; }
 
         /// <summary>
         /// The homepage
@@ -42,9 +48,9 @@ namespace Altinn.Platform.Authentication.Core.Models.ResourceRegistry
         public string? Homepage { get; set; }    
 
         /// <summary>
-        /// The status
+        /// The status. Omitted for some resources, for instance Altinn apps.
         /// </summary>
-        public string Status { get; set; }
+        public string? Status { get; set; }
 
         /// <summary>
         /// spatial coverage
@@ -53,9 +59,9 @@ namespace Altinn.Platform.Authentication.Core.Models.ResourceRegistry
         public List<string>? Spatial { get; set;  }
 
         /// <summary>
-        /// List of possible contact points
+        /// List of possible contact points. Never observed on a resource payload.
         /// </summary>
-        public List<ContactPoint> ContactPoints { get; set; }
+        public List<ContactPoint>? ContactPoints { get; set; }
 
         /// <summary>
         /// Linkes to the outcome of a public service
@@ -88,9 +94,9 @@ namespace Altinn.Platform.Authentication.Core.Models.ResourceRegistry
         public bool Visible { get; set; } = true; 
 
         /// <summary>
-        /// HasCompetentAuthority
+        /// The authority responsible for the resource. Present on every observed resource.
         /// </summary>
-        public CompetentAuthority HasCompetentAuthority { get; set; }
+        public CompetentAuthority HasCompetentAuthority { get; set; } = null!;
 
         /// <summary>
         /// Keywords
