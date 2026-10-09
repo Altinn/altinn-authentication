@@ -3,7 +3,7 @@
 ## Prerequisites
 
 - [.NET 10 SDK](https://dotnet.microsoft.com/download/dotnet/10.0)
-- [Docker](https://www.docker.com/get-docker) — **required for the integration tests** (they spin up PostgreSQL via Testcontainers).
+- A container runtime — **required for the integration tests** (they spin up PostgreSQL via Testcontainers). Either [Docker](https://www.docker.com/get-docker) or [Podman](https://podman.io/) works; see [Container runtime](#container-runtime) below.
 - Git, and a code editor / IDE.
 
 ## Build & run
@@ -23,14 +23,29 @@ Local runtime config comes from `appsettings.Development.json`; secrets should c
 ## Tests
 
 ```bash
-# Unit + integration tests (Docker MUST be running)
+# Unit + integration tests (a container runtime MUST be running)
 dotnet test test/Altinn.Platform.Authentication.Tests/Altinn.Platform.Authentication.Tests.csproj
 ```
 
-- **Integration tests need Docker.** Most controller tests run through a `WebApplicationFixture` backed by a Testcontainers PostgreSQL instance, applying migrations on startup. They are slow but cover real request/DB behaviour.
-- **A green local `dotnet build` is not enough.** Compilation passing does not mean the tests pass. The authoritative signal is the CI **Build and Test** job (it runs the Docker-backed suite). When you can't run Docker locally, push and watch CI.
+- **Integration tests need a container runtime.** Most controller tests run through a `WebApplicationFixture` backed by a Testcontainers PostgreSQL instance, applying migrations on startup. They are slow but cover real request/DB behaviour.
+- **A green local `dotnet build` is not enough.** Compilation passing does not mean the tests pass. The authoritative signal is the CI **Build and Test** job (it runs the container-backed suite). When you can't run containers locally, push and watch CI.
 - `test/.../PerformanceTests` holds the **opt-in** k6 suites that hit deployed environments / put on load — not part of the normal loop.
 - **End-to-end tests live in [`Altinn/altinn-platform-validation-tests`](https://github.com/Altinn/altinn-platform-validation-tests)** — k6 suites under `K6/api/tests/authentication` and `K6/api/domain-checks/authentication`, run from that repo against deployed environments.
+
+### Container runtime
+
+**Podman works as a drop-in for Docker** — Testcontainers talks to its Docker-compatible API, and no Docker CLI is needed. The usual failure is simply that the machine is not running:
+
+```bash
+podman machine list     # is there a machine, and is it up?
+podman machine start
+```
+
+On Windows and macOS, `podman machine start` sets up Docker API forwarding (on Windows, `npipe:////./pipe/docker_engine`) and Testcontainers picks it up with no further configuration — rootless mode is fine, including the Ryuk resource reaper. On Linux, point Testcontainers at Podman's socket:
+
+```bash
+export DOCKER_HOST="unix://$(podman info --format '{{.Host.RemoteSocket.Path}}')"
+```
 
 ### Testing patterns
 

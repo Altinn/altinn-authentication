@@ -14,7 +14,7 @@ These docs are written for **both humans and AI coding agents** — the conceptu
 | [flows/sessions-and-cookies.md](flows/sessions-and-cookies.md) | Sessions, the cookie model, refresh, and logout |
 | [flows/system-user.md](flows/system-user.md) | System users (Systembruker): system register, request/approval, agent delegation |
 | [operations.md](operations.md) | Configuration, feature flags, secrets, health, observability, runbook |
-| [development.md](development.md) | Local setup, build, run, and the (Docker-backed) test strategy |
+| [development.md](development.md) | Local setup, build, run, and the (container-backed) test strategy |
 | [adr/](adr/) | Architecture Decision Records — the **why** behind the design |
 
 ## Where to start

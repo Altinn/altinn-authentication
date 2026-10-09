@@ -12,7 +12,8 @@ Altinn Platform Authentication — an ASP.NET Core (.NET 10) service that authen
 # Build
 dotnet build Altinn.Platform.Authentication.sln
 
-# Test (Docker MUST be running — Testcontainers PostgreSQL)
+# Test (a container runtime MUST be running — Testcontainers PostgreSQL).
+# Podman works as a drop-in for Docker; if it fails to connect, try `podman machine start`.
 dotnet test test/Altinn.Platform.Authentication.Tests/Altinn.Platform.Authentication.Tests.csproj
 
 # Compile-only check of one project (fast)
@@ -21,7 +22,7 @@ dotnet build src/Authentication/Altinn.Platform.Authentication.csproj -clp:Error
 
 ## Critical workflow rules
 
-- **A green local `dotnet build` is NOT sufficient.** The integration tests need Docker, and compilation passing says nothing about them. The authoritative gate is the CI **Build and Test** job. If you can't run Docker, push and watch CI before claiming done.
+- **A green local `dotnet build` is NOT sufficient.** The integration tests need a container runtime (Docker *or* Podman — see [development.md](docs/development.md#container-runtime)), and compilation passing says nothing about them. The authoritative gate is the CI **Build and Test** job. Before concluding you can't run them locally, check `podman machine list` / `docker info`; a stopped Podman machine looks exactly like "no container runtime installed". If you genuinely can't run them, push and watch CI before claiming done.
 - **Branch per change; never commit to `main`.** Commit/push only when asked.
 - Update the relevant [`docs/`](docs/README.md) page or ADR **in the same PR** as a behaviour change.
 - Respond to CodeRabbit/CodeQL review comments; don't silently ignore them.
