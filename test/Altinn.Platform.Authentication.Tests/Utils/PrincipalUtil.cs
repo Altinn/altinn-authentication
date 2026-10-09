@@ -164,9 +164,44 @@ namespace Altinn.Platform.Authentication.Tests.Utils
             return token;
         }
 
+        /// <summary>
+        /// Builds a token equivalent to a Maskinporten system user token exchanged for an Altinn token.
+        /// </summary>
+        /// <remarks>
+        /// Deliberately carries no <c>urn:altinn:userid</c> and no <c>urn:altinn:org</c> claim: a system user
+        /// is not a person and not a service owner. Anything downstream that needs a user context is
+        /// therefore unavailable to this principal, which is exactly what these tokens must exercise.
+        /// </remarks>
+        public static string GetSystemUserToken(Guid systemUserId, string scopes, string orgNumber = "910493357", DateTimeOffset? now = null)
+        {
+            now ??= DateTimeOffset.UtcNow;
+
+            string issuer = "www.altinn.no";
+
+            List<Claim> claims =
+            [
+                new Claim("authorization_details", GetSystemUserObject(systemUserId, orgNumber), ClaimValueTypes.String, "maskinporten"),
+                new Claim("consumer", GetOrgNoObject(orgNumber), ClaimValueTypes.String, "maskinporten"),
+                new Claim(AuthzConstants.CLAIM_SCOPE, scopes, ClaimValueTypes.String, "maskinporten"),
+                new Claim(AltinnCoreClaimTypes.OrgNumber, orgNumber, ClaimValueTypes.Integer32, issuer),
+                new Claim(AltinnCoreClaimTypes.AuthenticateMethod, "maskinporten", ClaimValueTypes.String, issuer),
+                new Claim(AltinnCoreClaimTypes.AuthenticationLevel, "3", ClaimValueTypes.Integer32, issuer),
+            ];
+
+            ClaimsIdentity identity = new("mock-systemuser");
+            identity.AddClaims(claims);
+
+            return JwtTokenMock.GenerateToken(new ClaimsPrincipal(identity), new TimeSpan(1, 1, 1), now);
+        }
+
         private static string GetOrgNoObject(string orgNo)
         {
             return $"{{ \"authority\":\"iso6523-actorid-upis\", \"ID\":\"0192:{orgNo}\"}}";
+        }
+
+        private static string GetSystemUserObject(Guid systemUserId, string orgNo)
+        {
+            return $"{{ \"type\":\"urn:altinn:systemuser\", \"systemuser_org\":{GetOrgNoObject(orgNo)}, \"systemuser_id\":[\"{systemUserId}\"], \"system_id\":\"mock_system\"}}";
         }
     }
 }

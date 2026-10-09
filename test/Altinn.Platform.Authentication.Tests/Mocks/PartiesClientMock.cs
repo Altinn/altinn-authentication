@@ -88,6 +88,14 @@ public class PartiesClientMock : IPartiesClient
             party.PartyUuid = new Guid("7bb78d06-70b2-45f6-85bc-19ca7b4d34d8");
         }
 
+        if (!string.IsNullOrEmpty(orgNo) && orgNo == "123557789")
+        {
+            // deliberately without a PartyUuid: tests use orgNo 123557789 to cover callers that must
+            // reject an unusable party rather than dereference it
+            party.PartyId = 800000;
+            party.PartyUuid = null;
+        }
+
         if (!string.IsNullOrEmpty(orgNo) && orgNo == "123447789")
         {
             party = null; // deliberately null: tests use orgNo 123447789 to trigger "System Owner not Found"
