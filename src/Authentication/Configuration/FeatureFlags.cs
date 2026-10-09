@@ -14,5 +14,10 @@
         /// Feature flag for SystemUser Controller and functionality
         /// </summary>
         public const string SystemUser = "SystemUser";
+
+        /// <summary>
+        /// Feature flag for supporting ID token exchange for self-registered email users.
+        /// </summary>
+        public const string SupportIDTokenExchangeForSelfRegisteredEmailUsers = "SupportIDTokenExchangeForSelfRegisteredEmailUsers";
     }
 }
