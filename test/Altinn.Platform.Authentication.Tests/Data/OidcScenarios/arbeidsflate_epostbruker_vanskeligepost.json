@@ -1,0 +1,26 @@
+{
+  "ScenarioId": "Arbeidsflate_EpostBruker_VanskeligEpost",
+  "Title": "Arbeidsflate - Vanskelig epost",
+  "Description": "Test the happy flow for arbeidsflate. Bruker logger på med epost hos ID-porten som inneholder ?",
+  "Ssn": null,
+  "Email": "hvemerjeg?@verdensvakreste.no",
+  "UserId": null,
+  "PartyId": null,
+  "Acr": [ "selfregistered-email" ],
+  "Amr": [ "Selfregistered-email" ],
+  "UserName": "question",
+  "DownstreamClientCallbackUrl": "https://af.altinn.no/api/cb",
+  "Scopes": [
+    "openid",
+    "digdir:dialogporten.noconsent",
+    "altinn:portal/enduser"
+  ],
+  "AllowedScopes": [
+    "openid",
+    "digdir:dialogporten.noconsent",
+    "altinn:portal/enduser"
+  ],
+  "RedirectUris": [
+    "https://af.altinn.no/api/cb"
+  ]
+}

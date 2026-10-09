@@ -14,21 +14,21 @@ public interface ISystemUserRepository
     /// <param name="toBeInserted">The desciptor of the new SystemUser to be inserted, has either a null ID, or an ID provided by the frontend, the db generate a UUID if none is provided.</param>
     /// <param name="userId">The id of the user who is logged in</param>
     /// <returns></returns>
-    Task<Guid?> InsertSystemUser(SystemUser toBeInserted, int userId);
+    Task<Guid?> InsertSystemUser(SystemUserInternalDTO toBeInserted, int userId);
 
     /// <summary>
     /// Returns the list of all active system user integration for the given party id
     /// </summary>
     /// <param name="partyId">The party id</param>
     /// <returns></returns>
-    Task<List<SystemUser>> GetAllActiveSystemUsersForParty(int partyId);
+    Task<List<SystemUserInternalDTO>> GetAllActiveSystemUsersForParty(int partyId);
 
     /// <summary>
     /// Returns a single System User integration by its id
     /// </summary>
     /// <param name="id">The Guid id</param>
     /// <returns>Returns a System User Integration</returns>
-    Task<SystemUser?> GetSystemUserById(Guid id);
+    Task<SystemUserInternalDTO?> GetSystemUserById(Guid id);
 
     /// <summary>
     /// Sets the id'ed System User Integration's IsDeleted flag to true in the db, and returns true if it succeeds
@@ -53,7 +53,7 @@ public interface ISystemUserRepository
     /// <param name="externalRef">The key connecting the SystemUser integration to a unique Customer in the SystemProvider's system</param>
     /// <param name="cancellationToken">Cancellationtoken</param>
     /// <returns></returns>
-    Task<SystemUser?> CheckIfPartyHasIntegration(string clientId, string systemProviderOrgNo, string systemUserOwnerOrgNo, string externalRef, CancellationToken cancellationToken);
+    Task<SystemUserInternalDTO?> CheckIfPartyHasIntegration(string clientId, string systemProviderOrgNo, string systemUserOwnerOrgNo, string externalRef, CancellationToken cancellationToken);
 
     /// <summary>
     /// Retrieves a list of SystemUsers the Vendor has for a given system they own.
@@ -61,7 +61,7 @@ public interface ISystemUserRepository
     /// <param name="systemId">The system the Vendor wants the list for</param>
     /// <param name="cancellationToken">The cancellation token</param>
     /// <returns>Status response model CreateRequestSystemUserResponse</returns>
-    Task<List<SystemUser>?> GetAllSystemUsersByVendorSystem(string systemId, long sequenceFrom, int pageSize, CancellationToken cancellationToken);
+    Task<List<SystemUserInternalDTO>?> GetAllSystemUsersByVendorSystem(string systemId, long sequenceFrom, int pageSize, CancellationToken cancellationToken);
 
     /// <summary>
     /// Replaces the values for the existing system user with those from the ChangeRequest
@@ -69,14 +69,14 @@ public interface ISystemUserRepository
     /// <param name="toBeChanged">SystemUser to be changed</param>
     /// <param name="userId">the user id of the reporter approving the change</param>
     /// <returns>The id (UUID) of the SystemUser</returns>
-    Task<bool> ChangeSystemUser(SystemUser toBeChanged, int userId);
+    Task<bool> ChangeSystemUser(SystemUserInternalDTO toBeChanged, int userId);
 
     /// <summary>
     /// Fetches a SystemUser by the ExternalRequestId    /// 
     /// </summary>
     /// <param name="externalRequestId">External Ref + Orgno + Systemid should uniquely define a SystemUser</param>
     /// <returns>A SystemUser, if one is active.</returns>
-    Task<SystemUser?> GetSystemUserByExternalRequestId(ExternalRequestId externalRequestId);
+    Task<SystemUserInternalDTO?> GetSystemUserByExternalRequestId(ExternalRequestId externalRequestId);
 
     /// <summary>
     /// Returns a list of all SystemUsers    
@@ -95,5 +95,5 @@ public interface ISystemUserRepository
     /// </summary>
     /// <param name="partyId">The party id</param>
     /// <returns>List of Agent SystemUsers</returns>
-    Task<List<SystemUser>> GetAllActiveAgentSystemUsersForParty(int partyId);
+    Task<List<SystemUserInternalDTO>> GetAllActiveAgentSystemUsersForParty(int partyId);
 }

@@ -1,6 +1,7 @@
 ﻿using System.Data;
 using System.Threading;
 using System.Transactions;
+using Altinn.Authorization.ServiceDefaults.Npgsql;
 using Altinn.Platform.Authentication.Core.Models;
 using Altinn.Platform.Authentication.Core.Models.AccessPackages;
 using Altinn.Platform.Authentication.Core.Models.SystemRegisters;
@@ -30,6 +31,7 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
     /// <param name="dataSource">Needs connection to a Postgres db</param>
     /// <param name="logger">The logger</param>
     /// <param name="systemChangeLogRepository"> The system change log repository</param>
+    /// <param name="timeProvider">The time provider</param>
     public SystemRegisterRepository(NpgsqlDataSource dataSource, ILogger<SystemRegisterRepository> logger, ISystemChangeLogRepository systemChangeLogRepository, TimeProvider timeProvider)
     {
         _datasource = dataSource;
@@ -39,7 +41,7 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
     }
 
     /// <inheritdoc/>    
-    public async Task<List<RegisteredSystemResponse>> GetAllActiveSystems()
+    public async Task<List<RegisteredSystemResponse>> GetAllActiveSystems(CancellationToken cancellationToken)
     {
         const string QUERY = /*strpsql*/@"
             SELECT 
@@ -56,19 +58,62 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
                 allowedredirecturls,
                 accesspackages
             FROM business_application.system_register sr
-            WHERE sr.is_deleted = FALSE;";
+            WHERE sr.is_deleted = FALSE
+            AND sr.is_visible=TRUE;";
 
         try
         {
-            await using NpgsqlCommand command = _datasource.CreateCommand(QUERY);
+            await using var conn = await _datasource.OpenConnectionAsync(cancellationToken);
+            await using NpgsqlCommand command = conn.CreateCommand(QUERY);
 
-            return await command.ExecuteEnumerableAsync()
-                .SelectAwait(ConvertFromReaderToSystemRegister)
-                .ToListAsync();
+            await command.PrepareAsync(cancellationToken);
+            return await command.ExecuteEnumerableAsync(cancellationToken)
+                .Select(ConvertFromReaderToSystemRegister)
+                .ToListAsync(cancellationToken);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Authentication // SystemRegisterRepository // GetAllActiveSystems // Exception");
+            throw;
+        }
+    }
+
+    /// <inheritdoc/>    
+    public async Task<List<RegisteredSystemResponse>> GetAllSystemsForVendor(string vendorOrgNumber, CancellationToken cancellationToken)
+    {
+        const string QUERY = /*strpsql*/@"
+            SELECT 
+                system_internal_id,
+                system_id,
+                systemvendor_orgnumber, 
+                system_name,
+                name,
+                description,
+                is_deleted,
+                client_id,
+                rights,
+                is_visible,
+                allowedredirecturls,
+                accesspackages
+            FROM business_application.system_register
+            WHERE is_deleted = FALSE
+            AND systemvendor_orgnumber = @systemvendor_orgnumber;";
+
+        try
+        {
+            await using var conn = await _datasource.OpenConnectionAsync(cancellationToken);
+            await using NpgsqlCommand command = conn.CreateCommand(QUERY);
+
+            command.Parameters.AddWithValue(SystemRegisterFieldConstants.SYSTEM_VENDOR_ORGNUMBER, vendorOrgNumber);
+
+            await command.PrepareAsync(cancellationToken);
+            return await command.ExecuteEnumerableAsync(cancellationToken)
+                .Select(ConvertFromReaderToSystemRegister)
+                .ToListAsync(cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Authentication // SystemRegisterRepository // GetAllSystemsForVendor // Exception");
             throw;
         }
     }
@@ -119,9 +164,9 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
             command.Parameters.Add(new(SystemRegisterFieldConstants.SYSTEM_RIGHTS, NpgsqlDbType.Jsonb) { Value = (toBeInserted.Rights == null) ? DBNull.Value : toBeInserted.Rights });
             command.Parameters.Add(new(SystemRegisterFieldConstants.SYSTEM_ACCESSPACKAGES, NpgsqlDbType.Jsonb) { Value = (toBeInserted.AccessPackages == null) ? DBNull.Value : toBeInserted.AccessPackages });
 
-            Guid internalId = await command.ExecuteEnumerableAsync()
-                .SelectAwait(NpgSqlExtensions.ConvertFromReaderToGuid)
-                .SingleOrDefaultAsync();
+            Guid internalId = await command.ExecuteEnumerableAsync(cancellationToken)
+                .Select(NpgSqlExtensions.ConvertFromReaderToGuid)
+                .SingleOrDefaultAsync(cancellationToken);
 
             foreach (string id in toBeInserted.ClientId)
             {
@@ -197,7 +242,7 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
     }
 
     /// <inheritdoc/>  
-    public async Task<RegisteredSystemResponse?> GetRegisteredSystemById(string id)
+    public async Task<RegisteredSystemResponse?> GetRegisteredSystemById(string id, CancellationToken cancellationToken = default)
     {
         const string QUERY = /*strpsql*/@"
             SELECT 
@@ -214,18 +259,20 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
                 allowedredirecturls,
                 accesspackages
             FROM business_application.system_register sr
-            WHERE sr.system_id = @system_id;
+            WHERE sr.system_id = @system_id
         ";
 
         try
         {
-            await using NpgsqlCommand command = _datasource.CreateCommand(QUERY);
+            await using var conn = await _datasource.OpenConnectionAsync(cancellationToken);
+            await using NpgsqlCommand command = conn.CreateCommand(QUERY);
 
             command.Parameters.AddWithValue(SystemRegisterFieldConstants.SYSTEM_ID, id);
 
-            return await command.ExecuteEnumerableAsync()
-                .SelectAwait(ConvertFromReaderToSystemRegister)
-                .FirstOrDefaultAsync();
+            await command.PrepareAsync(cancellationToken);
+            return await command.ExecuteEnumerableAsync(cancellationToken)
+                .Select(ConvertFromReaderToSystemRegister)
+                .FirstOrDefaultAsync(cancellationToken);
         }
         catch (Exception ex)
         {
@@ -447,7 +494,7 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
         }
     }
 
-    private static ValueTask<RegisteredSystemResponse> ConvertFromReaderToSystemRegister(NpgsqlDataReader reader)
+    private static RegisteredSystemResponse ConvertFromReaderToSystemRegister(NpgsqlDataReader reader)
     {
         string[] stringGuids = reader.GetFieldValue<string[]>(SystemRegisterFieldConstants.SYSTEM_CLIENTID);
         List<Right>? rights = reader.IsDBNull(SystemRegisterFieldConstants.SYSTEM_RIGHTS) ? null : reader.GetFieldValue<List<Right>>(SystemRegisterFieldConstants.SYSTEM_RIGHTS);
@@ -467,8 +514,7 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
 
         VendorInfo vendor = new()
         {
-            ID = "0192:" + reader.GetFieldValue<string>(SystemRegisterFieldConstants.SYSTEM_VENDOR_ORGNUMBER),
-            Authority = "iso6523-actorid-upis"
+            ID = "0192:" + reader.GetFieldValue<string>(SystemRegisterFieldConstants.SYSTEM_VENDOR_ORGNUMBER)
         };
 
         if (!reader.IsDBNull(SystemRegisterFieldConstants.SYSTEM_ALLOWED_REDIRECTURLS))
@@ -476,7 +522,7 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
             allowedRedirectUrls = reader.GetFieldValue<List<string>>(SystemRegisterFieldConstants.SYSTEM_ALLOWED_REDIRECTURLS).ConvertAll<Uri>(delegate(string u) { return new Uri(u); });
         }
 
-        return new ValueTask<RegisteredSystemResponse>(new RegisteredSystemResponse
+        return new RegisteredSystemResponse
         {
             InternalId = reader.GetFieldValue<Guid>(SystemRegisterFieldConstants.SYSTEM_INTERNAL_ID),
             Id = reader.GetFieldValue<string>(SystemRegisterFieldConstants.SYSTEM_ID),
@@ -489,16 +535,16 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
             IsVisible = reader.GetFieldValue<bool>(SystemRegisterFieldConstants.SYSTEM_IS_VISIBLE),
             AllowedRedirectUrls = allowedRedirectUrls,
             AccessPackages = accessPackages
-        });
+        };
     }
 
-    private static ValueTask<MaskinPortenClientInfo> ConvertFromReaderToMaskinPortenClientInfo(NpgsqlDataReader reader)
+    private static MaskinPortenClientInfo ConvertFromReaderToMaskinPortenClientInfo(NpgsqlDataReader reader)
     {
-        return new ValueTask<MaskinPortenClientInfo>(new MaskinPortenClientInfo
+        return new MaskinPortenClientInfo
         {
             ClientId = reader.GetFieldValue<string>(SystemRegisterFieldConstants.SYSTEM_CLIENTID),
             SystemInternalId = reader.GetFieldValue<Guid>(SystemRegisterFieldConstants.SYSTEM_INTERNAL_ID)
-        });
+        };
     }
 
     private async Task<bool> CreateClient(string clientId, Guid systemInteralId, NpgsqlConnection conn, NpgsqlTransaction transaction,  CancellationToken cancellationToken)
@@ -529,7 +575,7 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
     {
         try
         {
-            RegisteredSystemResponse? systemInfo = await GetRegisteredSystemById(systemId);
+            RegisteredSystemResponse? systemInfo = await GetRegisteredSystemById(systemId, cancellationToken);
             List<MaskinPortenClientInfo> existingClients = await GetExistingClientIdsForSystem(systemInfo!.InternalId);
             List<string> existingClientIds = existingClients.Select(c => c.ClientId).ToList();
 
@@ -569,7 +615,7 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
             guidCommand.Parameters.AddWithValue(SystemRegisterFieldConstants.SYSTEM_ID, id);
 
             return await guidCommand.ExecuteEnumerableAsync()
-                .SelectAwait(NpgSqlExtensions.ConvertFromReaderToGuid)
+                .Select(NpgSqlExtensions.ConvertFromReaderToGuid)
                 .SingleOrDefaultAsync();
         }
         catch (Exception ex)
@@ -612,7 +658,7 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
             command.Parameters.AddWithValue(SystemRegisterFieldConstants.SYSTEM_CLIENTID, id.ToArray());
 
             return await command.ExecuteEnumerableAsync()
-                .SelectAwait(ConvertFromReaderToMaskinPortenClientInfo)
+                .Select(ConvertFromReaderToMaskinPortenClientInfo)
                 .ToListAsync();
         }
         catch (Exception ex)
@@ -639,7 +685,7 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
             command.Parameters.AddWithValue(SystemRegisterFieldConstants.SYSTEM_INTERNAL_ID, systemInternalId);
 
             return await command.ExecuteEnumerableAsync()
-                .SelectAwait(ConvertFromReaderToMaskinPortenClientInfo)
+                .Select(ConvertFromReaderToMaskinPortenClientInfo)
                 .ToListAsync();
         }
         catch (Exception ex)

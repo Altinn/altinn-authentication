@@ -79,7 +79,7 @@
       },
       "AccessPackages": [
         {
-          "Urn": "urn:altinn:accesspackage:skattnaering"
+          "Urn": "urn:altinn:accesspackage:skatt-naering"
         }
       ],
       "AllowedRedirectUrls": [

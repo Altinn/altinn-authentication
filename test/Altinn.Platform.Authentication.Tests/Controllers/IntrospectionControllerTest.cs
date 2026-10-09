@@ -73,16 +73,17 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             requestMessage.Content.Headers.ContentType = new MediaTypeHeaderValue("application/x-www-form-urlencoded");
             HttpClient client = CreateClient();
 
-            string token = JwtTokenMock.GenerateToken(GetTestPrincipal(), TimeSpan.FromMinutes(2));
+            string token = JwtTokenMock.GenerateToken(GetTestPrincipal(), TimeSpan.FromMinutes(2), now: TimeProvider.GetUtcNow());
             client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
             // Act
             HttpResponseMessage res = await client.SendAsync(requestMessage);
             string responseString = await res.Content.ReadAsStringAsync();
-            IntrospectionResponse actual = JsonSerializer.Deserialize<IntrospectionResponse>(responseString, _options);
+            IntrospectionResponse? actual = JsonSerializer.Deserialize<IntrospectionResponse>(responseString, _options);
 
             // Assert
             Assert.Equal(HttpStatusCode.OK, res.StatusCode);
+            Assert.NotNull(actual);
             AdvancedAsserts.Equal(expected, actual);
             _eformidlingValidatorService.Verify(efvs => efvs.ValidateToken(It.IsAny<string>()), Times.Once());
         }
@@ -113,16 +114,17 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
 
             HttpClient client = CreateClient();
 
-            string token = JwtTokenMock.GenerateToken(GetTestPrincipal(), TimeSpan.FromMinutes(2));
+            string token = JwtTokenMock.GenerateToken(GetTestPrincipal(), TimeSpan.FromMinutes(2), now: TimeProvider.GetUtcNow());
             client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
             // Act
             HttpResponseMessage res = await client.SendAsync(requestMessage);
             string responseString = await res.Content.ReadAsStringAsync();
-            IntrospectionResponse actual = JsonSerializer.Deserialize<IntrospectionResponse>(responseString, _options);
+            IntrospectionResponse? actual = JsonSerializer.Deserialize<IntrospectionResponse>(responseString, _options);
 
             // Assert
             Assert.Equal(HttpStatusCode.OK, res.StatusCode);
+            Assert.NotNull(actual);
             Assert.False(actual.Active);
             _eformidlingValidatorService.Verify(efvs => efvs.ValidateToken(It.IsAny<string>()), Times.Once());
         }

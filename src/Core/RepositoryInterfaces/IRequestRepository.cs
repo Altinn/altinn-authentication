@@ -48,17 +48,21 @@ public interface IRequestRepository
     /// Retrieves a list of Status-Response-model for all Requests that the Vendor has
     /// </summary>    
     /// <param name="systemId">The chosen system</param>
+    /// <param name="continueFrom">The id of the first Request to return; <see cref="Guid.Empty"/> for the first page</param>
+    /// <param name="pageSize">The page size</param>
     /// <param name="cancellationToken">The cancellationToken</param>
     /// <returns></returns>
-    Task<List<RequestSystemResponse>> GetAllRequestsBySystem(string systemId, CancellationToken cancellationToken);
+    Task<List<RequestSystemResponse>> GetAllRequestsBySystem(string systemId, Guid continueFrom, int pageSize, CancellationToken cancellationToken);
 
     /// <summary>
     /// Retrieves a list of Status-Response-model for all agent Requests that the Vendor has
     /// </summary>    
     /// <param name="systemId">The chosen system</param>
+    /// <param name="continueFrom">The id of the first Request to return; <see cref="Guid.Empty"/> for the first page</param>
+    /// <param name="pageSize">The page size</param>
     /// <param name="cancellationToken">The cancellationToken</param>
     /// <returns>list of agent requests for a system the vendor has</returns>
-    Task<List<AgentRequestSystemResponse>> GetAllAgentRequestsBySystem(string systemId, CancellationToken cancellationToken);
+    Task<List<AgentRequestSystemResponse>> GetAllAgentRequestsBySystem(string systemId, Guid continueFrom, int pageSize, CancellationToken cancellationToken);
 
     /// <summary>
     /// Rejects the system user request
@@ -112,4 +116,30 @@ public interface IRequestRepository
     /// <param name="externalRequestId">Struct containing the three external references</param>
     /// <returns>Create Request model</returns>
     Task<AgentRequestSystemResponse?> GetAgentRequestByExternalReferences(ExternalRequestId externalRequestId);
+
+    /// <summary>
+    /// Escalates the Request for later approval by AccessManager (Tilgangsstyrer).
+    /// Used by both Agent and Standard Requests
+    /// </summary>
+    /// <param name="requestId">The id</param>
+    /// <param name="userId">The user that changed the request</param>
+    /// <param name="cancellationToken">The cancellation token</param>
+    /// <returns></returns>
+    Task<bool> SetRequestEscalated(Guid requestId, int userId, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Used by the BFF to list all pending Standard Requests that where Escalated
+    /// </summary>
+    /// <param name="party_org_no">The org no</param>
+    /// <param name="cancellationToken">The Cancellation token</param>
+    /// <returns>Standard Request</returns>
+    Task<List<RequestSystemResponse>> GetAllPendingStandardRequests(string party_org_no, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Used by the BFF to list all pending Agent Requests that where Escalated
+    /// </summary>
+    /// <param name="party_org_no">The org no</param>
+    /// <param name="cancellationToken">The Cancellation token</param>
+    /// <returns>Agent Request</returns>
+    Task<List<AgentRequestSystemResponse>> GetAllPendingAgentRequests(string party_org_no, CancellationToken cancellationToken);
 }

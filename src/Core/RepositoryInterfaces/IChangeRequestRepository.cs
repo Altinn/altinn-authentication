@@ -14,11 +14,12 @@ public interface IChangeRequestRepository
     Task<Result<bool>> CreateChangeRequest(ChangeRequestResponse createRequest);
 
     /// <summary>
-    /// Gets a ChangeRequest model by the internal Guid ( which later is repurposed as the SystemUser Id )
+    /// Gets a ChangeRequest model by the Guid, which is both the Primary Key in the db, 
+    /// and the CorrellationId used by the Vendor for this Change Request
     /// </summary>
-    /// <param name="internalId">Internal Request guid</param>
+    /// <param name="id">Request guid</param>
     /// <returns>Create Request model</returns>
-    Task<ChangeRequestResponse?> GetChangeRequestByInternalId (Guid internalId);
+    Task<ChangeRequestResponse?> GetChangeRequestById(Guid id);
 
     /// <summary>
     /// Gets a ChangeRequest model by the three external references
@@ -34,15 +35,17 @@ public interface IChangeRequestRepository
     /// <param name="userId">the logged in user</param>
     /// <param name="cancellationToken">the cancellation token</param>
     /// <returns>true or false</returns>
-    Task<bool> PersistApprovalOfChangeRequest(Guid requestId, SystemUser toBeInserted, int userId, CancellationToken cancellationToken);
+    Task<bool> PersistApprovalOfChangeRequest(Guid requestId, SystemUserInternalDTO toBeInserted, int userId, CancellationToken cancellationToken);
 
     /// <summary>
     /// Retrieves a list of Status-Response-model for all ChangeRequests that the Vendor has
     /// </summary>    
     /// <param name="systemId">The chosen system</param>
+    /// <param name="continueFrom">The id of the first ChangeRequest to return; <see cref="Guid.Empty"/> for the first page</param>
+    /// <param name="pageSize">The page size</param>
     /// <param name="cancellationToken">The cancellationToken</param>
     /// <returns></returns>
-    Task<List<ChangeRequestResponse>> GetAllChangeRequestsBySystem(string systemId, CancellationToken cancellationToken);
+    Task<List<ChangeRequestResponse>> GetAllChangeRequestsBySystem(string systemId, Guid continueFrom, int pageSize, CancellationToken cancellationToken);
 
     /// <summary>
     /// Rejects the system user ChangeRequest

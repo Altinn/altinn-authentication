@@ -1,20 +1,23 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IdentityModel.Tokens.Jwt;
 using System.Linq;
+using System.Security.Authentication;
 using System.Security.Claims;
-using System.Security.Policy;
 using System.Text.RegularExpressions;
 using Altinn.Authentication.Core.Problems;
 using Altinn.Authorization.ProblemDetails;
 using Altinn.Platform.Authentication.Core.Constants;
 using Altinn.Platform.Authentication.Core.Models;
 using Altinn.Platform.Authentication.Core.Models.AccessPackages;
+using Altinn.Platform.Authentication.Core.Services.Interfaces;
 using Altinn.Platform.Authentication.Core.SystemRegister.Models;
 using Altinn.Platform.Authentication.Enum;
 using Altinn.Platform.Authentication.Model;
 using AltinnCore.Authentication.Constants;
 using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 
 #nullable enable
@@ -27,20 +30,48 @@ namespace Altinn.Platform.Authentication.Helpers
     public static class AuthenticationHelper
     {
         /// <summary>
+        /// The acr_values accepted when no configured catalogue is supplied. Derived from
+        /// ID-porten's built-in level table so there is a single source for it; the runtime
+        /// allow-list comes from <see cref="IAcrValueCatalog"/>, which is built from the
+        /// configured providers.
+        /// </summary>
+        private static readonly IReadOnlySet<string> AllowedAcrValues =
+            OidcAuthLevelDefaults.IdPorten.Select(l => l.Acr).ToHashSet(StringComparer.Ordinal);
+
+        /// <summary>
+        /// The required languages for system name.
+        /// </summary>
+        private static readonly string[] RequiredLanguages = ["nb", "nn", "en"];
+
+        /// <summary>
         /// Get user information from the token
         /// </summary>
         /// <param name="jwtSecurityToken">jwt token</param>
         /// <param name="provider">authentication provider</param>
+        /// <param name="accessToken">the access token</param>
         /// <returns>user information</returns>
-        public static UserAuthenticationModel GetUserFromToken(JwtSecurityToken jwtSecurityToken, OidcProvider provider)
+        /// <exception cref="AuthenticationException">
+        /// Thrown when the provider has <see cref="OidcProvider.RequireSyntheticPid"/>
+        /// set and the token does not carry a well-formed synthetic (Tenor)
+        /// fødselsnummer (including when no pid is present).
+        /// </exception>
+        /// <param name="logger">
+        /// Optional. Used only to report claim values the provider's configuration does not cover,
+        /// which otherwise degrade silently and look like a broken mapping.
+        /// </param>
+        public static UserAuthenticationModel GetUserFromToken(JwtSecurityToken jwtSecurityToken, OidcProvider provider, JwtSecurityToken? accessToken = null, ILogger? logger = null)
         {
             UserAuthenticationModel userAuthenticationModel = new UserAuthenticationModel()
             {
                 IsAuthenticated = true,
                 ProviderClaims = new Dictionary<string, List<string>>(),
                 Iss = provider.IssuerKey,
-                AuthenticationMethod = AuthenticationMethod.NotDefined
+                AuthenticationMethod = AuthenticationMethod.NotDefined,
+                TokenIssuer = jwtSecurityToken.Issuer,
+                TokenSubject = jwtSecurityToken.Subject
             };
+
+            OidcClaimMappings claimMappings = provider.ClaimMappings ?? new OidcClaimMappings();
 
             foreach (Claim claim in jwtSecurityToken.Claims)
             {
@@ -66,38 +97,92 @@ namespace Altinn.Platform.Authentication.Helpers
 
                 if (claim.Type.Equals(AltinnCoreClaimTypes.AuthenticateMethod))
                 {
-                    userAuthenticationModel.AuthenticationMethod = (Enum.AuthenticationMethod)System.Enum.Parse(typeof(Enum.AuthenticationMethod), claim.Value);
+                    if (System.Enum.TryParse<AuthenticationMethod>(claim.Value, ignoreCase: true, out var method))
+                    {
+                        userAuthenticationModel.AuthenticationMethod = method;
+                    }
+
                     continue;
                 }
 
                 if (claim.Type.Equals(AltinnCoreClaimTypes.AuthenticationLevel))
                 {
-                    userAuthenticationModel.AuthenticationLevel = (Enum.SecurityLevel)System.Enum.Parse(typeof(Enum.SecurityLevel), claim.Value);
+                    if (System.Enum.TryParse<SecurityLevel>(claim.Value, ignoreCase: true, out var level))
+                    {
+                        userAuthenticationModel.AuthenticationLevel = level;
+                    }
+
                     continue;
                 }
 
-                // ID-porten specific claims
-                if (claim.Type.Equals("pid"))
+                // Provider-mapped claims. Names default to ID-porten's (pid/acr/amr/email) and are
+                // overridden per provider for IdPs outside that convention — see OidcClaimMappings.
+                if (claim.Type.Equals(claimMappings.Email))
+                {
+                    userAuthenticationModel.Email = claim.Value.ToLowerInvariant();
+                    continue;
+                }
+
+                if (claim.Type.Equals(claimMappings.Pid))
                 {
                     userAuthenticationModel.SSN = claim.Value;
                     continue;
                 }
 
-                if (claim.Type.Equals("amr"))
+                if (claim.Type.Equals(claimMappings.AuthMethod))
                 {
-                    userAuthenticationModel.AuthenticationMethod = GetAuthenticationMethod(claim.Value);
+                    List<string> list = userAuthenticationModel.Amr?.ToList() ?? [];
+                    list.Add(claim.Value);
+                    userAuthenticationModel.Amr = [.. list];
+                    userAuthenticationModel.AuthenticationMethod = ResolveAuthenticationMethod(provider, list.First());
                     continue;
                 }
 
-                if (claim.Type.Equals("acr"))
+                if (claim.Type.Equals(claimMappings.AuthLevel))
                 {
-                    userAuthenticationModel.AuthenticationLevel = GetAuthenticationLevelForIdPorten(claim.Value);
+                    OidcAuthLevel? matchedLevel = MatchLevel(provider, claim.Value);
+
+                    if (matchedLevel is null)
+                    {
+                        // Silence here is what makes this look like a broken mapping rather than
+                        // an unmapped value: the sign-in succeeds, but at the lowest level, and
+                        // the user simply cannot reach anything. Say so once, with the value.
+                        logger?.LogWarning(
+                            "Authentication level claim '{LevelClaim}' from provider '{Provider}' carried value '{Value}', which matches no configured AuthLevels entry. The session falls back to the lowest level (SelfIdentifed = 0). Add the value to the ClaimValues of the appropriate level if this provider is expected to emit it.",
+                            claimMappings.AuthLevel,
+                            provider.IssuerKey,
+                            claim.Value);
+                    }
+
+                    // Store the Altinn-facing acr rather than the raw upstream value, so that
+                    // everything downstream (session, step-up, the emitted acr claim) speaks one
+                    // vocabulary regardless of which IdP authenticated the user. An unmatched
+                    // value is kept verbatim so it stays visible in the session and in audit.
+                    userAuthenticationModel.Acr = matchedLevel?.Acr ?? claim.Value;
+                    userAuthenticationModel.AuthenticationLevel = matchedLevel?.Level ?? SecurityLevel.SelfIdentifed;
+                    continue;
+                }
+
+                if (claim.Type.Equals("sid"))
+                {
+                    userAuthenticationModel.Sid = claim.Value;
+                    userAuthenticationModel.ExternalSessionId = claim.Value;
                     continue;
                 }
 
                 if (claim.Type.Equals("jti"))
                 {
-                    userAuthenticationModel.ExternalSessionId = claim.Value;
+                    userAuthenticationModel.Jti = claim.Value;
+                    continue;
+                }
+
+                if (claim.Type.Equals("auth_time"))
+                {
+                    if (long.TryParse(claim.Value, NumberStyles.Integer, CultureInfo.InvariantCulture, out var s))
+                    {
+                        userAuthenticationModel.AuthTime = DateTimeOffset.FromUnixTimeSeconds(s);
+                    }
+
                     continue;
                 }
 
@@ -109,18 +194,106 @@ namespace Altinn.Platform.Authentication.Helpers
                 // General claims handling
                 if (provider.ProviderClaims != null && provider.ProviderClaims.Contains(claim.Type))
                 {
-                    if (!userAuthenticationModel.ProviderClaims.ContainsKey(claim.Type))
+                    // Needs to special handle sub claim Since we are using it already. Prefixes it.
+                    string claimTypeName = claim.Type.ToString(); 
+                    if (claimTypeName.Equals("sub"))
                     {
-                        userAuthenticationModel.ProviderClaims.Add(claim.Type, new List<string>());
+                        claimTypeName = "provider:sub";
                     }
 
-                    userAuthenticationModel.ProviderClaims[claim.Type].Add(claim.Value);
+                    if (!userAuthenticationModel.ProviderClaims.TryGetValue(claimTypeName, out List<string>? value))
+                    {
+                        value = [];
+                        userAuthenticationModel.ProviderClaims.Add(claimTypeName, value);
+                    }
+
+                    value.Add(claim.Value);
                 }
             }
 
-            if (userAuthenticationModel.AuthenticationMethod == AuthenticationMethod.NotDefined)
+            if (userAuthenticationModel.AuthenticationMethod == AuthenticationMethod.NotDefined
+                && System.Enum.TryParse<AuthenticationMethod>(provider.DefaultAuthenticationMethod, ignoreCase: true, out var defaultMethod))
             {
-                userAuthenticationModel.AuthenticationMethod = (AuthenticationMethod)System.Enum.Parse(typeof(AuthenticationMethod), provider.DefaultAuthenticationMethod);
+                userAuthenticationModel.AuthenticationMethod = defaultMethod;
+            }
+
+            // Debug rather than Warning: an unmapped method is often deliberate. HelseID's
+            // 'idporten-oidc' is intentionally left unmapped because the eID behind it is not
+            // knowable, so warning on every such sign-in would be noise. The consequence is only
+            // that urn:altinn:authenticatemethod is omitted; access is governed by the level.
+            if (userAuthenticationModel.AuthenticationMethod == AuthenticationMethod.NotDefined
+                && userAuthenticationModel.Amr is { Length: > 0 } unresolvedAmr)
+            {
+                logger?.LogDebug(
+                    "Authentication method claim '{MethodClaim}' from provider '{Provider}' carried value '{Value}', which resolves to no AuthenticationMethod. The method claim is omitted from the issued tokens.",
+                    claimMappings.AuthMethod,
+                    provider.IssuerKey,
+                    unresolvedAmr[0]);
+            }
+
+            // Normalise Amr to Altinn's vocabulary so the resolved method survives token issuance.
+            //
+            // Only Amr is persisted on the session; the resolved AuthenticationMethod is not.
+            // ClaimsPrincipalBuilder re-derives the method from Amr[0] through the built-in
+            // ID-porten table and has no access to provider configuration, so a provider value
+            // such as HelseID's 'bankid-oidc' would resolve to NotDefined there and
+            // urn:altinn:authenticatemethod would be dropped from the issued tokens — leaving
+            // AuthMethodMappings effective for the audit log only.
+            //
+            // Rewriting here rather than persisting a second column keeps this schema-compatible.
+            //
+            // Restricted to providers that have opted into the configurable method vocabulary.
+            // Keying only on "the value does not resolve" would be too broad: an ID-porten amr
+            // value missing from the built-in table (MinIDTOTP, for instance, is in the enum but
+            // in neither mapping table) would be rewritten to the provider's default and the raw
+            // upstream value would be lost from the token. Providers that have not opted in keep
+            // their amr byte-for-byte, exactly as before.
+            //
+            // The raw upstream value remains available via ProviderClaims for providers that
+            // list the claim.
+            bool usesConfiguredMethodVocabulary =
+                provider.AuthMethodMappings is { Count: > 0 }
+                || !string.Equals(claimMappings.AuthMethod, "amr", StringComparison.Ordinal);
+
+            if (usesConfiguredMethodVocabulary
+                && userAuthenticationModel.AuthenticationMethod != AuthenticationMethod.NotDefined
+                && (userAuthenticationModel.Amr is null or { Length: 0 }
+                    || GetAuthenticationMethod(userAuthenticationModel.Amr[0]) == AuthenticationMethod.NotDefined))
+            {
+                string normalisedAmr = GetAmrFromAuthenticationMethod(userAuthenticationModel.AuthenticationMethod);
+                if (!string.IsNullOrEmpty(normalisedAmr))
+                {
+                    userAuthenticationModel.Amr = [normalisedAmr];
+                }
+            }
+
+            if (accessToken != null)
+            {
+                foreach (Claim claim in accessToken.Claims)
+                {
+                    // Scopes are only returned as part of the access token
+                    if (claim.Type.Equals("scope"))
+                    {
+                        userAuthenticationModel.Scope = claim.Value;
+                        continue;
+                    }
+                }
+            }
+
+            // Authoritative synthetic-only gate. A provider configured as test-only
+            // (e.g. mockporten) may authenticate ONLY synthetic (Tenor) test
+            // persons: a token whose pid is not a well-formed synthetic
+            // fødselsnummer — including a token with no pid at all — is rejected,
+            // so neither an ordinary national identity number nor a non-pid identity
+            // can be authenticated through that provider, regardless of what the
+            // upstream IdP asserts. This throws (rather than returning a
+            // not-authenticated model) so the request is guaranteed to abort and
+            // cannot be mishandled downstream. See issue #1409 / #1983.
+            if (provider.RequireSyntheticPid
+                && !SyntheticPersonIdentifier.IsSyntheticTenor(userAuthenticationModel.SSN))
+            {
+                throw new AuthenticationException(
+                    "this provider only allows synthetic (Tenor) test persons; a valid synthetic pid is required");
             }
 
             return userAuthenticationModel;
@@ -133,17 +306,104 @@ namespace Altinn.Platform.Authentication.Helpers
         /// </summary>
         public static SecurityLevel GetAuthenticationLevelForIdPorten(string acr)
         {
-            switch (acr)
+            switch (acr.ToLower(CultureInfo.InvariantCulture))
             {
-                case "Level0":
-                    return Enum.SecurityLevel.NotSensitive;
-                case "Level3":
-                    return Enum.SecurityLevel.Sensitive;
-                case "Level4":
-                    return Enum.SecurityLevel.VerySensitive;
+                case "level0":
+                case "selfregistered-email":
+                case "idporten-loa-low":
+                    return SecurityLevel.SelfIdentifed;
+                case "level1":
+                    return SecurityLevel.NotSensitive;
+                case "level2":
+                    return SecurityLevel.QuiteSensitive;
+                case "level3":
+                case "idporten-loa-substantial":
+                    return SecurityLevel.Sensitive;
+                case "level4":
+                case "idporten-loa-high":
+                    return SecurityLevel.VerySensitive;
                 default:
-                    return Enum.SecurityLevel.NotSensitive;
+                    return SecurityLevel.SelfIdentifed;
             }
+        }
+
+        /// <summary>
+        /// Resolves the value of a provider's authentication-level claim to the Altinn-facing acr
+        /// value configured for it.
+        /// </summary>
+        /// <remarks>
+        /// For ID-porten the claim value already <em>is</em> the acr, so this is an identity
+        /// mapping. For a provider like HelseID, whose level claim carries <c>"4"</c>, this is
+        /// what turns that into a meaningful acr. Falls back to the raw value when nothing
+        /// matches, so an unmapped provider value is at least visible in logs and audit rather
+        /// than silently dropped.
+        /// </remarks>
+        public static string ResolveAcr(OidcProvider provider, string claimValue)
+        {
+            OidcAuthLevel? match = MatchLevel(provider, claimValue);
+            return match?.Acr ?? claimValue;
+        }
+
+        /// <summary>
+        /// Resolves the value of a provider's authentication-level claim to a normalised Altinn
+        /// <see cref="SecurityLevel"/>.
+        /// </summary>
+        public static SecurityLevel ResolveAuthenticationLevel(OidcProvider provider, string claimValue)
+        {
+            OidcAuthLevel? match = MatchLevel(provider, claimValue);
+
+            // Unknown values stay at the lowest level. This is the safe direction: an
+            // unrecognised level must never be treated as a high one.
+            return match?.Level ?? SecurityLevel.SelfIdentifed;
+        }
+
+        /// <summary>
+        /// Resolves the value of a provider's authentication-method claim to an Altinn
+        /// <see cref="AuthenticationMethod"/>, using the provider's configured mappings and
+        /// falling back to its <see cref="OidcProvider.DefaultAuthenticationMethod"/>.
+        /// </summary>
+        public static AuthenticationMethod ResolveAuthenticationMethod(OidcProvider provider, string claimValue)
+        {
+            if (provider.AuthMethodMappings is { Count: > 0 } mappings)
+            {
+                foreach (KeyValuePair<string, string> kvp in mappings)
+                {
+                    if (kvp.Key.Equals(claimValue, StringComparison.OrdinalIgnoreCase)
+                        && System.Enum.TryParse<AuthenticationMethod>(kvp.Value, ignoreCase: true, out var mapped))
+                    {
+                        return mapped;
+                    }
+                }
+            }
+            else
+            {
+                AuthenticationMethod builtIn = GetAuthenticationMethod(claimValue);
+                if (builtIn != AuthenticationMethod.NotDefined)
+                {
+                    return builtIn;
+                }
+            }
+
+            // Deliberately NotDefined rather than a guess: the caller applies the provider's
+            // configured default, and ClaimsPrincipalBuilder must not emit "NotDefined" as a
+            // literal claim value.
+            return AuthenticationMethod.NotDefined;
+        }
+
+        private static OidcAuthLevel? MatchLevel(OidcProvider provider, string claimValue)
+        {
+            foreach (OidcAuthLevel level in OidcAuthLevelDefaults.For(provider))
+            {
+                foreach (string candidate in level.ClaimValues)
+                {
+                    if (candidate.Equals(claimValue, StringComparison.OrdinalIgnoreCase))
+                    {
+                        return level;
+                    }
+                }
+            }
+
+            return null;
         }
 
         /// <summary>
@@ -169,11 +429,67 @@ namespace Altinn.Platform.Authentication.Helpers
                     return Enum.AuthenticationMethod.EIDAS;
                 case "maskinporten":
                     return Enum.AuthenticationMethod.MaskinPorten;
-                case "testid":
+                case "Selfregistered-email":
+                    return AuthenticationMethod.IdportenEpost;
+                case "TestID":
                     return AuthenticationMethod.IdportenTestId;
+                case "SelfIdentified":
+                    return AuthenticationMethod.SelfIdentified;
+                case "StaticPassword":
+                    return AuthenticationMethod.StaticPassword;
+                case "Minid-APP":
+                    return AuthenticationMethod.MinIDApp;
             }
 
             return Enum.AuthenticationMethod.NotDefined;
+        }
+
+        /// <summary>
+        /// Maps the specified <see cref="AuthenticationMethod"/> to its corresponding Authentication Method Reference
+        /// (AMR) value.
+        /// </summary>
+        /// <param name="method">The authentication method to map.</param>
+        /// <returns>A string representing the AMR value for the specified authentication method.  Returns an empty string if the
+        /// authentication method is not recognized.</returns>
+        public static string GetAmrFromAuthenticationMethod(AuthenticationMethod method)
+        {
+            return method switch
+            {
+                AuthenticationMethod.MinIDPin => "Minid-PIN",
+                AuthenticationMethod.MinIDOTC => "Minid-OTC",
+                AuthenticationMethod.Commfides => "Commfides",
+                AuthenticationMethod.BuyPass => "Buypass",
+                AuthenticationMethod.BankID => "BankID",
+                AuthenticationMethod.BankIDMobil => "BankID Mobil",
+                AuthenticationMethod.EIDAS => "eIDAS",
+                AuthenticationMethod.MaskinPorten => "maskinporten",
+                AuthenticationMethod.IdportenTestId => "TestID",
+                AuthenticationMethod.AltinnPIN => "AltinnPIN",
+                AuthenticationMethod.SelfIdentified => "SelfIdentified",
+                AuthenticationMethod.MinIDApp => "Minid-APP",
+                AuthenticationMethod.StaticPassword => "StaticPassword",
+                AuthenticationMethod.SMSPIN => "SMSPIN",
+                _ => string.Empty
+            };
+        }
+
+        /// <summary>
+        /// Inverse of GetAuthenticationLevelForIdPorten.
+        /// Maps a SecurityLevel to a canonical ID-porten acr value.
+        /// </summary>
+        /// <param name="level">The Altinn security level.</param>
+        /// <returns>Canonical acr string representing the given level.</returns>
+        public static string GetAcrForAuthenticationLevel(SecurityLevel level)
+        {
+            return level switch
+            {
+                SecurityLevel.SelfIdentifed => "idporten-loa-low",
+                SecurityLevel.Sensitive => "idporten-loa-substantial",
+                SecurityLevel.VerySensitive => "idporten-loa-high",
+                SecurityLevel.NotSensitive => "level1",
+                SecurityLevel.QuiteSensitive => "level2",
+                _ => "idporten-loa-low" // Fallback for levels without direct ID-porten mapping
+            };
         }
 
         /// <summary>
@@ -407,6 +723,38 @@ namespace Altinn.Platform.Authentication.Helpers
         }
 
         /// <summary>
+        /// Gets the users id
+        /// </summary>
+        /// <param name="context">the http context</param>
+        /// <returns>the logged in users id</returns>
+        public static Guid GetPartyUuId(HttpContext context)
+        {
+            var claim = context.User?.Claims.FirstOrDefault(c => c.Type.Equals(AltinnCoreClaimTypes.PartyUUID));
+            if (claim != null && Guid.TryParse(claim.Value, out Guid partyUuId))
+            {
+                return partyUuId;
+            }
+
+            return Guid.Empty;
+        }
+
+        /// <summary>
+        /// Gets the users id
+        /// </summary>
+        /// <param name="context">the http context</param>
+        /// <returns>the logged in users id</returns>
+        public static int GetPartyId(HttpContext context)
+        {
+            var claim = context.User?.Claims.FirstOrDefault(c => c.Type.Equals(AltinnCoreClaimTypes.PartyID));
+            if (claim != null && int.TryParse(claim.Value, out int partyId))
+            {
+                return partyId;
+            }
+
+            return 0;
+        }
+
+        /// <summary>
         /// Validate the resource id attribute "id"
         /// </summary>
         /// <param name="rights">the resources that the system gives rights to</param>
@@ -511,13 +859,149 @@ namespace Altinn.Platform.Authentication.Helpers
         }
 
         /// <summary>
+        /// Check if the system name is provided for all languages
+        /// </summary>
+        /// <param name="name">The name of the system</param>
+        /// <returns>True if the system has name in all languages</returns>
+        public static bool HasNameInAllLanguages(IDictionary<string, string> name)
+        {
+            return name is not null && RequiredLanguages.All(lang => name.TryGetValue(lang, out var value) && !string.IsNullOrWhiteSpace(value));
+        }
+
+        /// <summary>
+        /// Check if the system description is provided for all languages
+        /// </summary>
+        /// <param name="description">The description of the system</param>
+        /// <returns>True if the system has description in all languages</returns>
+        public static bool HasDescriptionInAllLanguages(IDictionary<string, string> description)
+        {
+            return description is not null && RequiredLanguages.All(lang => description.TryGetValue(lang, out var value) && !string.IsNullOrWhiteSpace(value));
+        }
+
+        /// <summary>
         /// check if the system id contains space
         /// </summary>
         /// <param name="systemId">the id of the system</param>
-        /// <returns>true id the systemid contains space</returns>
+        /// <returns>true if the systemid contains space</returns>
         public static bool HasSpaceInId(string systemId)
         {
             return systemId.Contains(' ');
+        }
+
+        /// <summary>
+        /// Converts a list of <see cref="AccessPackage"/> objects into a list of their URNs.
+        /// </summary>
+        /// <param name="accessPackages">The list of <see cref="AccessPackage"/> objects to process. Cannot be null.</param>
+        /// <returns>A list of strings containing the URNs of the provided <see cref="AccessPackage"/> objects.  Returns an empty
+        /// list if <paramref name="accessPackages"/> is empty.</returns>
+        public static List<string> GetPackagesArrayFromAccessPackages(List<AccessPackage> accessPackages)
+        {
+            List<string> packages = new List<string>();
+            if (accessPackages == null || accessPackages.Count == 0)
+            {
+                return packages;
+            }
+
+            foreach (AccessPackage accessPackage in accessPackages)
+            {
+                packages.Add(accessPackage.Urn!.Split(':')[3]);
+            }
+
+            return packages;
+        }
+
+        /// <summary>
+        /// Maps a <see cref="SystemUserInternalDTO"/> to a <see cref="SystemUserDetailExternalDTO"/>.
+        /// </summary>
+        /// <param name="internalDto">The internal DTO containing system user data to be mapped. Cannot be null.</param>
+        /// <returns>A <see cref="SystemUserDetailExternalDTO"/> populated with data from the specified <paramref name="internalDto"/>.</returns>
+        public static SystemUserDetailExternalDTO MapSystemUserInternalToDetailDTO(SystemUserInternalDTO internalDto)
+        {
+            return new SystemUserDetailExternalDTO
+            {
+                Id = internalDto.Id,
+                IntegrationTitle = internalDto.IntegrationTitle,
+                SystemId = internalDto.SystemId,
+                ProductName = internalDto.ProductName,
+                ReporteeOrgNo = internalDto.ReporteeOrgNo,
+                Created = internalDto.Created,
+                IsDeleted = internalDto.IsDeleted,
+                AccessPackages = internalDto.AccessPackages,
+                ExternalRef = internalDto.ExternalRef,
+                SupplierName = internalDto.SupplierName,
+                SupplierOrgNo = internalDto.SupplierOrgNo,
+                UserType = internalDto.UserType
+            };
+        }
+
+        /// <summary>
+        /// Verifies if an ACR upgrade is needed, by comparing the session's normalised
+        /// authentication level against the highest level requested.
+        /// </summary>
+        /// <remarks>
+        /// Compares levels rather than acr strings. The previous string comparison against
+        /// <c>idporten-loa-high</c> could not express "this session is high enough" for any
+        /// provider using a different vocabulary, and its <c>currentAcr is null =&gt; no upgrade</c>
+        /// guard was fail-open: a session carrying no acr — which is every session from a provider
+        /// that does not emit one, such as HelseID — satisfied a request for any level.
+        /// </remarks>
+        public static bool NeedAcrUpgrade(string? currentAcr, string[] requestedAcr, IAcrValueCatalog catalog)
+        {
+            int? requestedLevel = catalog.GetRequestedLevel(requestedAcr);
+            if (requestedLevel is null)
+            {
+                // Nothing meaningful requested — any existing session will do.
+                return false;
+            }
+
+            if (!catalog.TryGetLevel(currentAcr, out int currentLevel))
+            {
+                // The session carries no level we can resolve. Step up whenever anything above
+                // the lowest level was asked for; requests for level 0 still reuse the session,
+                // so this cannot introduce a redirect loop on the self-registered path.
+                return requestedLevel > (int)SecurityLevel.SelfIdentifed;
+            }
+
+            return currentLevel < requestedLevel;
+        }
+
+        /// <summary>
+        /// Parses and validates a space-separated <c>acr_values</c> string from the public authentication
+        /// entry point against the allowed set.
+        /// </summary>
+        /// <param name="raw">The raw, space-separated acr_values query value. Null/empty is valid (no level requested).</param>
+        /// <param name="catalog">The configured acr catalogue that defines what is accepted.</param>
+        /// <param name="values">The parsed acr values, or an empty array when none were requested or validation failed.</param>
+        /// <returns><c>true</c> when the input is absent or contains only allowed values; otherwise <c>false</c>.</returns>
+        public static bool TryParseAcrValues(string? raw, IAcrValueCatalog catalog, out string[] values)
+            => TryParseAcrValues(raw, catalog.AllowedAcrValues, out values);
+
+        /// <summary>
+        /// Overload validating against ID-porten's built-in level table. Retained for callers and
+        /// tests that predate configurable providers.
+        /// </summary>
+        public static bool TryParseAcrValues(string? raw, out string[] values)
+            => TryParseAcrValues(raw, AllowedAcrValues, out values);
+
+        private static bool TryParseAcrValues(string? raw, IReadOnlySet<string> allowed, out string[] values)
+        {
+            values = Array.Empty<string>();
+            if (string.IsNullOrWhiteSpace(raw))
+            {
+                return true;
+            }
+
+            string[] parsed = raw.Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+            foreach (string v in parsed)
+            {
+                if (!allowed.Contains(v))
+                {
+                    return false;
+                }
+            }
+
+            values = parsed;
+            return true;
         }
     }
 }

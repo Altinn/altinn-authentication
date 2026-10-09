@@ -64,5 +64,25 @@ namespace AltinnCore.Authentication.Constants
         /// The org number.
         /// </summary>
         public const string OrgNumber = "urn:altinn:orgNumber";
+
+        /// <summary>
+        /// The person identifier (ssn).
+        /// </summary>
+        public const string PersonIdentifier = "urn:altinn:person:identifier-no";
+
+        /// <summary>
+        /// Defines the prefix for email claim from ID-Porten when stored as external identity.
+        /// </summary>
+        public const string IdPortenEmailPrefix = "urn:altinn:person:idporten-email";
+
+        /// <summary>
+        /// Email claim type. What we get from ID-Porten for selfidentifed email users.
+        /// </summary>
+        public const string Email = "email";
+
+        /// <summary>
+        /// Urn claim type for external identifier. The value will contain information about which external identity provider
+        /// </summary>
+        public const string ExternalIdentifier = "urn:altinn:party:external-identifier";
     }
 }

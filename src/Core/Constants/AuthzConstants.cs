@@ -37,6 +37,21 @@ namespace Altinn.Platform.Authentication.Core.Constants
         public const string CLAIM_MASKINPORTEN_CONSUMER_PREFIX = "consumer_prefix";
 
         /// <summary>
+        /// Policy tag for reading system user overview
+        /// </summary>
+        public const string POLICY_SYSTEMUSER_OVERVIEW_READ = "SystemUserOverviewRead";
+
+        /// <summary>
+        /// Policy tag for reading client administration
+        /// </summary>
+        public const string POLICY_CLIENT_ADMINISTRATION_READ = "ClientAdministrationRead";
+
+        /// <summary>
+        /// Policy tag for writing client administration
+        /// </summary>
+        public const string POLICY_CLIENT_ADMINISTRATION_WRITE = "ClientAdministrationWrite";
+
+        /// <summary>
         /// Policy tag for reading access management information
         /// </summary>
         public const string POLICY_ACCESS_MANAGEMENT_READ = "AccessManagementRead";
@@ -95,5 +110,46 @@ namespace Altinn.Platform.Authentication.Core.Constants
         /// Used for internal SystemUser APIs
         /// </summary>
         public const string SCOPE_INTERNAL_OR_PLATFORM_ACCESS = "altinn:authentication/systemuser.admin";
+
+        /// <summary>
+        /// Issuer when session is created based on Altinn 2 Ticket
+        /// </summary>
+        public const string ISSUER_ALTINN_PORTAL = "SBL";
+
+        /// <summary>
+        /// Policy tag for reading client delegation information
+        /// </summary>
+        public const string POLICY_CLIENTDELEGATION_READ = "ClientDelegationRead";
+
+        /// <summary>
+        /// Scope for reading client delegation information
+        /// </summary>
+        public const string SCOPE_CLIENTDELEGATION_READ = "altinn:clientdelegations.read";
+
+        /// <summary>
+        /// Policy tag for writing client delegation information
+        /// </summary>
+        public const string POLICY_CLIENTDELEGATION_WRITE = "ClientDelegationWrite";
+
+        /// <summary>
+        /// Scope for writing client delegation information
+        /// </summary>
+        public const string SCOPE_CLIENTDELEGATION_WRITE = "altinn:clientdelegations.write";
+
+        /// <summary>
+        /// Represents the AMR claim for ID-Porten self registered email authentication
+        /// </summary>
+        public const string CLAIM_AMR_IDPORTEN_EMAIL = "Selfregistered-email";
+
+        /// <summary>
+        /// Represents the ACR claim for ID-Porten self registered email authentication 
+        /// </summary>
+        public const string CLAIM_ACR_IDPORTEN_EMAIL = "selfregistered-email";
+
+        /// <summary>
+        /// Represents the claim type for the 'idporten-loa-substantial' authentication context class reference (ACR)
+        /// used in ID-porten authentication.
+        /// </summary>
+        public const string CLAIM_ACR_IDPORTEN_SUBSTANTIAL = "idporten-loa-substantial";
     }
 }

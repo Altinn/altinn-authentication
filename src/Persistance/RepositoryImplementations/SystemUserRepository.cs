@@ -22,7 +22,7 @@ public class SystemUserRepository : ISystemUserRepository
 {
     private readonly NpgsqlDataSource _dataSource;
     private readonly ILogger _logger;
-    
+
     /// <summary>
     /// SystemUserRepository Constructor
     /// </summary>
@@ -52,17 +52,17 @@ public class SystemUserRepository : ISystemUserRepository
             command.Parameters.AddWithValue("system_user_profile_id", id);
 
             await command.ExecuteEnumerableAsync()
-                .SelectAwait(NpgSqlExtensions.ConvertFromReaderToBoolean)   
+                .Select(NpgSqlExtensions.ConvertFromReaderToBoolean)
                 .FirstOrDefaultAsync();
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Authentication // SystemUserRepository // SetDeleteSystemUserById // Exception");            
+            _logger.LogError(ex, "Authentication // SystemUserRepository // SetDeleteSystemUserById // Exception");
         }
     }
 
     /// <inheritdoc />
-    public async Task<List<SystemUser>> GetAllActiveSystemUsersForParty(int partyId)
+    public async Task<List<SystemUserInternalDTO>> GetAllActiveSystemUsersForParty(int partyId)
     {
         const string QUERY = /*strpsql*/@"
             SELECT 
@@ -74,6 +74,7 @@ public class SystemUserRepository : ISystemUserRepository
                 sui.reportee_org_no,
 		        sui.reportee_party_id,
 		        sui.created,
+                sui.last_changed,
                 sui.external_ref,
                 sui.systemuser_type,
                 sui.accesspackages,
@@ -94,7 +95,7 @@ public class SystemUserRepository : ISystemUserRepository
             command.Parameters.Add<SystemUserType>("systemuser_type").TypedValue = SystemUserType.Standard;
 
             IAsyncEnumerable<NpgsqlDataReader> list = command.ExecuteEnumerableAsync();
-            return await list.SelectAwait(ConvertFromReaderToSystemUser).ToListAsync();
+            return await list.Select(ConvertFromReaderToSystemUser).ToListAsync();
         }
         catch (Exception ex)
         {
@@ -104,7 +105,7 @@ public class SystemUserRepository : ISystemUserRepository
     }
 
     /// <inheritdoc />
-    public async Task<List<SystemUser>> GetAllActiveAgentSystemUsersForParty(int partyId)
+    public async Task<List<SystemUserInternalDTO>> GetAllActiveAgentSystemUsersForParty(int partyId)
     {
         const string QUERY = /*strpsql*/@"
             SELECT 
@@ -116,6 +117,7 @@ public class SystemUserRepository : ISystemUserRepository
                 sui.reportee_org_no,
 		        sui.reportee_party_id,
 		        sui.created,
+                sui.last_changed,
                 sui.external_ref,
                 sui.systemuser_type,
                 sui.accesspackages,
@@ -136,7 +138,7 @@ public class SystemUserRepository : ISystemUserRepository
             command.Parameters.Add<SystemUserType>("systemuser_type").TypedValue = SystemUserType.Agent;
 
             IAsyncEnumerable<NpgsqlDataReader> list = command.ExecuteEnumerableAsync();
-            return await list.SelectAwait(ConvertFromReaderToSystemUser).ToListAsync();
+            return await list.Select(ConvertFromReaderToSystemUser).ToListAsync();
         }
         catch (Exception ex)
         {
@@ -146,7 +148,7 @@ public class SystemUserRepository : ISystemUserRepository
     }
 
     /// <inheritdoc />
-    public async Task<SystemUser?> GetSystemUserById(Guid id)
+    public async Task<SystemUserInternalDTO?> GetSystemUserById(Guid id)
     {
         const string QUERY = /*strpsql*/@"
             SELECT 
@@ -158,6 +160,7 @@ public class SystemUserRepository : ISystemUserRepository
                 sui.reportee_org_no,
 		        sui.reportee_party_id,
 		        sui.created,
+                sui.last_changed,
                 sui.external_ref,
                 sui.systemuser_type,
                 sui.accesspackages,
@@ -175,7 +178,7 @@ public class SystemUserRepository : ISystemUserRepository
             command.Parameters.AddWithValue("system_user_profile_id", id);
 
             return await command.ExecuteEnumerableAsync()
-                .SelectAwait(ConvertFromReaderToSystemUser)
+                .Select(ConvertFromReaderToSystemUser)
                 .FirstOrDefaultAsync();
         }
         catch (Exception ex)
@@ -186,7 +189,7 @@ public class SystemUserRepository : ISystemUserRepository
     }
 
     /// <inheritdoc />
-    public async Task<SystemUser?> GetSystemUserByExternalRequestId(ExternalRequestId externalRequestId)
+    public async Task<SystemUserInternalDTO?> GetSystemUserByExternalRequestId(ExternalRequestId externalRequestId)
     {
         const string QUERY = /*strpsql*/"""
             SELECT 
@@ -198,6 +201,7 @@ public class SystemUserRepository : ISystemUserRepository
                 sui.reportee_org_no,
                 sui.reportee_party_id,
                 sui.created,
+                sui.last_changed,
                 sui.external_ref,
                 sui.systemuser_type,
                 sui.accesspackages,
@@ -220,7 +224,7 @@ public class SystemUserRepository : ISystemUserRepository
             command.Parameters.AddWithValue("reportee_org_no", externalRequestId.OrgNo);
 
             return await command.ExecuteEnumerableAsync()
-                .SelectAwait(ConvertFromReaderToSystemUser)
+                .Select(ConvertFromReaderToSystemUser)
                 .FirstOrDefaultAsync();
         }
         catch (Exception ex)
@@ -231,12 +235,12 @@ public class SystemUserRepository : ISystemUserRepository
     }
 
     /// <inheritdoc />
-    public async Task<Guid?> InsertSystemUser(SystemUser toBeInserted, int userId)
+    public async Task<Guid?> InsertSystemUser(SystemUserInternalDTO toBeInserted, int userId)
     {
-        if (string.IsNullOrEmpty(toBeInserted.Id) || !Guid.TryParse(toBeInserted.Id, out _))    
+        if (string.IsNullOrEmpty(toBeInserted.Id) || !Guid.TryParse(toBeInserted.Id, out _))
         {
             toBeInserted.Id = Guid.NewGuid().ToString();
-        }        
+        }
 
         const string QUERY = /*strpsql*/@"            
                 INSERT INTO business_application.system_user_profile(
@@ -279,11 +283,11 @@ public class SystemUserRepository : ISystemUserRepository
             command.Parameters.AddWithValue("created_by", createdBy);
             command.Parameters.AddWithValue("external_ref", ext_ref);
             command.Parameters.Add(new("accesspackages", NpgsqlDbType.Jsonb) { Value = (toBeInserted.AccessPackages == null) ? DBNull.Value : toBeInserted.AccessPackages });
-            
+
             command.Parameters.Add<SystemUserType>("systemuser_type").TypedValue = toBeInserted.UserType;
 
             return await command.ExecuteEnumerableAsync()
-                .SelectAwait(ConvertFromReaderToGuid)
+                .Select(ConvertFromReaderToGuid)
                 .FirstOrDefaultAsync();
         }
         catch (Exception ex)
@@ -310,7 +314,7 @@ public class SystemUserRepository : ISystemUserRepository
             command.Parameters.AddWithValue("integration_title", integrationTitle);
 
             return await command.ExecuteEnumerableAsync()
-                .SelectAwait(ConvertFromReaderToInt)
+                .Select(ConvertFromReaderToInt)
                 .FirstOrDefaultAsync();
         }
         catch (Exception ex)
@@ -322,13 +326,13 @@ public class SystemUserRepository : ISystemUserRepository
     }
 
     /// <inheritdoc />
-    public async Task<SystemUser?> CheckIfPartyHasIntegration(
-        string clientId, 
-        string systemProviderOrgNo, 
+    public async Task<SystemUserInternalDTO?> CheckIfPartyHasIntegration(
+        string clientId,
+        string systemProviderOrgNo,
         string systemUserOwnerOrgNo,
         string externalRef,
         CancellationToken cancellationToken)
-    {      
+    {
         const string QUERY = /*strpsql*/@"
             SELECT 
                 system_user_profile_id,
@@ -338,6 +342,7 @@ public class SystemUserRepository : ISystemUserRepository
                 sui.system_internal_id,
                 reportee_party_id,
                 sui.created,
+                sui.last_changed,
                 systemvendor_orgnumber,
                 external_ref,
                 sui.systemuser_type,
@@ -363,28 +368,28 @@ public class SystemUserRepository : ISystemUserRepository
             command.Parameters.AddWithValue("systemVendorOrgno", systemProviderOrgNo);
             command.Parameters.AddWithValue("external_ref", externalRef);
 
-            return await command.ExecuteEnumerableAsync()
-                .SelectAwait(ConvertFromReaderToSystemUser)
-                .FirstOrDefaultAsync();
+            return await command.ExecuteEnumerableAsync(cancellationToken)
+                .Select(ConvertFromReaderToSystemUser)
+                .FirstOrDefaultAsync(cancellationToken);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Authentication // SystemUserRepository // CheckIfPartyHasIntegration // Exception");
             throw;
         }
-    }    
-
-    private ValueTask<int> ConvertFromReaderToInt(NpgsqlDataReader reader)
-    {
-        return new ValueTask<int>(reader.GetFieldValue<int>(0));
     }
 
-    private ValueTask<Guid> ConvertFromReaderToGuid(NpgsqlDataReader reader)
+    private ValueTask<int> ConvertFromReaderToInt(NpgsqlDataReader reader, CancellationToken cancellationToken = default)
     {
-        return new ValueTask<Guid>(reader.GetFieldValue<Guid>(0));
+        return new ValueTask<int>(reader.GetFieldValueAsync<int>(0, cancellationToken));
     }
 
-    private static ValueTask<SystemUser> ConvertFromReaderToSystemUser(NpgsqlDataReader reader)
+    private ValueTask<Guid> ConvertFromReaderToGuid(NpgsqlDataReader reader, CancellationToken cancellationToken = default)
+    {
+        return new ValueTask<Guid>(reader.GetFieldValueAsync<Guid>(0, cancellationToken));
+    }
+
+    private static SystemUserInternalDTO ConvertFromReaderToSystemUser(NpgsqlDataReader reader)
     {
         string? external_ref = reader.GetFieldValue<string>("external_ref");
         string orgno = reader.GetFieldValue<string>("reportee_org_no");
@@ -392,7 +397,7 @@ public class SystemUserRepository : ISystemUserRepository
         List<AccessPackage> accessPackages = reader.IsDBNull("accesspackages") ? [] : reader.GetFieldValue<List<AccessPackage>>("accesspackages");
         SystemUserType systemUserType = reader.IsDBNull("systemuser_type") ? SystemUserType.Standard : reader.GetFieldValue<SystemUserType>("systemuser_type");
 
-        return new ValueTask<SystemUser>(new SystemUser
+        return new SystemUserInternalDTO
         {
             Id = reader.GetFieldValue<Guid>("system_user_profile_id").ToString(),
             SystemInternalId = reader.GetFieldValue<Guid>("system_internal_id"),
@@ -401,16 +406,17 @@ public class SystemUserRepository : ISystemUserRepository
             PartyId = reader.GetFieldValue<string>("reportee_party_id"),
             IntegrationTitle = reader.GetFieldValue<string>("integration_title"),
             Created = reader.GetFieldValue<DateTime>("created"),
+            LastChanged = reader.GetFieldValue<DateTime>("last_changed"),
             SupplierOrgNo = reader.GetFieldValue<string>("systemvendor_orgnumber"),
             ExternalRef = external_ref ?? orgno,
             UserType = systemUserType,
             AccessPackages = accessPackages,
             SequenceNo = reader.GetFieldValue<long>("sequence_no")
-        });
+        };
     }
 
     /// <inheritdoc />
-    public async Task<List<SystemUser>?> GetAllSystemUsersByVendorSystem(string systemId, long sequenceFrom, int pageSize, CancellationToken cancellationToken)
+    public async Task<List<SystemUserInternalDTO>?> GetAllSystemUsersByVendorSystem(string systemId, long sequenceFrom, int pageSize, CancellationToken cancellationToken)
     {
         const string QUERY = /*strpsql*/@"
             SELECT 
@@ -422,6 +428,7 @@ public class SystemUserRepository : ISystemUserRepository
                 sui.reportee_org_no,
 		        sui.reportee_party_id,
 		        sui.created,
+                sui.last_changed,
                 sui.external_ref,
                 sui.systemuser_type,
                 sui.accesspackages,
@@ -444,7 +451,7 @@ public class SystemUserRepository : ISystemUserRepository
             command.Parameters.AddWithValue("limit", pageSize + 1);
 
             return await command.ExecuteEnumerableAsync(cancellationToken)
-                .SelectAwait(ConvertFromReaderToSystemUser)
+                .Select(ConvertFromReaderToSystemUser)
                 .ToListAsync(cancellationToken);
         }
         catch (Exception ex)
@@ -455,7 +462,7 @@ public class SystemUserRepository : ISystemUserRepository
     }
 
     /// <inheritdoc />
-    public async Task<bool> ChangeSystemUser(SystemUser toBeChanged, int userId)
+    public async Task<bool> ChangeSystemUser(SystemUserInternalDTO toBeChanged, int userId)
     {
         const string QUERY = /*strpsql*/@"
                 UPDATE business_application.system_user_profile
@@ -505,7 +512,7 @@ public class SystemUserRepository : ISystemUserRepository
         {
             _logger.LogError(ex, "Authentication // SystemUserRepository // GetSystemUserSequenceNo // Exception");
             throw;
-        }        
+        }
     }
 
     /// <inheritdoc />
@@ -542,7 +549,7 @@ public class SystemUserRepository : ISystemUserRepository
             command.Parameters.AddWithValue("limit", limit);
 
             return await command.ExecuteEnumerableAsync(cancellationToken)
-                .SelectAwait(ConvertFromReaderToSystemUserRegisterDTO)
+                .Select(ConvertFromReaderToSystemUserRegisterDTO)
                 .ToListAsync(cancellationToken);
         }
         catch (Exception ex)
@@ -552,11 +559,11 @@ public class SystemUserRepository : ISystemUserRepository
         }
     }
 
-    private static ValueTask<SystemUserRegisterDTO> ConvertFromReaderToSystemUserRegisterDTO(NpgsqlDataReader reader)
+    private static SystemUserRegisterDTO ConvertFromReaderToSystemUserRegisterDTO(NpgsqlDataReader reader)
     {
         SystemUserType systemUserType = reader.IsDBNull("systemuser_type") ? SystemUserType.Standard : reader.GetFieldValue<SystemUserType>("systemuser_type");
 
-        return new ValueTask<SystemUserRegisterDTO>(new SystemUserRegisterDTO
+        return new SystemUserRegisterDTO
         {
             Id = reader.GetFieldValue<Guid>("system_user_profile_id").ToString(),
             IntegrationTitle = reader.GetFieldValue<string>("integration_title"),
@@ -567,6 +574,6 @@ public class SystemUserRepository : ISystemUserRepository
             SystemUserType = systemUserType,
             PartyOrgNo = reader.GetFieldValue<string>("reportee_org_no"),
             PartyId = reader.GetFieldValue<string>("reportee_party_id"),
-        });
+        };
     }
 }

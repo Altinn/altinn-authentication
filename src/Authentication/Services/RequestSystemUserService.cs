@@ -1,8 +1,9 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Security.Claims;
 using System.Threading;
 using System.Threading.Tasks;
+using Altinn.AccessManagement.Core.Helpers;
 using Altinn.Authentication.Core.Clients.Interfaces;
 using Altinn.Authentication.Core.Problems;
 using Altinn.Authorization.ABAC.Xacml.JsonProfile;
@@ -17,8 +18,9 @@ using Altinn.Platform.Authentication.Core.Models.SystemUsers;
 using Altinn.Platform.Authentication.Core.RepositoryInterfaces;
 using Altinn.Platform.Authentication.Core.SystemRegister.Models;
 using Altinn.Platform.Authentication.Helpers;
+using Altinn.Platform.Authentication.Integration.AccessManagement;
 using Altinn.Platform.Authentication.Services.Interfaces;
-using Altinn.Platform.Register.Models;
+using Altinn.Register.Contracts.V1;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Options;
 
@@ -30,10 +32,12 @@ public class RequestSystemUserService(
     IHttpContextAccessor httpContextAccessor,
     ISystemRegisterService systemRegisterService,
     IPartiesClient partiesClient,
+    IAccessManagementClient _accessManagemetClient,
     IPDP pdp,
     ISystemRegisterRepository systemRegisterRepository,
     IRequestRepository requestRepository,
     IOptions<PaginationOptions> _paginationOption,
+    IOptions<GeneralSettings> generalSettings,
     ISystemUserService systemUserService)
     : IRequestSystemUser
 {
@@ -41,7 +45,7 @@ public class RequestSystemUserService(
     /// Used to limit the number of items returned in a paginated list
     /// </summary>
     private int _paginationSize = _paginationOption.Value.Size;
-    
+
     /// <inheritdoc/>
     public async Task<Result<RequestSystemResponse>> CreateRequest(CreateRequestSystemUser createRequest, OrganisationNumber vendorOrgNo)
     {
@@ -57,6 +61,11 @@ public class RequestSystemUserService(
         if (systemInfo is null)
         {
             return Problem.SystemIdNotFound;
+        }
+
+        if (systemInfo.IsDeleted)
+        {
+            return Problem.SystemIsDeleted;
         }
 
         Result<bool> valRef = await ValidateExternalRequestId(externalRequestId);
@@ -120,7 +129,7 @@ public class RequestSystemUserService(
 
         if (createRequest.AccessPackages is not null && createRequest.AccessPackages.Count > 0)
         {
-            Result<bool> valPackages = systemUserService.ValidateAccessPackages(createRequest.AccessPackages, systemInfo);
+            Result<bool> valPackages = await systemUserService.ValidateAccessPackages(createRequest.AccessPackages, systemInfo, isAgentRequest: false);
             if (valPackages.IsProblem)
             {
                 return valPackages.Problem;
@@ -138,13 +147,15 @@ public class RequestSystemUserService(
         var created = new RequestSystemResponse()
         {
             Id = newId,
+            IntegrationTitle = createRequest.IntegrationTitle?.Trim() ?? (systemInfo.Name.TryGetValue("nb", out string? value) ? value : null),
             ExternalRef = createRequest.ExternalRef,
             SystemId = createRequest.SystemId,
             PartyOrgNo = createRequest.PartyOrgNo,
             Rights = createRequest.Rights ?? [],
             AccessPackages = createRequest.AccessPackages ?? [],
             Status = RequestStatus.New.ToString(),
-            RedirectUrl = createRequest.RedirectUrl
+            RedirectUrl = createRequest.RedirectUrl,
+            TimedOut = false
         };
 
         Result<bool> res = await requestRepository.CreateRequest(created);
@@ -171,6 +182,11 @@ public class RequestSystemUserService(
         if (systemInfo is null)
         {
             return Problem.SystemIdNotFound;
+        }
+
+        if (systemInfo.IsDeleted)
+        {
+            return Problem.SystemIsDeleted;
         }
 
         Result<bool> valRef = await ValidateExternalRequestId(externalRequestId);
@@ -205,7 +221,7 @@ public class RequestSystemUserService(
             return Problem.SystemUser_MissingAccessPackage;
         }
 
-        Result<bool> valPackages = systemUserService.ValidateAccessPackages(createAgentRequest.AccessPackages, systemInfo);
+        Result<bool> valPackages = await systemUserService.ValidateAccessPackages(createAgentRequest.AccessPackages, systemInfo, isAgentRequest: true);
         if (valPackages.IsProblem)
         {
             return valPackages.Problem;
@@ -222,13 +238,15 @@ public class RequestSystemUserService(
         var created = new AgentRequestSystemResponse()
         {
             Id = newId,
+            IntegrationTitle = createAgentRequest.IntegrationTitle?.Trim() ?? (systemInfo.Name.TryGetValue("nb", out string? value) ? value : null),
             ExternalRef = createAgentRequest.ExternalRef,
             SystemId = createAgentRequest.SystemId,
             PartyOrgNo = createAgentRequest.PartyOrgNo,
             AccessPackages = createAgentRequest.AccessPackages,
             Status = RequestStatus.New.ToString(),
             RedirectUrl = createAgentRequest.RedirectUrl,
-            UserType = Core.Enums.SystemUserType.Agent
+            UserType = Core.Enums.SystemUserType.Agent,
+            TimedOut = false
         };
 
         Result<bool> res = await requestRepository.CreateAgentRequest(created);
@@ -309,8 +327,8 @@ public class RequestSystemUserService(
     /// <param name="partyOrgNo">the PartyOrgNo for the Customer</param>
     /// <returns>Result or Problem</returns>
     private async Task<Result<bool>> ValidateCustomerOrgNo(string partyOrgNo)
-    {        
-        if (partyOrgNo == null) 
+    {
+        if (partyOrgNo == null)
         {
             return Problem.Reportee_Orgno_NotFound;
         }
@@ -343,13 +361,16 @@ public class RequestSystemUserService(
         return new RequestSystemResponse()
         {
             Id = res.Id,
+            IntegrationTitle = res.IntegrationTitle,
             ExternalRef = res.ExternalRef,
             SystemId = res.SystemId,
             PartyOrgNo = res.PartyOrgNo,
             Rights = res.Rights,
             AccessPackages = res.AccessPackages,
             Status = res.Status,
-            RedirectUrl = res.RedirectUrl
+            RedirectUrl = res.RedirectUrl,
+            TimedOut = res.TimedOut,
+            Created = res.Created
         };
     }
 
@@ -366,18 +387,21 @@ public class RequestSystemUserService(
         if (check.IsProblem)
         {
             return check.Problem;
-        }                
+        }
 
         return new RequestSystemResponse()
         {
             Id = res.Id,
+            IntegrationTitle = res.IntegrationTitle,
             ExternalRef = res.ExternalRef,
             SystemId = res.SystemId,
             PartyOrgNo = res.PartyOrgNo,
             Rights = res.Rights,
             AccessPackages = res.AccessPackages,
             Status = res.Status,
-            RedirectUrl = res.RedirectUrl
+            RedirectUrl = res.RedirectUrl,
+            TimedOut = res.TimedOut,
+            Created = res.Created,
         };
     }
 
@@ -404,12 +428,15 @@ public class RequestSystemUserService(
         return new AgentRequestSystemResponse()
         {
             Id = res.Id,
+            IntegrationTitle = res.IntegrationTitle,
             ExternalRef = res.ExternalRef,
             SystemId = res.SystemId,
             PartyOrgNo = res.PartyOrgNo,
             AccessPackages = res.AccessPackages,
             Status = res.Status,
-            RedirectUrl = res.RedirectUrl
+            RedirectUrl = res.RedirectUrl,
+            TimedOut = res.TimedOut,
+            Created = res.Created
         };
     }
 
@@ -433,7 +460,7 @@ public class RequestSystemUserService(
     /// <inheritdoc/>
     public async Task<Result<RequestSystemResponse>> GetRequestByPartyAndRequestId(int partyId, Guid requestId)
     {
-        Party party = await partiesClient.GetPartyAsync(partyId);
+        Party? party = await partiesClient.GetPartyAsync(partyId);
         if (party is null)
         {
             return Problem.Reportee_Orgno_NotFound;
@@ -453,13 +480,15 @@ public class RequestSystemUserService(
         var request = new RequestSystemResponse
         {
             Id = find.Id,
+            IntegrationTitle = find.IntegrationTitle,
             SystemId = find.SystemId,
             ExternalRef = find.ExternalRef,
             Rights = find.Rights,
             AccessPackages = find.AccessPackages,
             PartyOrgNo = find.PartyOrgNo,
             Status = find.Status,
-            RedirectUrl = find.RedirectUrl
+            RedirectUrl = find.RedirectUrl,
+            Created = find.Created
         };
 
         return request;
@@ -468,7 +497,7 @@ public class RequestSystemUserService(
     /// <inheritdoc/>
     public async Task<Result<AgentRequestSystemResponse>> GetAgentRequestByPartyAndRequestId(int partyId, Guid requestId)
     {
-        Party party = await partiesClient.GetPartyAsync(partyId);
+        Party? party = await partiesClient.GetPartyAsync(partyId);
         if (party is null)
         {
             return Problem.Reportee_Orgno_NotFound;
@@ -488,12 +517,14 @@ public class RequestSystemUserService(
         var request = new AgentRequestSystemResponse
         {
             Id = find.Id,
+            IntegrationTitle = find.IntegrationTitle,
             SystemId = find.SystemId,
             ExternalRef = find.ExternalRef,
             AccessPackages = find.AccessPackages,
             PartyOrgNo = find.PartyOrgNo,
             Status = find.Status,
-            RedirectUrl = find.RedirectUrl
+            RedirectUrl = find.RedirectUrl,
+            Created = find.Created
         };
 
         return request;
@@ -503,7 +534,7 @@ public class RequestSystemUserService(
     public async Task<Result<bool>> ApproveAndCreateSystemUser(Guid requestId, int partyId, int userId, CancellationToken cancellationToken)
     {
         Result<bool> validatePartyRequest = await ValidatePartyRequest(partyId, requestId, SystemUserType.Standard, cancellationToken);
-        if (validatePartyRequest.IsProblem) 
+        if (validatePartyRequest.IsProblem)
         {
             return validatePartyRequest.Problem;
         }
@@ -519,7 +550,7 @@ public class RequestSystemUserService(
             return Problem.RequestStatusNotNew;
         }
 
-        Result<SystemUser> systemUser = await systemUserService.CreateSystemUserFromApprovedVendorRequest(systemUserRequest, partyId.ToString(), userId, cancellationToken);
+        Result<SystemUserInternalDTO> systemUser = await systemUserService.CreateSystemUserFromApprovedVendorRequest(systemUserRequest, partyId.ToString(), userId, cancellationToken);
         if (systemUser.IsProblem)
         {
             return systemUser.Problem;
@@ -560,19 +591,19 @@ public class RequestSystemUserService(
             return Problem.RequestStatusNotNew;
         }
 
-        RegisteredSystemResponse? regSystem = await systemRegisterRepository.GetRegisteredSystemById(systemUserRequest.SystemId);
+        RegisteredSystemResponse? regSystem = await systemRegisterRepository.GetRegisteredSystemById(systemUserRequest.SystemId, cancellationToken);
         if (regSystem is null)
         {
             return Problem.SystemIdNotFound;
         }
 
-        Result<SystemUser> toBeInserted = MapAgentSystemUserRequestToSystemUser(systemUserRequest, regSystem, partyId);
+        Result<SystemUserInternalDTO> toBeInserted = MapAgentSystemUserRequestToSystemUser(systemUserRequest, regSystem, partyId);
         if (toBeInserted.IsProblem)
         {
             return toBeInserted.Problem;
         }
 
-        Result<SystemUser> res = await systemUserService.CreateSystemUserFromApprovedVendorRequest(systemUserRequest, partyId.ToString(), userId, cancellationToken);
+        Result<SystemUserInternalDTO> res = await systemUserService.CreateSystemUserFromApprovedVendorRequest(systemUserRequest, partyId.ToString(), userId, cancellationToken);
         if (res.IsProblem)
         {
             return res.Problem;
@@ -633,21 +664,21 @@ public class RequestSystemUserService(
         return await requestRepository.RejectSystemUser(requestId, userId, cancellationToken);
     }
 
-    private static Result<SystemUser> MapSystemUserRequestToSystemUser(RequestSystemResponse systemUserRequest, RegisteredSystemResponse regSystem, int partyId)
+    private static Result<SystemUserInternalDTO> MapSystemUserRequestToSystemUser(RequestSystemResponse systemUserRequest, RegisteredSystemResponse regSystem, int partyId)
     {
-        SystemUser? toBeInserted = null;
+        SystemUserInternalDTO? toBeInserted = null;
         regSystem.Name.TryGetValue("nb", out string? systemName);
-        if (systemName is null) 
+        if (systemName is null)
         {
             return Problem.SystemNameNotFound;
         }
 
         if (systemUserRequest != null)
         {
-            toBeInserted = new SystemUser
+            toBeInserted = new SystemUserInternalDTO
             {
                 SystemId = systemUserRequest.SystemId,
-                IntegrationTitle = systemName,
+                IntegrationTitle = systemUserRequest.IntegrationTitle ?? systemName,
                 SystemInternalId = regSystem?.InternalId,
                 PartyId = partyId.ToString(),
                 ReporteeOrgNo = systemUserRequest.PartyOrgNo,
@@ -659,9 +690,9 @@ public class RequestSystemUserService(
         return toBeInserted!;
     }
 
-    private static Result<SystemUser> MapAgentSystemUserRequestToSystemUser(AgentRequestSystemResponse agentSystemUserRequest, RegisteredSystemResponse regSystem, int partyId)
+    private static Result<SystemUserInternalDTO> MapAgentSystemUserRequestToSystemUser(AgentRequestSystemResponse agentSystemUserRequest, RegisteredSystemResponse regSystem, int partyId)
     {
-        SystemUser? toBeInserted = null;
+        SystemUserInternalDTO? toBeInserted = null;
         regSystem.Name.TryGetValue("nb", out string? systemName);
         if (systemName is null)
         {
@@ -670,11 +701,11 @@ public class RequestSystemUserService(
 
         if (agentSystemUserRequest != null)
         {
-            toBeInserted = new SystemUser
+            toBeInserted = new SystemUserInternalDTO
             {
                 Id = agentSystemUserRequest.Id.ToString(),
                 SystemId = agentSystemUserRequest.SystemId,
-                IntegrationTitle = systemName,
+                IntegrationTitle = agentSystemUserRequest.IntegrationTitle ?? systemName,
                 SystemInternalId = regSystem?.InternalId,
                 PartyId = partyId.ToString(),
                 ReporteeOrgNo = agentSystemUserRequest.PartyOrgNo,
@@ -722,7 +753,7 @@ public class RequestSystemUserService(
         foreach (var data in rightResponse)
         {
             if (data.Status != "Delegable")
-            { 
+            {
                 errors.AddRange(data.Details);
                 canDelegate = false;
             }
@@ -738,7 +769,7 @@ public class RequestSystemUserService(
         Page<Guid>.Request continueRequest,
         CancellationToken cancellationToken)
     {
-        RegisteredSystemResponse? system = await systemRegisterRepository.GetRegisteredSystemById(systemId);
+        RegisteredSystemResponse? system = await systemRegisterRepository.GetRegisteredSystemById(systemId, cancellationToken);
         if (system is null)
         {
             return Problem.SystemIdNotFound;
@@ -749,11 +780,13 @@ public class RequestSystemUserService(
         {
             return Problem.SystemIdNotFound;
         }
-        
-        List<RequestSystemResponse>? theList = await requestRepository.GetAllRequestsBySystem(systemId, cancellationToken);
+
+        Guid nextId = continueRequest?.ContinuationToken ?? Guid.Empty;
+
+        List<RequestSystemResponse>? theList = await requestRepository.GetAllRequestsBySystem(systemId, nextId, _paginationSize, cancellationToken);
         theList ??= [];
 
-        return Page.Create(theList, _paginationSize, static theList => theList.Id); 
+        return Page.Create(theList, _paginationSize, static theList => theList.Id);
     }
 
     /// <inheritdoc/>
@@ -763,7 +796,7 @@ public class RequestSystemUserService(
         Page<Guid>.Request continueRequest,
         CancellationToken cancellationToken)
     {
-        RegisteredSystemResponse? system = await systemRegisterRepository.GetRegisteredSystemById(systemId);
+        RegisteredSystemResponse? system = await systemRegisterRepository.GetRegisteredSystemById(systemId, cancellationToken);
         if (system is null)
         {
             return Problem.SystemIdNotFound;
@@ -775,7 +808,9 @@ public class RequestSystemUserService(
             return Problem.SystemIdNotFound;
         }
 
-        List<AgentRequestSystemResponse>? theList = await requestRepository.GetAllAgentRequestsBySystem(systemId, cancellationToken);
+        Guid nextId = continueRequest?.ContinuationToken ?? Guid.Empty;
+
+        List<AgentRequestSystemResponse>? theList = await requestRepository.GetAllAgentRequestsBySystem(systemId, nextId, _paginationSize, cancellationToken);
         theList ??= [];
 
         return Page.Create(theList, _paginationSize, static theList => theList.Id);
@@ -845,7 +880,7 @@ public class RequestSystemUserService(
             return Problem.RequestNotFound;
         }
 
-        Result<Party> validatedParty = await ValidateAndVerifyRequest(request.PartyOrgNo);
+        Result<(Party Party, bool HasRelationButNotApprove)> validatedParty = await ValidateAndVerifyRequest(request.PartyOrgNo);
         if (validatedParty.IsProblem)
         {
             return validatedParty.Problem;
@@ -857,19 +892,21 @@ public class RequestSystemUserService(
             ExternalRef = request.ExternalRef,
             SystemId = request.SystemId,
             PartyOrgNo = request.PartyOrgNo,
-            PartyId = validatedParty.Value.PartyId,
-            PartyUuid = (Guid)validatedParty.Value.PartyUuid!,
+            PartyId = validatedParty.Value.Party.PartyId,
+            PartyUuid = (Guid)validatedParty.Value.Party.PartyUuid!,
             Rights = [],
             AccessPackages = request.AccessPackages,
             Status = request.Status,
             ConfirmUrl = request.ConfirmUrl,
             Created = request.Created,
             RedirectUrl = request.RedirectUrl,
-            SystemUserType = request.UserType.ToString()
+            SystemUserType = request.UserType.ToString(),
+            Escalated = request.Escalated,
+            UserMayEscalateButNotApprove = validatedParty.Value.HasRelationButNotApprove
         };
     }
 
-    private async Task<Result<Party>> ValidateAndVerifyRequest(string orgNo)
+    private async Task<Result<(Party Party, bool HasRelation)>> ValidateAndVerifyRequest(string orgNo)
     {
         HttpContext? context = httpContextAccessor.HttpContext;
         if (context is null)
@@ -879,9 +916,9 @@ public class RequestSystemUserService(
 
         IEnumerable<Claim> claims = context.User.Claims;
 
-        Party party = await partiesClient.GetPartyByOrgNo(orgNo);
+        Party? party = await partiesClient.GetPartyByOrgNo(orgNo);
 
-        if (!party.PartyUuid.HasValue)
+        if (party?.PartyUuid is null)
         {
             return Problem.Reportee_Orgno_NotFound;
         }
@@ -898,10 +935,23 @@ public class RequestSystemUserService(
 
         if (SpecificDecisionHelper.ValidatePdpDecision(response, context.User))
         {
-            return party;
+            return (party, false);
         }
 
-        return Problem.RequestNotFound;
+        string token = JwtTokenUtil.GetTokenFromContext(context, generalSettings.Value.JwtCookieName);
+        if (string.IsNullOrEmpty(token))
+        {
+            return Problem.RequestNotFound;
+        }
+
+        AuthorizedPartyExternal? hasRelationParty = await _accessManagemetClient.GetPartyFromReporteeListIfExists(party.PartyId, token);
+        if (hasRelationParty is not null)
+        {
+            return (party, true);
+        }
+
+        // User is not access manager and has no relation
+        return Problem.Request_UserIsNotAccessManager;
     }
 
     /// <inheritdoc/>
@@ -913,32 +963,34 @@ public class RequestSystemUserService(
             return Problem.RequestNotFound;
         }
 
-        Result<Party> validatedParty = await ValidateAndVerifyRequest(request.PartyOrgNo);
+        Result<(Party Party, bool HasRelationButNotApprove)> validatedParty = await ValidateAndVerifyRequest(request.PartyOrgNo);
         if (validatedParty.IsProblem)
         {
             return validatedParty.Problem;
         }
 
         return new RequestSystemResponseInternal()
-            {
-                Id = request.Id,
-                ExternalRef = request.ExternalRef,
-                SystemId = request.SystemId,
-                PartyOrgNo = request.PartyOrgNo,
-                PartyId = validatedParty.Value.PartyId,
-                PartyUuid = (Guid)validatedParty.Value.PartyUuid!,
-                Rights = request.Rights,
-                AccessPackages = request.AccessPackages,
-                Status = request.Status,
-                ConfirmUrl = request.ConfirmUrl,
-                Created = request.Created,
-                RedirectUrl = request.RedirectUrl
-            };       
+        {
+            Id = request.Id,
+            ExternalRef = request.ExternalRef,
+            SystemId = request.SystemId,
+            PartyOrgNo = request.PartyOrgNo,
+            PartyId = validatedParty.Value.Party.PartyId,
+            PartyUuid = (Guid)validatedParty.Value.Party.PartyUuid!,
+            Rights = request.Rights,
+            AccessPackages = request.AccessPackages,
+            Status = request.Status,
+            ConfirmUrl = request.ConfirmUrl,
+            Escalated = request.Escalated,
+            Created = request.Created,
+            RedirectUrl = request.RedirectUrl,
+            UserMayEscalateButNotApprove = validatedParty.Value.HasRelationButNotApprove
+        };
     }
 
-    private async Task<Result<bool>> ValidatePartyRequest(int partyId, Guid requestId, SystemUserType userType,CancellationToken cancellationToken)
+    private async Task<Result<bool>> ValidatePartyRequest(int partyId, Guid requestId, SystemUserType userType, CancellationToken cancellationToken)
     {
-        Party party = await partiesClient.GetPartyAsync(partyId, cancellationToken);
+        Party? party = await partiesClient.GetPartyAsync(partyId, cancellationToken);
         if (party is null)
         {
             return Problem.Reportee_Orgno_NotFound;
@@ -973,5 +1025,62 @@ public class RequestSystemUserService(
         }
 
         return true;
+    }
+
+    /// <inheritdoc/>
+    public async Task<Result<bool>> EscalateApprovalSystemUser(Guid requestId, int party, int userId, CancellationToken cancellationToken)
+    {
+        HttpContext? context = httpContextAccessor.HttpContext;
+        if (context is null)
+        {
+            return Problem.RequestNotFound;
+        }
+
+        string token = JwtTokenUtil.GetTokenFromContext(context, generalSettings.Value.JwtCookieName);
+        if (string.IsNullOrEmpty(token))
+        {
+            return Problem.RequestNotFound;
+        }
+
+        AuthorizedPartyExternal? hasRelationParty = await _accessManagemetClient.GetPartyFromReporteeListIfExists(party, token);
+        if (hasRelationParty is not null)
+        {
+            return await requestRepository.SetRequestEscalated(requestId, userId, cancellationToken);
+        }
+
+        return false;
+    }
+
+    /// <inheritdoc/>
+    public async Task<Result<bool>> EscalateApprovalAgentSystemUser(Guid requestId, int party, int userId, CancellationToken cancellationToken)
+    {
+        // Deprecated: use EscalateApprovalSystemUser
+        return await EscalateApprovalSystemUser(requestId, party, userId, cancellationToken);
+    }
+
+    /// <inheritdoc/>
+    public async Task<Result<List<RequestSystemResponse>>> GetPendingStandardRequests(string orgno, int userId, CancellationToken cancellationToken)
+    {
+        List<RequestSystemResponse> theList = [];
+        Result<List<RequestSystemResponse>> result = await requestRepository.GetAllPendingStandardRequests(orgno, cancellationToken);
+        if (result.IsSuccess)
+        {
+            return result.Value;
+        }
+
+        return theList;
+    }
+
+    /// <inheritdoc/>
+    public async Task<Result<List<AgentRequestSystemResponse>>> GetPendingAgentRequests(string orgno, int userId, CancellationToken cancellationToken)
+    {
+        List<AgentRequestSystemResponse> theList = [];
+        Result<List<AgentRequestSystemResponse>> result = await requestRepository.GetAllPendingAgentRequests(orgno, cancellationToken);
+        if (result.IsSuccess)
+        {
+            return result.Value;
+        }
+
+        return theList;
     }
 }

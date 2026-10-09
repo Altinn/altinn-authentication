@@ -1,0 +1,42 @@
+@{
+    ViewData["Title"] = "Test-IDP";
+}
+
+<div class="text-center mb-4">
+    <h1 class="display-5">Test Identity Provider</h1>
+    <p class="lead text-muted">A synthetic-only OIDC provider for automated test runs.</p>
+</div>
+
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="alert alert-danger" role="alert">
+            <h5 class="alert-heading">⚠ Test purpose only</h5>
+            <p class="mb-0">
+                This service is <strong>not</strong> a real identity provider. It exists
+                only to let automated tests obtain tokens for <strong>synthetic test
+                persons</strong>. It will never authenticate a real person:
+            </p>
+        </div>
+
+        <ul class="list-group mb-3">
+            <li class="list-group-item">
+                Only <strong>synthetic (Tenor) fødselsnummer</strong> are accepted
+                (month component 81–92, valid control digits). Ordinary numbers and
+                real D-numbers are rejected fail-closed.
+            </li>
+            <li class="list-group-item">
+                Access requires a single <strong>shared access password</strong>
+                (rate-limited, lockout). There is no per-user credential.
+            </li>
+            <li class="list-group-item">
+                Disabled by default per environment and only reachable through an
+                explicit, allowlisted opt-in flow.
+            </li>
+        </ul>
+
+        <p class="text-muted">
+            See Altinn issues <strong>#1409</strong> and <strong>#1983</strong> for the
+            design and security requirements.
+        </p>
+    </div>
+</div>

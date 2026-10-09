@@ -9,5 +9,5 @@ public class ChangeRequestValidationSet
 
     public RegisteredSystemResponse RegisteredSystem { get; set; }
 
-    public SystemUser SystemUser { get; set; }
+    public SystemUserInternalDTO SystemUser { get; set; }
 }

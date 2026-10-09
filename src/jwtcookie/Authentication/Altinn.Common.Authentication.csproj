@@ -2,6 +2,7 @@
 
   <PropertyGroup>
     <TargetFrameworks>net8.0;net9.0</TargetFrameworks>
+    <Nullable>enable</Nullable>
     <OutputType>Library</OutputType>
     <AssemblyVersion>4.0.4.0</AssemblyVersion>
     <FileVersion>4.0.4.0</FileVersion>
@@ -29,7 +30,7 @@
 
   <ItemGroup>
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
-    <PackageReference Include="Microsoft.IdentityModel.Protocols.OpenIdConnect" Version="8.14.0" />
+    <PackageReference Include="Microsoft.IdentityModel.Protocols.OpenIdConnect" Version="8.22.0" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(Configuration)'=='Debug'">
@@ -40,6 +41,12 @@
     <AdditionalFiles Include="..\..\..\stylecop.json">
       <Link>stylecop.json</Link>
     </AdditionalFiles>
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetFramework)' == 'net9.0'">
+    <PackageReference Include="Altinn.Register.Contracts">
+      <Version>1.7.0</Version>
+    </PackageReference>
   </ItemGroup>
 
   <PropertyGroup Condition="'$(Configuration)'=='Debug'">

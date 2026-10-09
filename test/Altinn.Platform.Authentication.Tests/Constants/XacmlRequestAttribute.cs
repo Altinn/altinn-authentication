@@ -59,5 +59,10 @@
         /// xacml string that represents resource
         /// </summary>
         public const string ResourceRegistryAttribute = "urn:altinn:resource";
+
+        /// <summary>
+        /// xacml string that represents party uuid
+        /// </summary>
+        public const string PartyUuIdAttribute = "urn:altinn:party:uuid";
     }
 }

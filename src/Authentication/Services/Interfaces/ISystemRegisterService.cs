@@ -24,6 +24,14 @@ namespace Altinn.Platform.Authentication.Services.Interfaces
         Task<List<RegisteredSystemResponse>> GetListRegSys(CancellationToken cancellation = default);
 
         /// <summary>
+        /// Retrieves a list of registered systems associated with the specified vendor organization.
+        /// </summary>
+        /// <param name="vendorOrgNumber">The organization number of the vendor whose registered systems are to be retrieved.</param>
+        /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
+        /// <returns>list of systems for vendor</returns>
+        Task<List<RegisteredSystemResponse>> GetListOfSystemsForVendor(string vendorOrgNumber, CancellationToken cancellationToken = default);
+
+        /// <summary>
         /// Retrieves the list, if any, of the Default Rights the System Provider
         /// has set for the Registered System.
         /// </summary>
@@ -137,8 +145,8 @@ namespace Altinn.Platform.Authentication.Services.Interfaces
         /// </summary>
         /// <param name="accessPackages">access packages to be validated</param>
         /// <param name="cancellationToken">the cancellation token</param>
-        /// <returns>list of invalid access package format, packages that are not valid because they are not found in altinn's resource register</returns>
-        Task<(List<string> InvalidFormatUrns, List<string> NotFoundUrns, List<string> NotDelegableUrns)>
+        /// <returns>list of invalid access package format, packages that are not valid because they are not found in altinn's resource register, and packages with IsAssignable false</returns>
+        Task<(List<string> InvalidFormatUrns, List<string> NotFoundUrns, List<string> NotDelegableUrns, List<string> NonAssignableUrns)>
             GetInvalidAccessPackageUrnsDetailed(List<AccessPackage> accessPackages, CancellationToken cancellationToken);
 
         /// <summary>
@@ -148,5 +156,19 @@ namespace Altinn.Platform.Authentication.Services.Interfaces
         /// <param name="cancellationToken">the cancellation token</param>
         /// <returns></returns>
         Task<IList<SystemChangeLog>> GetChangeLogAsync(Guid systemInternalId, CancellationToken cancellationToken = default);
+
+        /// <summary>
+        /// Identifies resource IDs in the given rights that have invalid format, are not found, or are not delegable.
+        /// </summary>
+        /// <remarks>
+        /// Each resource attribute is checked for correct ID format, then looked up in the resource registry.
+        /// Resources whose <see cref="ServiceResource.ResourceType"/> is not in <see cref="WhitelistedResourceTypes"/>
+        /// are treated as not delegable.</remarks>
+        /// <param name="rights">A list of rights to be validated.</param>
+        /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
+        /// <returns>A tuple containing three lists: <see cref="List{T}"/> of rights that are not in valid format, <see cref="List{T}"/> of rights that are not found and  <see cref="List{T}"/>
+        /// of rights that are not delegable.</returns>
+        Task<(List<string> InvalidFormatResourceIds, List<string> NotFoundResourceIds, List<string> NotDelegableResourceIds)>
+            GetInvalidResourceIdsDetailed(List<Right> rights, CancellationToken cancellationToken);
     }
 }

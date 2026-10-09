@@ -20,6 +20,11 @@ nupkg/
 *.userosscache
 *.sln.docstates
 
+# Visual Studio publish profiles / service dependencies (deploy artifacts - do not commit)
+*.pubxml
+**/Properties/ServiceDependencies/
+**/Properties/serviceDependencies*.json
+
 # Build results
 [Dd]ebug/
 [Dd]ebugPublic/
@@ -38,5 +43,10 @@ msbuild.wrn
 
 #Test
 TestResults
+# Kept after the SystemIntegrationTests project was deleted: local leftovers may hold
+# real environment credentials / Maskinporten keys, so keep them ignored.
 /test/Altinn.Platform.Authentication.SystemIntegrationTests/Resources/Environment/environment.json
 /test/Altinn.Platform.Authentication.SystemIntegrationTests/Resources/Jwks/jwks.json
+/.claude/settings.local.json
+*.lscache
+/.claude/worktrees/

@@ -32,7 +32,7 @@ public class ChangeRequestResponse()
     /// </summary>
     [Required]
     [JsonPropertyName("systemId")]
-    public string SystemId { get; set; }
+    public required string SystemId { get; set; }
 
     [Required]
     [JsonPropertyName("systemUserId")]
@@ -44,7 +44,7 @@ public class ChangeRequestResponse()
     /// </summary>
     [Required]
     [JsonPropertyName("partyOrgNo")]
-    public string PartyOrgNo { get; set; }
+    public required string PartyOrgNo { get; set; }
 
     /// <summary>
     /// The set of Rights requested as Required for this system user. 
@@ -90,7 +90,7 @@ public class ChangeRequestResponse()
     /// </summary>
     [Required]
     [JsonPropertyName("status")]
-    public string Status { get; set; }
+    public required string Status { get; set; }
 
     /// <summary>
     /// Optional redirect URL to navigate to after the customer has accepted/denied the Request
@@ -110,6 +110,13 @@ public class ChangeRequestResponse()
     /// The date and time the Request was created,
     /// used to determine if the Request is still valid.
     /// </summary>
-    [JsonIgnore]
+    [JsonPropertyName("created")]
     public DateTime Created { get; set; }
+
+    /// <summary>
+    /// After 180 days, a Request is considered timed out, and will be archived.
+    /// The Vendor should verify the Request before the time out period; 
+    /// and use the SystemUser Id for further calls after approval.
+    /// </summary>
+    public bool TimedOut { get; set; }
 }

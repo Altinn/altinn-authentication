@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading.Tasks;
@@ -14,6 +15,13 @@ namespace Altinn.Platform.Authentication.Tests.Fakes
     /// </summary>
     public class JwtSigningCertificateProviderStub : IJwtSigningCertificateProvider
     {
+        /// <summary>
+        /// macOS does not support <see cref="X509KeyStorageFlags.EphemeralKeySet"/> when loading PKCS#12 files,
+        /// so fall back to the default key set there.
+        /// </summary>
+        private static readonly X509KeyStorageFlags KeyStorageFlags =
+            OperatingSystem.IsMacOS() ? X509KeyStorageFlags.DefaultKeySet : X509KeyStorageFlags.EphemeralKeySet;
+
         private readonly CertificateSettings _certificateSettings;
 
         /// <summary>
@@ -28,9 +36,9 @@ namespace Altinn.Platform.Authentication.Tests.Fakes
         /// <inheritdoc />
         public async Task<List<X509Certificate2>> GetCertificates()
         {
-            X509Certificate2 cert = new X509Certificate2(_certificateSettings.CertificatePath, _certificateSettings.CertificatePwd);
+            X509Certificate2 cert = X509CertificateLoader.LoadPkcs12FromFile(_certificateSettings.CertificatePath, _certificateSettings.CertificatePwd, KeyStorageFlags);
 
-            List<X509Certificate2> certificates = new List<X509Certificate2> { cert };
+            List<X509Certificate2> certificates = [cert];
 
             return await Task.FromResult(certificates);
         }

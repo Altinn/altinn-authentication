@@ -1,15 +1,14 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using Altinn.Authentication.Core.Clients.Interfaces;
 using Altinn.Authorization.ProblemDetails;
-using Altinn.Platform.Authentication.Core.Enums;
 using Altinn.Platform.Authentication.Core.Models.SystemUsers;
-using Altinn.Platform.Register.Models;
+using Altinn.Register.Contracts.V1;
+using RegisterContracts = Altinn.Register.Contracts;
 
 namespace Altinn.Authentication.Tests.Mocks;
 
@@ -19,20 +18,19 @@ namespace Altinn.Authentication.Tests.Mocks;
 public class PartiesClientMock : IPartiesClient
 {
     /// <inheritdoc/>
-    public Task<Party> GetPartyAsync(int partyId, CancellationToken cancellationToken = default)
+    public Task<Party?> GetPartyAsync(int partyId, CancellationToken cancellationToken = default)
     {
-        return Task.FromResult(GetTestDataParties().Find(p => p.PartyId == partyId));
+        return Task.FromResult(GetTestDataParties(GetPartiesPath()).Find(p => p.PartyId == partyId));
     }
 
-    private static List<Party> GetTestDataParties()
+    private static List<Party> GetTestDataParties(string partiesPath)
     {
         List<Party> partyList = new List<Party>();
 
-        string partiesPath = GetPartiesPath();
         if (File.Exists(partiesPath))
         {
             string content = File.ReadAllText(partiesPath);
-            partyList = JsonSerializer.Deserialize<List<Party>>(content);
+            partyList = JsonSerializer.Deserialize<List<Party>>(content) ?? [];
         }
 
         return partyList;
@@ -40,45 +38,82 @@ public class PartiesClientMock : IPartiesClient
 
     private static string GetPartiesPath()
     {
-        string unitTestFolder = Path.GetDirectoryName(new Uri(typeof(PartiesClientMock).Assembly.Location).LocalPath);
-        return Path.Combine(unitTestFolder, "Data", "Parties", "parties.json");
+        string? unitTestFolder = Path.GetDirectoryName(new Uri(typeof(PartiesClientMock).Assembly.Location).LocalPath);
+        return Path.Combine(unitTestFolder!, "Data", "Parties", "parties.json"); // assembly location always has a directory
+    }
+
+    private static string GetCustomerPartiesPath()
+    {
+        string? unitTestFolder = Path.GetDirectoryName(new Uri(typeof(PartiesClientMock).Assembly.Location).LocalPath);
+        return Path.Combine(unitTestFolder!, "Data", "Parties", "customerparties.json"); // assembly location always has a directory
     }
 
     private static string GetMainUnitsPath(int subunitPartyId)
     {
-        string unitTestFolder = Path.GetDirectoryName(new Uri(typeof(PartiesClientMock).Assembly.Location).LocalPath);
-        return Path.Combine(unitTestFolder, "Data", "MainUnits", $"{subunitPartyId}", "mainunits.json");
+        string? unitTestFolder = Path.GetDirectoryName(new Uri(typeof(PartiesClientMock).Assembly.Location).LocalPath);
+        return Path.Combine(unitTestFolder!, "Data", "MainUnits", $"{subunitPartyId}", "mainunits.json"); // assembly location always has a directory
     }
 
     private static string GetKeyRoleUnitsPaths(int userId)
     {
-        string unitTestFolder = Path.GetDirectoryName(new Uri(typeof(PartiesClientMock).Assembly.Location).LocalPath);
-        return Path.Combine(unitTestFolder, "Data", "KeyRoleUnits", $"{userId}", "keyroleunits.json");
+        string? unitTestFolder = Path.GetDirectoryName(new Uri(typeof(PartiesClientMock).Assembly.Location).LocalPath);
+        return Path.Combine(unitTestFolder!, "Data", "KeyRoleUnits", $"{userId}", "keyroleunits.json"); // assembly location always has a directory
     }
 
-    public Task<Organization> GetOrganizationAsync(string partyOrgNo, CancellationToken cancellationToken = default)
+    public Task<Organization?> GetOrganizationAsync(string partyOrgNo, CancellationToken cancellationToken = default)
     {
         Organization organization = new()
         {
             OrgNumber = partyOrgNo,
         };
 
-        return Task.FromResult<Organization>(organization);
+        return Task.FromResult<Organization?>(organization);
     }
 
-    public Task<Party> GetPartyByOrgNo(string orgNo, CancellationToken cancellationToken = default)
+    public Task<Party?> GetPartyByOrgNo(string orgNo, CancellationToken cancellationToken = default)
     {
-        Party party = new()
-        {
-            PartyId = 500000,
-            PartyUuid = new Guid("00000000-0000-0000-0005-000000000000")
-        };
+        Party? party = new Party();
+        party.PartyId = 500000;
+        party.PartyUuid = new Guid("00000000-0000-0000-0005-000000000000");
 
-        return Task.FromResult<Party>(party);
+        if (!string.IsNullOrEmpty(orgNo) && orgNo == "987654321")
+        {
+            party.PartyId = 600000;
+            party.PartyUuid = new Guid("6bb78d06-70b2-45f6-85bc-19ca7b4d34d8");
+        }
+
+        if (!string.IsNullOrEmpty(orgNo) && orgNo == "123357789")
+        {   
+            party.PartyId = 700000;
+            party.PartyUuid = new Guid("7bb78d06-70b2-45f6-85bc-19ca7b4d34d8");
+        }
+
+        if (!string.IsNullOrEmpty(orgNo) && orgNo == "123447789")
+        {
+            party = null; // deliberately null: tests use orgNo 123447789 to trigger "System Owner not Found"
+        }
+
+        return Task.FromResult(party);
     }
     
     public Task<Result<CustomerList>> GetPartyCustomers(Guid partyUuid, string accessPackage, CancellationToken cancellationToken)
     {
         throw new NotImplementedException();
+    }
+
+    /// <inheritdoc/>
+    public Task<RegisterContracts.Party?> GetPartyIdentifiersAndUsernameByPersonIdentifier(string ssn, CancellationToken cancellationToken = default)
+    {
+        return Task.FromResult<RegisterContracts.Party?>(null);
+    }
+
+    public Task<Party?> GetPartyByUuId(Guid partyUuId, CancellationToken cancellationToken = default)
+    {
+        return Task.FromResult(GetTestDataParties(GetCustomerPartiesPath()).Find(p => p.PartyUuid == partyUuId));
+    }
+
+    public async Task<Result<bool>> CheckIfUserHasRelationToPartyUuid()
+    {
+        return true;
     }
 }

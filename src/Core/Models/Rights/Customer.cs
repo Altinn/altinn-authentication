@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Altinn.Platform.Authentication.Core.Models.Rights.ConnectionsDtos;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;

@@ -1,0 +1,6169 @@
+{
+  "links": {
+    "next": null
+  },
+  "data": [
+    {
+      "client": {
+        "id": "02148ed1-0559-4390-b232-f802cf63464b",
+        "name": "KNUSLETE FORDEKT TIGER AS",
+        "type": "Organisasjon",
+        "variant": "AS",
+        "parent": null,
+        "children": null,
+        "partyid": 51191311,
+        "userId": null,
+        "username": null,
+        "organizationIdentifier": "310066915",
+        "personIdentifier": null,
+        "dateOfBirth": null,
+        "dateOfDeath": null,
+        "isDeleted": false,
+        "deletedAt": null
+      },
+      "access": [
+        {
+          "role": {
+            "id": "f76b997a-9bd8-4f7b-899f-fcd85d35669f",
+            "code": "revisor",
+            "urn": "urn:altinn:external-role:ccr:revisor",
+            "legacyurn ": "urn:altinn:rolecode:revi",
+            "children": null
+          },
+          "packages": [
+            {
+              "id": "96120c32-389d-46eb-8212-0a6540540c25",
+              "urn": "urn:altinn:accesspackage:revisormedarbeider",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            },
+            {
+              "id": "2f176732-b1e9-449b-9918-090d1fa986f6",
+              "urn": "urn:altinn:accesspackage:ansvarlig-revisor",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "client": {
+        "id": "034d1803-11c3-4a76-b52d-ea469047d937",
+        "name": "EKSTRA HUSLØS TIGER AS",
+        "type": "Organisasjon",
+        "variant": "AS",
+        "parent": null,
+        "children": null,
+        "partyid": 51439992,
+        "userId": null,
+        "username": null,
+        "organizationIdentifier": "312468859",
+        "personIdentifier": null,
+        "dateOfBirth": null,
+        "dateOfDeath": null,
+        "isDeleted": false,
+        "deletedAt": null
+      },
+      "access": [
+        {
+          "role": {
+            "id": "f76b997a-9bd8-4f7b-899f-fcd85d35669f",
+            "code": "revisor",
+            "urn": "urn:altinn:external-role:ccr:revisor",
+            "legacyurn ": "urn:altinn:rolecode:revi",
+            "children": null
+          },
+          "packages": [
+            {
+              "id": "2f176732-b1e9-449b-9918-090d1fa986f6",
+              "urn": "urn:altinn:accesspackage:ansvarlig-revisor",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            },
+            {
+              "id": "96120c32-389d-46eb-8212-0a6540540c25",
+              "urn": "urn:altinn:accesspackage:revisormedarbeider",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "client": {
+        "id": "038bb620-018a-4170-baef-c02fecb6a0fb",
+        "name": "HUSLØS DJERV TIGER AS",
+        "type": "Organisasjon",
+        "variant": "AS",
+        "parent": null,
+        "children": null,
+        "partyid": 51110439,
+        "userId": null,
+        "username": null,
+        "organizationIdentifier": "313318788",
+        "personIdentifier": null,
+        "dateOfBirth": null,
+        "dateOfDeath": null,
+        "isDeleted": false,
+        "deletedAt": null
+      },
+      "access": [
+        {
+          "role": {
+            "id": "f76b997a-9bd8-4f7b-899f-fcd85d35669f",
+            "code": "revisor",
+            "urn": "urn:altinn:external-role:ccr:revisor",
+            "legacyurn ": "urn:altinn:rolecode:revi",
+            "children": null
+          },
+          "packages": [
+            {
+              "id": "96120c32-389d-46eb-8212-0a6540540c25",
+              "urn": "urn:altinn:accesspackage:revisormedarbeider",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            },
+            {
+              "id": "2f176732-b1e9-449b-9918-090d1fa986f6",
+              "urn": "urn:altinn:accesspackage:ansvarlig-revisor",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "client": {
+        "id": "04477f4a-1007-4052-9213-b949e67a273a",
+        "name": "KANTETE KVART TIGER AS",
+        "type": "Organisasjon",
+        "variant": "AS",
+        "parent": null,
+        "children": null,
+        "partyid": 51257170,
+        "userId": null,
+        "username": null,
+        "organizationIdentifier": "310802670",
+        "personIdentifier": null,
+        "dateOfBirth": null,
+        "dateOfDeath": null,
+        "isDeleted": false,
+        "deletedAt": null
+      },
+      "access": [
+        {
+          "role": {
+            "id": "f76b997a-9bd8-4f7b-899f-fcd85d35669f",
+            "code": "revisor",
+            "urn": "urn:altinn:external-role:ccr:revisor",
+            "legacyurn ": "urn:altinn:rolecode:revi",
+            "children": null
+          },
+          "packages": [
+            {
+              "id": "2f176732-b1e9-449b-9918-090d1fa986f6",
+              "urn": "urn:altinn:accesspackage:ansvarlig-revisor",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            },
+            {
+              "id": "96120c32-389d-46eb-8212-0a6540540c25",
+              "urn": "urn:altinn:accesspackage:revisormedarbeider",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "client": {
+        "id": "04c8b16a-68bf-40ef-b3a0-a014e026fb48",
+        "name": "OPPFYLLENDE BESTEMT TIGER AS",
+        "type": "Organisasjon",
+        "variant": "AS",
+        "parent": null,
+        "children": null,
+        "partyid": 51310185,
+        "userId": null,
+        "username": null,
+        "organizationIdentifier": "313473309",
+        "personIdentifier": null,
+        "dateOfBirth": null,
+        "dateOfDeath": null,
+        "isDeleted": false,
+        "deletedAt": null
+      },
+      "access": [
+        {
+          "role": {
+            "id": "f76b997a-9bd8-4f7b-899f-fcd85d35669f",
+            "code": "revisor",
+            "urn": "urn:altinn:external-role:ccr:revisor",
+            "legacyurn ": "urn:altinn:rolecode:revi",
+            "children": null
+          },
+          "packages": [
+            {
+              "id": "2f176732-b1e9-449b-9918-090d1fa986f6",
+              "urn": "urn:altinn:accesspackage:ansvarlig-revisor",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            },
+            {
+              "id": "96120c32-389d-46eb-8212-0a6540540c25",
+              "urn": "urn:altinn:accesspackage:revisormedarbeider",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "client": {
+        "id": "058a6bd5-b252-44ca-9b26-44e9b0969a98",
+        "name": "ANONYM JURIDISK TIGER AS",
+        "type": "Organisasjon",
+        "variant": "AS",
+        "parent": null,
+        "children": null,
+        "partyid": 51491089,
+        "userId": null,
+        "username": null,
+        "organizationIdentifier": "313195295",
+        "personIdentifier": null,
+        "dateOfBirth": null,
+        "dateOfDeath": null,
+        "isDeleted": false,
+        "deletedAt": null
+      },
+      "access": [
+        {
+          "role": {
+            "id": "f76b997a-9bd8-4f7b-899f-fcd85d35669f",
+            "code": "revisor",
+            "urn": "urn:altinn:external-role:ccr:revisor",
+            "legacyurn ": "urn:altinn:rolecode:revi",
+            "children": null
+          },
+          "packages": [
+            {
+              "id": "96120c32-389d-46eb-8212-0a6540540c25",
+              "urn": "urn:altinn:accesspackage:revisormedarbeider",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            },
+            {
+              "id": "2f176732-b1e9-449b-9918-090d1fa986f6",
+              "urn": "urn:altinn:accesspackage:ansvarlig-revisor",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "client": {
+        "id": "06461e33-95e3-4518-8280-4d28577bc6e4",
+        "name": "HÅRSÅR GJENNOMSIKTIG TIGER AS",
+        "type": "Organisasjon",
+        "variant": "AS",
+        "parent": null,
+        "children": null,
+        "partyid": 51501655,
+        "userId": null,
+        "username": null,
+        "organizationIdentifier": "313347095",
+        "personIdentifier": null,
+        "dateOfBirth": null,
+        "dateOfDeath": null,
+        "isDeleted": false,
+        "deletedAt": null
+      },
+      "access": [
+        {
+          "role": {
+            "id": "f76b997a-9bd8-4f7b-899f-fcd85d35669f",
+            "code": "revisor",
+            "urn": "urn:altinn:external-role:ccr:revisor",
+            "legacyurn ": "urn:altinn:rolecode:revi",
+            "children": null
+          },
+          "packages": [
+            {
+              "id": "96120c32-389d-46eb-8212-0a6540540c25",
+              "urn": "urn:altinn:accesspackage:revisormedarbeider",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            },
+            {
+              "id": "2f176732-b1e9-449b-9918-090d1fa986f6",
+              "urn": "urn:altinn:accesspackage:ansvarlig-revisor",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "client": {
+        "id": "073ebd2a-1881-44bd-8f58-462f95edebbd",
+        "name": "SIGEN UTÅLMODIG TIGER AS",
+        "type": "Organisasjon",
+        "variant": "AS",
+        "parent": null,
+        "children": null,
+        "partyid": 51417715,
+        "userId": null,
+        "username": null,
+        "organizationIdentifier": "312243199",
+        "personIdentifier": null,
+        "dateOfBirth": null,
+        "dateOfDeath": null,
+        "isDeleted": false,
+        "deletedAt": null
+      },
+      "access": [
+        {
+          "role": {
+            "id": "f76b997a-9bd8-4f7b-899f-fcd85d35669f",
+            "code": "revisor",
+            "urn": "urn:altinn:external-role:ccr:revisor",
+            "legacyurn ": "urn:altinn:rolecode:revi",
+            "children": null
+          },
+          "packages": [
+            {
+              "id": "2f176732-b1e9-449b-9918-090d1fa986f6",
+              "urn": "urn:altinn:accesspackage:ansvarlig-revisor",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            },
+            {
+              "id": "96120c32-389d-46eb-8212-0a6540540c25",
+              "urn": "urn:altinn:accesspackage:revisormedarbeider",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "client": {
+        "id": "0825cbc6-e59c-4cc5-af24-b7f6f0dcb651",
+        "name": "UINSPIRERT HUSLØS TIGER AS",
+        "type": "Organisasjon",
+        "variant": "AS",
+        "parent": null,
+        "children": null,
+        "partyid": 51520736,
+        "userId": null,
+        "username": null,
+        "organizationIdentifier": "313620999",
+        "personIdentifier": null,
+        "dateOfBirth": null,
+        "dateOfDeath": null,
+        "isDeleted": false,
+        "deletedAt": null
+      },
+      "access": [
+        {
+          "role": {
+            "id": "f76b997a-9bd8-4f7b-899f-fcd85d35669f",
+            "code": "revisor",
+            "urn": "urn:altinn:external-role:ccr:revisor",
+            "legacyurn ": "urn:altinn:rolecode:revi",
+            "children": null
+          },
+          "packages": [
+            {
+              "id": "2f176732-b1e9-449b-9918-090d1fa986f6",
+              "urn": "urn:altinn:accesspackage:ansvarlig-revisor",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            },
+            {
+              "id": "96120c32-389d-46eb-8212-0a6540540c25",
+              "urn": "urn:altinn:accesspackage:revisormedarbeider",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "client": {
+        "id": "090459e0-eedd-4b1f-9b69-11f9f9aea61d",
+        "name": "UROMANTISK IHERDIG TIGER AS",
+        "type": "Organisasjon",
+        "variant": "AS",
+        "parent": null,
+        "children": null,
+        "partyid": 51281827,
+        "userId": null,
+        "username": null,
+        "organizationIdentifier": "311079964",
+        "personIdentifier": null,
+        "dateOfBirth": null,
+        "dateOfDeath": null,
+        "isDeleted": false,
+        "deletedAt": null
+      },
+      "access": [
+        {
+          "role": {
+            "id": "f76b997a-9bd8-4f7b-899f-fcd85d35669f",
+            "code": "revisor",
+            "urn": "urn:altinn:external-role:ccr:revisor",
+            "legacyurn ": "urn:altinn:rolecode:revi",
+            "children": null
+          },
+          "packages": [
+            {
+              "id": "96120c32-389d-46eb-8212-0a6540540c25",
+              "urn": "urn:altinn:accesspackage:revisormedarbeider",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            },
+            {
+              "id": "2f176732-b1e9-449b-9918-090d1fa986f6",
+              "urn": "urn:altinn:accesspackage:ansvarlig-revisor",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "client": {
+        "id": "09db319a-be36-4aa5-b6d0-9a3bbac916cd",
+        "name": "ÆRLIG MÅTEHOLDEN TIGER AS",
+        "type": "Organisasjon",
+        "variant": "AS",
+        "parent": null,
+        "children": null,
+        "partyid": 51278717,
+        "userId": null,
+        "username": null,
+        "organizationIdentifier": "311045210",
+        "personIdentifier": null,
+        "dateOfBirth": null,
+        "dateOfDeath": null,
+        "isDeleted": false,
+        "deletedAt": null
+      },
+      "access": [
+        {
+          "role": {
+            "id": "f76b997a-9bd8-4f7b-899f-fcd85d35669f",
+            "code": "revisor",
+            "urn": "urn:altinn:external-role:ccr:revisor",
+            "legacyurn ": "urn:altinn:rolecode:revi",
+            "children": null
+          },
+          "packages": [
+            {
+              "id": "2f176732-b1e9-449b-9918-090d1fa986f6",
+              "urn": "urn:altinn:accesspackage:ansvarlig-revisor",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            },
+            {
+              "id": "96120c32-389d-46eb-8212-0a6540540c25",
+              "urn": "urn:altinn:accesspackage:revisormedarbeider",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "client": {
+        "id": "0aae8e1b-1a52-4309-973e-b1c95b5a048b",
+        "name": "SJELDEN URIMELIG TIGER AS",
+        "type": "Organisasjon",
+        "variant": "AS",
+        "parent": null,
+        "children": null,
+        "partyid": 51271561,
+        "userId": null,
+        "username": null,
+        "organizationIdentifier": "310964980",
+        "personIdentifier": null,
+        "dateOfBirth": null,
+        "dateOfDeath": null,
+        "isDeleted": false,
+        "deletedAt": null
+      },
+      "access": [
+        {
+          "role": {
+            "id": "f76b997a-9bd8-4f7b-899f-fcd85d35669f",
+            "code": "revisor",
+            "urn": "urn:altinn:external-role:ccr:revisor",
+            "legacyurn ": "urn:altinn:rolecode:revi",
+            "children": null
+          },
+          "packages": [
+            {
+              "id": "2f176732-b1e9-449b-9918-090d1fa986f6",
+              "urn": "urn:altinn:accesspackage:ansvarlig-revisor",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            },
+            {
+              "id": "96120c32-389d-46eb-8212-0a6540540c25",
+              "urn": "urn:altinn:accesspackage:revisormedarbeider",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "client": {
+        "id": "0d6f4849-3907-4e2a-b946-6e8d07c7e6a6",
+        "name": "DYPSINDIG TOPP TIGER AS",
+        "type": "Organisasjon",
+        "variant": "AS",
+        "parent": null,
+        "children": null,
+        "partyid": 51537482,
+        "userId": null,
+        "username": null,
+        "organizationIdentifier": "313862658",
+        "personIdentifier": null,
+        "dateOfBirth": null,
+        "dateOfDeath": null,
+        "isDeleted": false,
+        "deletedAt": null
+      },
+      "access": [
+        {
+          "role": {
+            "id": "f76b997a-9bd8-4f7b-899f-fcd85d35669f",
+            "code": "revisor",
+            "urn": "urn:altinn:external-role:ccr:revisor",
+            "legacyurn ": "urn:altinn:rolecode:revi",
+            "children": null
+          },
+          "packages": [
+            {
+              "id": "96120c32-389d-46eb-8212-0a6540540c25",
+              "urn": "urn:altinn:accesspackage:revisormedarbeider",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            },
+            {
+              "id": "2f176732-b1e9-449b-9918-090d1fa986f6",
+              "urn": "urn:altinn:accesspackage:ansvarlig-revisor",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "client": {
+        "id": "0f1debf1-9a87-49f5-8dc0-2af310fafaaf",
+        "name": "LOGISK SART TIGER AS",
+        "type": "Organisasjon",
+        "variant": "AS",
+        "parent": null,
+        "children": null,
+        "partyid": 51531212,
+        "userId": null,
+        "username": null,
+        "organizationIdentifier": "313772756",
+        "personIdentifier": null,
+        "dateOfBirth": null,
+        "dateOfDeath": null,
+        "isDeleted": false,
+        "deletedAt": null
+      },
+      "access": [
+        {
+          "role": {
+            "id": "f76b997a-9bd8-4f7b-899f-fcd85d35669f",
+            "code": "revisor",
+            "urn": "urn:altinn:external-role:ccr:revisor",
+            "legacyurn ": "urn:altinn:rolecode:revi",
+            "children": null
+          },
+          "packages": [
+            {
+              "id": "96120c32-389d-46eb-8212-0a6540540c25",
+              "urn": "urn:altinn:accesspackage:revisormedarbeider",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            },
+            {
+              "id": "2f176732-b1e9-449b-9918-090d1fa986f6",
+              "urn": "urn:altinn:accesspackage:ansvarlig-revisor",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "client": {
+        "id": "0faa0b7a-fcfb-4a47-8639-b06b04649d98",
+        "name": "GREI RIMELIG STRUTS AB",
+        "type": "Organisasjon",
+        "variant": "NUF",
+        "parent": null,
+        "children": null,
+        "partyid": 51529968,
+        "userId": null,
+        "username": null,
+        "organizationIdentifier": "313754367",
+        "personIdentifier": null,
+        "dateOfBirth": null,
+        "dateOfDeath": null,
+        "isDeleted": false,
+        "deletedAt": null
+      },
+      "access": [
+        {
+          "role": {
+            "id": "f76b997a-9bd8-4f7b-899f-fcd85d35669f",
+            "code": "revisor",
+            "urn": "urn:altinn:external-role:ccr:revisor",
+            "legacyurn ": "urn:altinn:rolecode:revi",
+            "children": null
+          },
+          "packages": [
+            {
+              "id": "2f176732-b1e9-449b-9918-090d1fa986f6",
+              "urn": "urn:altinn:accesspackage:ansvarlig-revisor",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            },
+            {
+              "id": "96120c32-389d-46eb-8212-0a6540540c25",
+              "urn": "urn:altinn:accesspackage:revisormedarbeider",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "client": {
+        "id": "10b106ed-3da7-4499-a5da-357976a801c1",
+        "name": "MORSOM VIS TIGER AS",
+        "type": "Organisasjon",
+        "variant": "AS",
+        "parent": null,
+        "children": null,
+        "partyid": 51156878,
+        "userId": null,
+        "username": null,
+        "organizationIdentifier": "214034522",
+        "personIdentifier": null,
+        "dateOfBirth": null,
+        "dateOfDeath": null,
+        "isDeleted": false,
+        "deletedAt": null
+      },
+      "access": [
+        {
+          "role": {
+            "id": "f76b997a-9bd8-4f7b-899f-fcd85d35669f",
+            "code": "revisor",
+            "urn": "urn:altinn:external-role:ccr:revisor",
+            "legacyurn ": "urn:altinn:rolecode:revi",
+            "children": null
+          },
+          "packages": [
+            {
+              "id": "2f176732-b1e9-449b-9918-090d1fa986f6",
+              "urn": "urn:altinn:accesspackage:ansvarlig-revisor",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            },
+            {
+              "id": "96120c32-389d-46eb-8212-0a6540540c25",
+              "urn": "urn:altinn:accesspackage:revisormedarbeider",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "client": {
+        "id": "13cb741d-a7ef-4713-8cea-ae2f0073e6b1",
+        "name": "OMTENKSOM BARMHJERTIG TIGER AS",
+        "type": "Organisasjon",
+        "variant": "AS",
+        "parent": null,
+        "children": null,
+        "partyid": 51294906,
+        "userId": null,
+        "username": null,
+        "organizationIdentifier": "313193063",
+        "personIdentifier": null,
+        "dateOfBirth": null,
+        "dateOfDeath": null,
+        "isDeleted": false,
+        "deletedAt": null
+      },
+      "access": [
+        {
+          "role": {
+            "id": "f76b997a-9bd8-4f7b-899f-fcd85d35669f",
+            "code": "revisor",
+            "urn": "urn:altinn:external-role:ccr:revisor",
+            "legacyurn ": "urn:altinn:rolecode:revi",
+            "children": null
+          },
+          "packages": [
+            {
+              "id": "96120c32-389d-46eb-8212-0a6540540c25",
+              "urn": "urn:altinn:accesspackage:revisormedarbeider",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            },
+            {
+              "id": "2f176732-b1e9-449b-9918-090d1fa986f6",
+              "urn": "urn:altinn:accesspackage:ansvarlig-revisor",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "client": {
+        "id": "13f6b424-a7dc-4a97-9a5d-a7f8d429498f",
+        "name": "EIERSEKSJONSSAMEIET MORSOM INKONSEKVENT LØVE",
+        "type": "Organisasjon",
+        "variant": "ESEK",
+        "parent": null,
+        "children": null,
+        "partyid": 51484777,
+        "userId": null,
+        "username": null,
+        "organizationIdentifier": "313106020",
+        "personIdentifier": null,
+        "dateOfBirth": null,
+        "dateOfDeath": null,
+        "isDeleted": false,
+        "deletedAt": null
+      },
+      "access": [
+        {
+          "role": {
+            "id": "f76b997a-9bd8-4f7b-899f-fcd85d35669f",
+            "code": "revisor",
+            "urn": "urn:altinn:external-role:ccr:revisor",
+            "legacyurn ": "urn:altinn:rolecode:revi",
+            "children": null
+          },
+          "packages": [
+            {
+              "id": "2f176732-b1e9-449b-9918-090d1fa986f6",
+              "urn": "urn:altinn:accesspackage:ansvarlig-revisor",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            },
+            {
+              "id": "96120c32-389d-46eb-8212-0a6540540c25",
+              "urn": "urn:altinn:accesspackage:revisormedarbeider",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "client": {
+        "id": "18552590-00c7-46ec-b747-8014251b5527",
+        "name": "LYSEBLÅ VÅKEN TIGER AS",
+        "type": "Organisasjon",
+        "variant": "AS",
+        "parent": null,
+        "children": null,
+        "partyid": 51151774,
+        "userId": null,
+        "username": null,
+        "organizationIdentifier": "213501232",
+        "personIdentifier": null,
+        "dateOfBirth": null,
+        "dateOfDeath": null,
+        "isDeleted": false,
+        "deletedAt": null
+      },
+      "access": [
+        {
+          "role": {
+            "id": "f76b997a-9bd8-4f7b-899f-fcd85d35669f",
+            "code": "revisor",
+            "urn": "urn:altinn:external-role:ccr:revisor",
+            "legacyurn ": "urn:altinn:rolecode:revi",
+            "children": null
+          },
+          "packages": [
+            {
+              "id": "2f176732-b1e9-449b-9918-090d1fa986f6",
+              "urn": "urn:altinn:accesspackage:ansvarlig-revisor",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            },
+            {
+              "id": "96120c32-389d-46eb-8212-0a6540540c25",
+              "urn": "urn:altinn:accesspackage:revisormedarbeider",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "client": {
+        "id": "19dd089a-86d1-42c6-8046-754f5d436f63",
+        "name": "REDELIG ÆRLIG TIGER AS",
+        "type": "Organisasjon",
+        "variant": "AS",
+        "parent": null,
+        "children": null,
+        "partyid": 51515280,
+        "userId": null,
+        "username": null,
+        "organizationIdentifier": "313542785",
+        "personIdentifier": null,
+        "dateOfBirth": null,
+        "dateOfDeath": null,
+        "isDeleted": false,
+        "deletedAt": null
+      },
+      "access": [
+        {
+          "role": {
+            "id": "f76b997a-9bd8-4f7b-899f-fcd85d35669f",
+            "code": "revisor",
+            "urn": "urn:altinn:external-role:ccr:revisor",
+            "legacyurn ": "urn:altinn:rolecode:revi",
+            "children": null
+          },
+          "packages": [
+            {
+              "id": "2f176732-b1e9-449b-9918-090d1fa986f6",
+              "urn": "urn:altinn:accesspackage:ansvarlig-revisor",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            },
+            {
+              "id": "96120c32-389d-46eb-8212-0a6540540c25",
+              "urn": "urn:altinn:accesspackage:revisormedarbeider",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "client": {
+        "id": "1d06ac40-6a11-48b1-9930-ac5586bb07c3",
+        "name": "OVERFLØDIG KLASSISK TIGER AS",
+        "type": "Organisasjon",
+        "variant": "AS",
+        "parent": null,
+        "children": null,
+        "partyid": 51143244,
+        "userId": null,
+        "username": null,
+        "organizationIdentifier": "212616362",
+        "personIdentifier": null,
+        "dateOfBirth": null,
+        "dateOfDeath": null,
+        "isDeleted": false,
+        "deletedAt": null
+      },
+      "access": [
+        {
+          "role": {
+            "id": "f76b997a-9bd8-4f7b-899f-fcd85d35669f",
+            "code": "revisor",
+            "urn": "urn:altinn:external-role:ccr:revisor",
+            "legacyurn ": "urn:altinn:rolecode:revi",
+            "children": null
+          },
+          "packages": [
+            {
+              "id": "96120c32-389d-46eb-8212-0a6540540c25",
+              "urn": "urn:altinn:accesspackage:revisormedarbeider",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            },
+            {
+              "id": "2f176732-b1e9-449b-9918-090d1fa986f6",
+              "urn": "urn:altinn:accesspackage:ansvarlig-revisor",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "client": {
+        "id": "1d7044d1-b54e-4bab-88b1-e3458f966b0d",
+        "name": "ULLEN INTERNASJONAL TIGER AS",
+        "type": "Organisasjon",
+        "variant": "AS",
+        "parent": null,
+        "children": null,
+        "partyid": 51366558,
+        "userId": null,
+        "username": null,
+        "organizationIdentifier": "311783815",
+        "personIdentifier": null,
+        "dateOfBirth": null,
+        "dateOfDeath": null,
+        "isDeleted": false,
+        "deletedAt": null
+      },
+      "access": [
+        {
+          "role": {
+            "id": "f76b997a-9bd8-4f7b-899f-fcd85d35669f",
+            "code": "revisor",
+            "urn": "urn:altinn:external-role:ccr:revisor",
+            "legacyurn ": "urn:altinn:rolecode:revi",
+            "children": null
+          },
+          "packages": [
+            {
+              "id": "96120c32-389d-46eb-8212-0a6540540c25",
+              "urn": "urn:altinn:accesspackage:revisormedarbeider",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            },
+            {
+              "id": "2f176732-b1e9-449b-9918-090d1fa986f6",
+              "urn": "urn:altinn:accesspackage:ansvarlig-revisor",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "client": {
+        "id": "1e1f9d89-7419-4af3-bd34-8a914739a5fd",
+        "name": "VENNLIG GRETTEN TIGER AS",
+        "type": "Organisasjon",
+        "variant": "AS",
+        "parent": null,
+        "children": null,
+        "partyid": 51219683,
+        "userId": null,
+        "username": null,
+        "organizationIdentifier": "310381659",
+        "personIdentifier": null,
+        "dateOfBirth": null,
+        "dateOfDeath": null,
+        "isDeleted": false,
+        "deletedAt": null
+      },
+      "access": [
+        {
+          "role": {
+            "id": "f76b997a-9bd8-4f7b-899f-fcd85d35669f",
+            "code": "revisor",
+            "urn": "urn:altinn:external-role:ccr:revisor",
+            "legacyurn ": "urn:altinn:rolecode:revi",
+            "children": null
+          },
+          "packages": [
+            {
+              "id": "96120c32-389d-46eb-8212-0a6540540c25",
+              "urn": "urn:altinn:accesspackage:revisormedarbeider",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            },
+            {
+              "id": "2f176732-b1e9-449b-9918-090d1fa986f6",
+              "urn": "urn:altinn:accesspackage:ansvarlig-revisor",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "client": {
+        "id": "271405ce-4d88-44ed-af1d-94f76d78e70c",
+        "name": "UNDERLIG INNSIKTSFULL TIGER AS",
+        "type": "Organisasjon",
+        "variant": "AS",
+        "parent": null,
+        "children": null,
+        "partyid": 51286762,
+        "userId": null,
+        "username": null,
+        "organizationIdentifier": "311135619",
+        "personIdentifier": null,
+        "dateOfBirth": null,
+        "dateOfDeath": null,
+        "isDeleted": false,
+        "deletedAt": null
+      },
+      "access": [
+        {
+          "role": {
+            "id": "f76b997a-9bd8-4f7b-899f-fcd85d35669f",
+            "code": "revisor",
+            "urn": "urn:altinn:external-role:ccr:revisor",
+            "legacyurn ": "urn:altinn:rolecode:revi",
+            "children": null
+          },
+          "packages": [
+            {
+              "id": "2f176732-b1e9-449b-9918-090d1fa986f6",
+              "urn": "urn:altinn:accesspackage:ansvarlig-revisor",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            },
+            {
+              "id": "96120c32-389d-46eb-8212-0a6540540c25",
+              "urn": "urn:altinn:accesspackage:revisormedarbeider",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "client": {
+        "id": "28044609-ba90-412a-8b51-b9e1e273bbd2",
+        "name": "ALFABETISK RØD TIGER AS",
+        "type": "Organisasjon",
+        "variant": "AS",
+        "parent": null,
+        "children": null,
+        "partyid": 51461038,
+        "userId": null,
+        "username": null,
+        "organizationIdentifier": "312767732",
+        "personIdentifier": null,
+        "dateOfBirth": null,
+        "dateOfDeath": null,
+        "isDeleted": false,
+        "deletedAt": null
+      },
+      "access": [
+        {
+          "role": {
+            "id": "f76b997a-9bd8-4f7b-899f-fcd85d35669f",
+            "code": "revisor",
+            "urn": "urn:altinn:external-role:ccr:revisor",
+            "legacyurn ": "urn:altinn:rolecode:revi",
+            "children": null
+          },
+          "packages": [
+            {
+              "id": "2f176732-b1e9-449b-9918-090d1fa986f6",
+              "urn": "urn:altinn:accesspackage:ansvarlig-revisor",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            },
+            {
+              "id": "96120c32-389d-46eb-8212-0a6540540c25",
+              "urn": "urn:altinn:accesspackage:revisormedarbeider",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "client": {
+        "id": "2d817ccf-bc15-4467-b54b-164da2172428",
+        "name": "LYDIG TRIST TIGER AS",
+        "type": "Organisasjon",
+        "variant": "AS",
+        "parent": null,
+        "children": null,
+        "partyid": 51159081,
+        "userId": null,
+        "username": null,
+        "organizationIdentifier": "214286602",
+        "personIdentifier": null,
+        "dateOfBirth": null,
+        "dateOfDeath": null,
+        "isDeleted": false,
+        "deletedAt": null
+      },
+      "access": [
+        {
+          "role": {
+            "id": "f76b997a-9bd8-4f7b-899f-fcd85d35669f",
+            "code": "revisor",
+            "urn": "urn:altinn:external-role:ccr:revisor",
+            "legacyurn ": "urn:altinn:rolecode:revi",
+            "children": null
+          },
+          "packages": [
+            {
+              "id": "96120c32-389d-46eb-8212-0a6540540c25",
+              "urn": "urn:altinn:accesspackage:revisormedarbeider",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            },
+            {
+              "id": "2f176732-b1e9-449b-9918-090d1fa986f6",
+              "urn": "urn:altinn:accesspackage:ansvarlig-revisor",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "client": {
+        "id": "3057b61b-0998-4774-bd1f-c7e7e0753469",
+        "name": "REDELIG HEMMELIGHETSFULL TIGER AS",
+        "type": "Organisasjon",
+        "variant": "AS",
+        "parent": null,
+        "children": null,
+        "partyid": 51496892,
+        "userId": null,
+        "username": null,
+        "organizationIdentifier": "313278662",
+        "personIdentifier": null,
+        "dateOfBirth": null,
+        "dateOfDeath": null,
+        "isDeleted": false,
+        "deletedAt": null
+      },
+      "access": [
+        {
+          "role": {
+            "id": "f76b997a-9bd8-4f7b-899f-fcd85d35669f",
+            "code": "revisor",
+            "urn": "urn:altinn:external-role:ccr:revisor",
+            "legacyurn ": "urn:altinn:rolecode:revi",
+            "children": null
+          },
+          "packages": [
+            {
+              "id": "96120c32-389d-46eb-8212-0a6540540c25",
+              "urn": "urn:altinn:accesspackage:revisormedarbeider",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            },
+            {
+              "id": "2f176732-b1e9-449b-9918-090d1fa986f6",
+              "urn": "urn:altinn:accesspackage:ansvarlig-revisor",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "client": {
+        "id": "31f72be1-c0d1-44d9-90d5-33c4e11eaeb6",
+        "name": "HUSLØS EKSPLOSIV TIGER AS",
+        "type": "Organisasjon",
+        "variant": "AS",
+        "parent": null,
+        "children": null,
+        "partyid": 51245992,
+        "userId": null,
+        "username": null,
+        "organizationIdentifier": "310676519",
+        "personIdentifier": null,
+        "dateOfBirth": null,
+        "dateOfDeath": null,
+        "isDeleted": false,
+        "deletedAt": null
+      },
+      "access": [
+        {
+          "role": {
+            "id": "f76b997a-9bd8-4f7b-899f-fcd85d35669f",
+            "code": "revisor",
+            "urn": "urn:altinn:external-role:ccr:revisor",
+            "legacyurn ": "urn:altinn:rolecode:revi",
+            "children": null
+          },
+          "packages": [
+            {
+              "id": "2f176732-b1e9-449b-9918-090d1fa986f6",
+              "urn": "urn:altinn:accesspackage:ansvarlig-revisor",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            },
+            {
+              "id": "96120c32-389d-46eb-8212-0a6540540c25",
+              "urn": "urn:altinn:accesspackage:revisormedarbeider",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "client": {
+        "id": "334c70c5-0643-4d6d-894f-1c78496d85fe",
+        "name": "OMTENKSOM KONSEKVENT TIGER AS",
+        "type": "Organisasjon",
+        "variant": "AS",
+        "parent": null,
+        "children": null,
+        "partyid": 51559130,
+        "userId": null,
+        "username": null,
+        "organizationIdentifier": "314174186",
+        "personIdentifier": null,
+        "dateOfBirth": null,
+        "dateOfDeath": null,
+        "isDeleted": false,
+        "deletedAt": null
+      },
+      "access": [
+        {
+          "role": {
+            "id": "f76b997a-9bd8-4f7b-899f-fcd85d35669f",
+            "code": "revisor",
+            "urn": "urn:altinn:external-role:ccr:revisor",
+            "legacyurn ": "urn:altinn:rolecode:revi",
+            "children": null
+          },
+          "packages": [
+            {
+              "id": "96120c32-389d-46eb-8212-0a6540540c25",
+              "urn": "urn:altinn:accesspackage:revisormedarbeider",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            },
+            {
+              "id": "2f176732-b1e9-449b-9918-090d1fa986f6",
+              "urn": "urn:altinn:accesspackage:ansvarlig-revisor",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "client": {
+        "id": "339db947-1d55-4c28-9785-f71ca69acbff",
+        "name": "VOKAL KOMISK TIGER AS",
+        "type": "Organisasjon",
+        "variant": "AS",
+        "parent": null,
+        "children": null,
+        "partyid": 51187149,
+        "userId": null,
+        "username": null,
+        "organizationIdentifier": "310020893",
+        "personIdentifier": null,
+        "dateOfBirth": null,
+        "dateOfDeath": null,
+        "isDeleted": false,
+        "deletedAt": null
+      },
+      "access": [
+        {
+          "role": {
+            "id": "f76b997a-9bd8-4f7b-899f-fcd85d35669f",
+            "code": "revisor",
+            "urn": "urn:altinn:external-role:ccr:revisor",
+            "legacyurn ": "urn:altinn:rolecode:revi",
+            "children": null
+          },
+          "packages": [
+            {
+              "id": "2f176732-b1e9-449b-9918-090d1fa986f6",
+              "urn": "urn:altinn:accesspackage:ansvarlig-revisor",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            },
+            {
+              "id": "96120c32-389d-46eb-8212-0a6540540c25",
+              "urn": "urn:altinn:accesspackage:revisormedarbeider",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "client": {
+        "id": "33e20625-c5c0-41e2-8a4f-3b840d4f47f7",
+        "name": "AUTONOM MORALSK TIGER AS",
+        "type": "Organisasjon",
+        "variant": "AS",
+        "parent": null,
+        "children": null,
+        "partyid": 51266050,
+        "userId": null,
+        "username": null,
+        "organizationIdentifier": "310902950",
+        "personIdentifier": null,
+        "dateOfBirth": null,
+        "dateOfDeath": null,
+        "isDeleted": false,
+        "deletedAt": null
+      },
+      "access": [
+        {
+          "role": {
+            "id": "f76b997a-9bd8-4f7b-899f-fcd85d35669f",
+            "code": "revisor",
+            "urn": "urn:altinn:external-role:ccr:revisor",
+            "legacyurn ": "urn:altinn:rolecode:revi",
+            "children": null
+          },
+          "packages": [
+            {
+              "id": "2f176732-b1e9-449b-9918-090d1fa986f6",
+              "urn": "urn:altinn:accesspackage:ansvarlig-revisor",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            },
+            {
+              "id": "96120c32-389d-46eb-8212-0a6540540c25",
+              "urn": "urn:altinn:accesspackage:revisormedarbeider",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "client": {
+        "id": "34c08222-18d0-4ccc-a19a-b85cb1c655a9",
+        "name": "TROVERDIG SKEPTISK KROKODILLE",
+        "type": "Organisasjon",
+        "variant": "STI",
+        "parent": null,
+        "children": null,
+        "partyid": 51328074,
+        "userId": null,
+        "username": null,
+        "organizationIdentifier": "313816656",
+        "personIdentifier": null,
+        "dateOfBirth": null,
+        "dateOfDeath": null,
+        "isDeleted": false,
+        "deletedAt": null
+      },
+      "access": [
+        {
+          "role": {
+            "id": "f76b997a-9bd8-4f7b-899f-fcd85d35669f",
+            "code": "revisor",
+            "urn": "urn:altinn:external-role:ccr:revisor",
+            "legacyurn ": "urn:altinn:rolecode:revi",
+            "children": null
+          },
+          "packages": [
+            {
+              "id": "2f176732-b1e9-449b-9918-090d1fa986f6",
+              "urn": "urn:altinn:accesspackage:ansvarlig-revisor",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            },
+            {
+              "id": "96120c32-389d-46eb-8212-0a6540540c25",
+              "urn": "urn:altinn:accesspackage:revisormedarbeider",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "client": {
+        "id": "3510c85f-9f00-422a-9651-ad3ff57f5bcd",
+        "name": "SIGEN INTERESSANT TIGER AS",
+        "type": "Organisasjon",
+        "variant": "AS",
+        "parent": null,
+        "children": null,
+        "partyid": 51147350,
+        "userId": null,
+        "username": null,
+        "organizationIdentifier": "213039032",
+        "personIdentifier": null,
+        "dateOfBirth": null,
+        "dateOfDeath": null,
+        "isDeleted": false,
+        "deletedAt": null
+      },
+      "access": [
+        {
+          "role": {
+            "id": "f76b997a-9bd8-4f7b-899f-fcd85d35669f",
+            "code": "revisor",
+            "urn": "urn:altinn:external-role:ccr:revisor",
+            "legacyurn ": "urn:altinn:rolecode:revi",
+            "children": null
+          },
+          "packages": [
+            {
+              "id": "96120c32-389d-46eb-8212-0a6540540c25",
+              "urn": "urn:altinn:accesspackage:revisormedarbeider",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            },
+            {
+              "id": "2f176732-b1e9-449b-9918-090d1fa986f6",
+              "urn": "urn:altinn:accesspackage:ansvarlig-revisor",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "client": {
+        "id": "390ed0ce-5c86-470c-bcde-1c31a029299a",
+        "name": "KRY RING TIGER AS",
+        "type": "Organisasjon",
+        "variant": "AS",
+        "parent": null,
+        "children": null,
+        "partyid": 51112159,
+        "userId": null,
+        "username": null,
+        "organizationIdentifier": "314254643",
+        "personIdentifier": null,
+        "dateOfBirth": null,
+        "dateOfDeath": null,
+        "isDeleted": false,
+        "deletedAt": null
+      },
+      "access": [
+        {
+          "role": {
+            "id": "f76b997a-9bd8-4f7b-899f-fcd85d35669f",
+            "code": "revisor",
+            "urn": "urn:altinn:external-role:ccr:revisor",
+            "legacyurn ": "urn:altinn:rolecode:revi",
+            "children": null
+          },
+          "packages": [
+            {
+              "id": "2f176732-b1e9-449b-9918-090d1fa986f6",
+              "urn": "urn:altinn:accesspackage:ansvarlig-revisor",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            },
+            {
+              "id": "96120c32-389d-46eb-8212-0a6540540c25",
+              "urn": "urn:altinn:accesspackage:revisormedarbeider",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "client": {
+        "id": "39d2ca10-cf1a-4f38-9a61-0f94b19587e7",
+        "name": "SPESIELL ELEKTRONISK TIGER AS",
+        "type": "Organisasjon",
+        "variant": "AS",
+        "parent": null,
+        "children": null,
+        "partyid": 51237778,
+        "userId": null,
+        "username": null,
+        "organizationIdentifier": "310584436",
+        "personIdentifier": null,
+        "dateOfBirth": null,
+        "dateOfDeath": null,
+        "isDeleted": false,
+        "deletedAt": null
+      },
+      "access": [
+        {
+          "role": {
+            "id": "f76b997a-9bd8-4f7b-899f-fcd85d35669f",
+            "code": "revisor",
+            "urn": "urn:altinn:external-role:ccr:revisor",
+            "legacyurn ": "urn:altinn:rolecode:revi",
+            "children": null
+          },
+          "packages": [
+            {
+              "id": "96120c32-389d-46eb-8212-0a6540540c25",
+              "urn": "urn:altinn:accesspackage:revisormedarbeider",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            },
+            {
+              "id": "2f176732-b1e9-449b-9918-090d1fa986f6",
+              "urn": "urn:altinn:accesspackage:ansvarlig-revisor",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "client": {
+        "id": "3b3b3062-3073-477b-953e-cb14a579f3dd",
+        "name": "ORANSJE BESKJEDEN TIGER AS",
+        "type": "Organisasjon",
+        "variant": "AS",
+        "parent": null,
+        "children": null,
+        "partyid": 51144146,
+        "userId": null,
+        "username": null,
+        "organizationIdentifier": "212708062",
+        "personIdentifier": null,
+        "dateOfBirth": null,
+        "dateOfDeath": null,
+        "isDeleted": false,
+        "deletedAt": null
+      },
+      "access": [
+        {
+          "role": {
+            "id": "f76b997a-9bd8-4f7b-899f-fcd85d35669f",
+            "code": "revisor",
+            "urn": "urn:altinn:external-role:ccr:revisor",
+            "legacyurn ": "urn:altinn:rolecode:revi",
+            "children": null
+          },
+          "packages": [
+            {
+              "id": "2f176732-b1e9-449b-9918-090d1fa986f6",
+              "urn": "urn:altinn:accesspackage:ansvarlig-revisor",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            },
+            {
+              "id": "96120c32-389d-46eb-8212-0a6540540c25",
+              "urn": "urn:altinn:accesspackage:revisormedarbeider",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "client": {
+        "id": "3beea5d1-dbbf-4468-a0f6-e3c181318756",
+        "name": "LØSNINGSORIENTERT ENKEL TIGER AS",
+        "type": "Organisasjon",
+        "variant": "AS",
+        "parent": null,
+        "children": null,
+        "partyid": 51475530,
+        "userId": null,
+        "username": null,
+        "organizationIdentifier": "312974398",
+        "personIdentifier": null,
+        "dateOfBirth": null,
+        "dateOfDeath": null,
+        "isDeleted": false,
+        "deletedAt": null
+      },
+      "access": [
+        {
+          "role": {
+            "id": "f76b997a-9bd8-4f7b-899f-fcd85d35669f",
+            "code": "revisor",
+            "urn": "urn:altinn:external-role:ccr:revisor",
+            "legacyurn ": "urn:altinn:rolecode:revi",
+            "children": null
+          },
+          "packages": [
+            {
+              "id": "96120c32-389d-46eb-8212-0a6540540c25",
+              "urn": "urn:altinn:accesspackage:revisormedarbeider",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            },
+            {
+              "id": "2f176732-b1e9-449b-9918-090d1fa986f6",
+              "urn": "urn:altinn:accesspackage:ansvarlig-revisor",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "client": {
+        "id": "3c21cbcd-3758-4fbe-b97d-9f142b3aa107",
+        "name": "UFORNUFTIG ULOGISK TIGER AS",
+        "type": "Organisasjon",
+        "variant": "AS",
+        "parent": null,
+        "children": null,
+        "partyid": 51361705,
+        "userId": null,
+        "username": null,
+        "organizationIdentifier": "311722719",
+        "personIdentifier": null,
+        "dateOfBirth": null,
+        "dateOfDeath": null,
+        "isDeleted": false,
+        "deletedAt": null
+      },
+      "access": [
+        {
+          "role": {
+            "id": "f76b997a-9bd8-4f7b-899f-fcd85d35669f",
+            "code": "revisor",
+            "urn": "urn:altinn:external-role:ccr:revisor",
+            "legacyurn ": "urn:altinn:rolecode:revi",
+            "children": null
+          },
+          "packages": [
+            {
+              "id": "96120c32-389d-46eb-8212-0a6540540c25",
+              "urn": "urn:altinn:accesspackage:revisormedarbeider",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            },
+            {
+              "id": "2f176732-b1e9-449b-9918-090d1fa986f6",
+              "urn": "urn:altinn:accesspackage:ansvarlig-revisor",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "client": {
+        "id": "3c630624-3789-4955-aee0-0af7c70e18b7",
+        "name": "TØFF SITRONGUL TIGER AS",
+        "type": "Organisasjon",
+        "variant": "AS",
+        "parent": null,
+        "children": null,
+        "partyid": 51538129,
+        "userId": null,
+        "username": null,
+        "organizationIdentifier": "313872076",
+        "personIdentifier": null,
+        "dateOfBirth": null,
+        "dateOfDeath": null,
+        "isDeleted": false,
+        "deletedAt": null
+      },
+      "access": [
+        {
+          "role": {
+            "id": "f76b997a-9bd8-4f7b-899f-fcd85d35669f",
+            "code": "revisor",
+            "urn": "urn:altinn:external-role:ccr:revisor",
+            "legacyurn ": "urn:altinn:rolecode:revi",
+            "children": null
+          },
+          "packages": [
+            {
+              "id": "2f176732-b1e9-449b-9918-090d1fa986f6",
+              "urn": "urn:altinn:accesspackage:ansvarlig-revisor",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            },
+            {
+              "id": "96120c32-389d-46eb-8212-0a6540540c25",
+              "urn": "urn:altinn:accesspackage:revisormedarbeider",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "client": {
+        "id": "3cf2784e-fd8d-422e-aaa7-bf43304a6467",
+        "name": "SVIMMEL ORDENTLIG TIGER AS",
+        "type": "Organisasjon",
+        "variant": "AS",
+        "parent": null,
+        "children": null,
+        "partyid": 51528647,
+        "userId": null,
+        "username": null,
+        "organizationIdentifier": "313734986",
+        "personIdentifier": null,
+        "dateOfBirth": null,
+        "dateOfDeath": null,
+        "isDeleted": false,
+        "deletedAt": null
+      },
+      "access": [
+        {
+          "role": {
+            "id": "f76b997a-9bd8-4f7b-899f-fcd85d35669f",
+            "code": "revisor",
+            "urn": "urn:altinn:external-role:ccr:revisor",
+            "legacyurn ": "urn:altinn:rolecode:revi",
+            "children": null
+          },
+          "packages": [
+            {
+              "id": "96120c32-389d-46eb-8212-0a6540540c25",
+              "urn": "urn:altinn:accesspackage:revisormedarbeider",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            },
+            {
+              "id": "2f176732-b1e9-449b-9918-090d1fa986f6",
+              "urn": "urn:altinn:accesspackage:ansvarlig-revisor",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "client": {
+        "id": "3d4eb214-3a44-4398-a16e-a9a62aa12e4f",
+        "name": "FYSISK SIST ISBJØRN SA",
+        "type": "Organisasjon",
+        "variant": "SA",
+        "parent": null,
+        "children": null,
+        "partyid": 51257637,
+        "userId": null,
+        "username": null,
+        "organizationIdentifier": "310807974",
+        "personIdentifier": null,
+        "dateOfBirth": null,
+        "dateOfDeath": null,
+        "isDeleted": false,
+        "deletedAt": null
+      },
+      "access": [
+        {
+          "role": {
+            "id": "f76b997a-9bd8-4f7b-899f-fcd85d35669f",
+            "code": "revisor",
+            "urn": "urn:altinn:external-role:ccr:revisor",
+            "legacyurn ": "urn:altinn:rolecode:revi",
+            "children": null
+          },
+          "packages": [
+            {
+              "id": "96120c32-389d-46eb-8212-0a6540540c25",
+              "urn": "urn:altinn:accesspackage:revisormedarbeider",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            },
+            {
+              "id": "2f176732-b1e9-449b-9918-090d1fa986f6",
+              "urn": "urn:altinn:accesspackage:ansvarlig-revisor",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "client": {
+        "id": "3e497018-586c-4cbf-9bd3-48cbb9953982",
+        "name": "AUTONOM SPESIFIKK APE",
+        "type": "Organisasjon",
+        "variant": "FLI",
+        "parent": null,
+        "children": null,
+        "partyid": 51248663,
+        "userId": null,
+        "username": null,
+        "organizationIdentifier": "310706485",
+        "personIdentifier": null,
+        "dateOfBirth": null,
+        "dateOfDeath": null,
+        "isDeleted": false,
+        "deletedAt": null
+      },
+      "access": [
+        {
+          "role": {
+            "id": "f76b997a-9bd8-4f7b-899f-fcd85d35669f",
+            "code": "revisor",
+            "urn": "urn:altinn:external-role:ccr:revisor",
+            "legacyurn ": "urn:altinn:rolecode:revi",
+            "children": null
+          },
+          "packages": [
+            {
+              "id": "96120c32-389d-46eb-8212-0a6540540c25",
+              "urn": "urn:altinn:accesspackage:revisormedarbeider",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            },
+            {
+              "id": "2f176732-b1e9-449b-9918-090d1fa986f6",
+              "urn": "urn:altinn:accesspackage:ansvarlig-revisor",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "client": {
+        "id": "3eae4b9a-088e-44b8-b72d-2f975a7adec7",
+        "name": "HENSIKTSMESSIG UMOTIVERT TIGER AS",
+        "type": "Organisasjon",
+        "variant": "AS",
+        "parent": null,
+        "children": null,
+        "partyid": 51517532,
+        "userId": null,
+        "username": null,
+        "organizationIdentifier": "313575586",
+        "personIdentifier": null,
+        "dateOfBirth": null,
+        "dateOfDeath": null,
+        "isDeleted": false,
+        "deletedAt": null
+      },
+      "access": [
+        {
+          "role": {
+            "id": "f76b997a-9bd8-4f7b-899f-fcd85d35669f",
+            "code": "revisor",
+            "urn": "urn:altinn:external-role:ccr:revisor",
+            "legacyurn ": "urn:altinn:rolecode:revi",
+            "children": null
+          },
+          "packages": [
+            {
+              "id": "2f176732-b1e9-449b-9918-090d1fa986f6",
+              "urn": "urn:altinn:accesspackage:ansvarlig-revisor",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            },
+            {
+              "id": "96120c32-389d-46eb-8212-0a6540540c25",
+              "urn": "urn:altinn:accesspackage:revisormedarbeider",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "client": {
+        "id": "3f02f8c6-b29b-4dd6-bff0-5b92db7bc5bf",
+        "name": "RU OPPJAGET TIGER AS",
+        "type": "Organisasjon",
+        "variant": "AS",
+        "parent": null,
+        "children": null,
+        "partyid": 51472350,
+        "userId": null,
+        "username": null,
+        "organizationIdentifier": "312929112",
+        "personIdentifier": null,
+        "dateOfBirth": null,
+        "dateOfDeath": null,
+        "isDeleted": false,
+        "deletedAt": null
+      },
+      "access": [
+        {
+          "role": {
+            "id": "f76b997a-9bd8-4f7b-899f-fcd85d35669f",
+            "code": "revisor",
+            "urn": "urn:altinn:external-role:ccr:revisor",
+            "legacyurn ": "urn:altinn:rolecode:revi",
+            "children": null
+          },
+          "packages": [
+            {
+              "id": "96120c32-389d-46eb-8212-0a6540540c25",
+              "urn": "urn:altinn:accesspackage:revisormedarbeider",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            },
+            {
+              "id": "2f176732-b1e9-449b-9918-090d1fa986f6",
+              "urn": "urn:altinn:accesspackage:ansvarlig-revisor",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "client": {
+        "id": "3fd54d0c-ca8d-4d1c-8526-c3c5ca449255",
+        "name": "RUSTEN RIK TIGER AS",
+        "type": "Organisasjon",
+        "variant": "AS",
+        "parent": null,
+        "children": null,
+        "partyid": 51384200,
+        "userId": null,
+        "username": null,
+        "organizationIdentifier": "312267446",
+        "personIdentifier": null,
+        "dateOfBirth": null,
+        "dateOfDeath": null,
+        "isDeleted": false,
+        "deletedAt": null
+      },
+      "access": [
+        {
+          "role": {
+            "id": "f76b997a-9bd8-4f7b-899f-fcd85d35669f",
+            "code": "revisor",
+            "urn": "urn:altinn:external-role:ccr:revisor",
+            "legacyurn ": "urn:altinn:rolecode:revi",
+            "children": null
+          },
+          "packages": [
+            {
+              "id": "96120c32-389d-46eb-8212-0a6540540c25",
+              "urn": "urn:altinn:accesspackage:revisormedarbeider",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            },
+            {
+              "id": "2f176732-b1e9-449b-9918-090d1fa986f6",
+              "urn": "urn:altinn:accesspackage:ansvarlig-revisor",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "client": {
+        "id": "401b595d-29d1-4636-a698-ada842c0b394",
+        "name": "FINTFØLENDE GJESTFRI HAMSTER KF",
+        "type": "Organisasjon",
+        "variant": "KF",
+        "parent": null,
+        "children": null,
+        "partyid": 51131094,
+        "userId": null,
+        "username": null,
+        "organizationIdentifier": "313334333",
+        "personIdentifier": null,
+        "dateOfBirth": null,
+        "dateOfDeath": null,
+        "isDeleted": false,
+        "deletedAt": null
+      },
+      "access": [
+        {
+          "role": {
+            "id": "46e27685-b3ba-423e-8b42-faab54de5817",
+            "code": "regnskapsforer",
+            "urn": "urn:altinn:external-role:ccr:regnskapsforer",
+            "legacyurn ": "urn:altinn:rolecode:regn",
+            "children": null
+          },
+          "packages": [
+            {
+              "id": "955d5779-3e2b-4098-b11d-0431dc41ddbe",
+              "urn": "urn:altinn:accesspackage:regnskapsforer-med-signeringsrettighet",
+              "areaId": "64cbcdc8-01c9-448c-b3d2-eb9582beb3c2"
+            },
+            {
+              "id": "a5f7f72a-9b89-445d-85bb-06f678a3d4d1",
+              "urn": "urn:altinn:accesspackage:regnskapsforer-uten-signeringsrettighet",
+              "areaId": "64cbcdc8-01c9-448c-b3d2-eb9582beb3c2"
+            },
+            {
+              "id": "43becc6a-8c6c-4e9e-bb2f-08fe588ada21",
+              "urn": "urn:altinn:accesspackage:regnskapsforer-lonn",
+              "areaId": "64cbcdc8-01c9-448c-b3d2-eb9582beb3c2"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "client": {
+        "id": "431a181a-135c-4a27-9184-2f4b5fb109e3",
+        "name": "VAKKER PRIKKETE TIGER AS",
+        "type": "Organisasjon",
+        "variant": "AS",
+        "parent": null,
+        "children": null,
+        "partyid": 51473107,
+        "userId": null,
+        "username": null,
+        "organizationIdentifier": "312939460",
+        "personIdentifier": null,
+        "dateOfBirth": null,
+        "dateOfDeath": null,
+        "isDeleted": false,
+        "deletedAt": null
+      },
+      "access": [
+        {
+          "role": {
+            "id": "f76b997a-9bd8-4f7b-899f-fcd85d35669f",
+            "code": "revisor",
+            "urn": "urn:altinn:external-role:ccr:revisor",
+            "legacyurn ": "urn:altinn:rolecode:revi",
+            "children": null
+          },
+          "packages": [
+            {
+              "id": "96120c32-389d-46eb-8212-0a6540540c25",
+              "urn": "urn:altinn:accesspackage:revisormedarbeider",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            },
+            {
+              "id": "2f176732-b1e9-449b-9918-090d1fa986f6",
+              "urn": "urn:altinn:accesspackage:ansvarlig-revisor",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            },
+            {
+              "id": "2e0d3443-1971-46db-97a4-6cbcd66f05f9",
+              "urn": "urn:altinn:accesspackage:skatt-naering",
+              "areaId": "f9b06605-7131-493b-b201-5f644ec693d8"
+            },
+            {
+              "id": "c0baeadf-2043-4fcb-8190-320313461caf",
+              "urn": "urn:altinn:accesspackage:forretningsforer-eiendom",
+              "areaId": "bfb9df2a-f122-4617-bd43-a84ed022c1f2"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "client": {
+        "id": "43363be4-7763-4439-9114-9d1ec55cf686",
+        "name": "FAST SINDIG KROKODILLE",
+        "type": "Organisasjon",
+        "variant": "STI",
+        "parent": null,
+        "children": null,
+        "partyid": 51501722,
+        "userId": null,
+        "username": null,
+        "organizationIdentifier": "313347974",
+        "personIdentifier": null,
+        "dateOfBirth": null,
+        "dateOfDeath": null,
+        "isDeleted": false,
+        "deletedAt": null
+      },
+      "access": [
+        {
+          "role": {
+            "id": "f76b997a-9bd8-4f7b-899f-fcd85d35669f",
+            "code": "revisor",
+            "urn": "urn:altinn:external-role:ccr:revisor",
+            "legacyurn ": "urn:altinn:rolecode:revi",
+            "children": null
+          },
+          "packages": [
+            {
+              "id": "2f176732-b1e9-449b-9918-090d1fa986f6",
+              "urn": "urn:altinn:accesspackage:ansvarlig-revisor",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            },
+            {
+              "id": "96120c32-389d-46eb-8212-0a6540540c25",
+              "urn": "urn:altinn:accesspackage:revisormedarbeider",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "client": {
+        "id": "48bd8b1a-d80a-4768-80c8-3a775a3dd8ef",
+        "name": "SENTRAL REN TIGER AS",
+        "type": "Organisasjon",
+        "variant": "AS",
+        "parent": null,
+        "children": null,
+        "partyid": 51518487,
+        "userId": null,
+        "username": null,
+        "organizationIdentifier": "313589056",
+        "personIdentifier": null,
+        "dateOfBirth": null,
+        "dateOfDeath": null,
+        "isDeleted": false,
+        "deletedAt": null
+      },
+      "access": [
+        {
+          "role": {
+            "id": "f76b997a-9bd8-4f7b-899f-fcd85d35669f",
+            "code": "revisor",
+            "urn": "urn:altinn:external-role:ccr:revisor",
+            "legacyurn ": "urn:altinn:rolecode:revi",
+            "children": null
+          },
+          "packages": [
+            {
+              "id": "96120c32-389d-46eb-8212-0a6540540c25",
+              "urn": "urn:altinn:accesspackage:revisormedarbeider",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            },
+            {
+              "id": "2f176732-b1e9-449b-9918-090d1fa986f6",
+              "urn": "urn:altinn:accesspackage:ansvarlig-revisor",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "client": {
+        "id": "4a74cfff-dfa5-42c0-a1c5-03d491e1eadc",
+        "name": "LYDIG VELDIG TIGER AS",
+        "type": "Organisasjon",
+        "variant": "AS",
+        "parent": null,
+        "children": null,
+        "partyid": 51479639,
+        "userId": null,
+        "username": null,
+        "organizationIdentifier": "313032418",
+        "personIdentifier": null,
+        "dateOfBirth": null,
+        "dateOfDeath": null,
+        "isDeleted": false,
+        "deletedAt": null
+      },
+      "access": [
+        {
+          "role": {
+            "id": "f76b997a-9bd8-4f7b-899f-fcd85d35669f",
+            "code": "revisor",
+            "urn": "urn:altinn:external-role:ccr:revisor",
+            "legacyurn ": "urn:altinn:rolecode:revi",
+            "children": null
+          },
+          "packages": [
+            {
+              "id": "2f176732-b1e9-449b-9918-090d1fa986f6",
+              "urn": "urn:altinn:accesspackage:ansvarlig-revisor",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            },
+            {
+              "id": "96120c32-389d-46eb-8212-0a6540540c25",
+              "urn": "urn:altinn:accesspackage:revisormedarbeider",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "client": {
+        "id": "4b0c49d2-527a-49e5-8cca-fe589dd74dae",
+        "name": "SLAPP AKROBATISK TIGER AS",
+        "type": "Organisasjon",
+        "variant": "AS",
+        "parent": null,
+        "children": null,
+        "partyid": 51232301,
+        "userId": null,
+        "username": null,
+        "organizationIdentifier": "310522775",
+        "personIdentifier": null,
+        "dateOfBirth": null,
+        "dateOfDeath": null,
+        "isDeleted": false,
+        "deletedAt": null
+      },
+      "access": [
+        {
+          "role": {
+            "id": "f76b997a-9bd8-4f7b-899f-fcd85d35669f",
+            "code": "revisor",
+            "urn": "urn:altinn:external-role:ccr:revisor",
+            "legacyurn ": "urn:altinn:rolecode:revi",
+            "children": null
+          },
+          "packages": [
+            {
+              "id": "96120c32-389d-46eb-8212-0a6540540c25",
+              "urn": "urn:altinn:accesspackage:revisormedarbeider",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            },
+            {
+              "id": "2f176732-b1e9-449b-9918-090d1fa986f6",
+              "urn": "urn:altinn:accesspackage:ansvarlig-revisor",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "client": {
+        "id": "4ce9a4e5-75a0-440b-ac13-a47bc383bd4f",
+        "name": "OMKOMMEN FRYKTSOM TIGER AS",
+        "type": "Organisasjon",
+        "variant": "AS",
+        "parent": null,
+        "children": null,
+        "partyid": 51117758,
+        "userId": null,
+        "username": null,
+        "organizationIdentifier": "210716572",
+        "personIdentifier": null,
+        "dateOfBirth": null,
+        "dateOfDeath": null,
+        "isDeleted": false,
+        "deletedAt": null
+      },
+      "access": [
+        {
+          "role": {
+            "id": "f76b997a-9bd8-4f7b-899f-fcd85d35669f",
+            "code": "revisor",
+            "urn": "urn:altinn:external-role:ccr:revisor",
+            "legacyurn ": "urn:altinn:rolecode:revi",
+            "children": null
+          },
+          "packages": [
+            {
+              "id": "96120c32-389d-46eb-8212-0a6540540c25",
+              "urn": "urn:altinn:accesspackage:revisormedarbeider",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            },
+            {
+              "id": "2f176732-b1e9-449b-9918-090d1fa986f6",
+              "urn": "urn:altinn:accesspackage:ansvarlig-revisor",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "client": {
+        "id": "4e636d64-21d4-467e-aa77-78e23953e4d5",
+        "name": "ELEKTRONISK MORSK TIGER AS",
+        "type": "Organisasjon",
+        "variant": "AS",
+        "parent": null,
+        "children": null,
+        "partyid": 51334684,
+        "userId": null,
+        "username": null,
+        "organizationIdentifier": "314018397",
+        "personIdentifier": null,
+        "dateOfBirth": null,
+        "dateOfDeath": null,
+        "isDeleted": false,
+        "deletedAt": null
+      },
+      "access": [
+        {
+          "role": {
+            "id": "f76b997a-9bd8-4f7b-899f-fcd85d35669f",
+            "code": "revisor",
+            "urn": "urn:altinn:external-role:ccr:revisor",
+            "legacyurn ": "urn:altinn:rolecode:revi",
+            "children": null
+          },
+          "packages": [
+            {
+              "id": "2f176732-b1e9-449b-9918-090d1fa986f6",
+              "urn": "urn:altinn:accesspackage:ansvarlig-revisor",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            },
+            {
+              "id": "96120c32-389d-46eb-8212-0a6540540c25",
+              "urn": "urn:altinn:accesspackage:revisormedarbeider",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "client": {
+        "id": "507a7e22-6c27-44b8-972e-eb8c9e38552c",
+        "name": "FANTASTISK FALSK TIGER AS",
+        "type": "Organisasjon",
+        "variant": "AS",
+        "parent": null,
+        "children": null,
+        "partyid": 51464391,
+        "userId": null,
+        "username": null,
+        "organizationIdentifier": "312815591",
+        "personIdentifier": null,
+        "dateOfBirth": null,
+        "dateOfDeath": null,
+        "isDeleted": false,
+        "deletedAt": null
+      },
+      "access": [
+        {
+          "role": {
+            "id": "f76b997a-9bd8-4f7b-899f-fcd85d35669f",
+            "code": "revisor",
+            "urn": "urn:altinn:external-role:ccr:revisor",
+            "legacyurn ": "urn:altinn:rolecode:revi",
+            "children": null
+          },
+          "packages": [
+            {
+              "id": "2f176732-b1e9-449b-9918-090d1fa986f6",
+              "urn": "urn:altinn:accesspackage:ansvarlig-revisor",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            },
+            {
+              "id": "96120c32-389d-46eb-8212-0a6540540c25",
+              "urn": "urn:altinn:accesspackage:revisormedarbeider",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "client": {
+        "id": "50fd3030-1e44-4c47-8837-b8e486f748bc",
+        "name": "UNGT UAVHENGIG TIGER AS",
+        "type": "Organisasjon",
+        "variant": "AS",
+        "parent": null,
+        "children": null,
+        "partyid": 51492696,
+        "userId": null,
+        "username": null,
+        "organizationIdentifier": "313218155",
+        "personIdentifier": null,
+        "dateOfBirth": null,
+        "dateOfDeath": null,
+        "isDeleted": false,
+        "deletedAt": null
+      },
+      "access": [
+        {
+          "role": {
+            "id": "f76b997a-9bd8-4f7b-899f-fcd85d35669f",
+            "code": "revisor",
+            "urn": "urn:altinn:external-role:ccr:revisor",
+            "legacyurn ": "urn:altinn:rolecode:revi",
+            "children": null
+          },
+          "packages": [
+            {
+              "id": "2f176732-b1e9-449b-9918-090d1fa986f6",
+              "urn": "urn:altinn:accesspackage:ansvarlig-revisor",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            },
+            {
+              "id": "96120c32-389d-46eb-8212-0a6540540c25",
+              "urn": "urn:altinn:accesspackage:revisormedarbeider",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "client": {
+        "id": "514a2ea9-96d7-4355-bd56-b2db8dd2e5b5",
+        "name": "EVIG SKÅNSOM TIGER AS",
+        "type": "Organisasjon",
+        "variant": "AS",
+        "parent": null,
+        "children": null,
+        "partyid": 51485441,
+        "userId": null,
+        "username": null,
+        "organizationIdentifier": "313115461",
+        "personIdentifier": null,
+        "dateOfBirth": null,
+        "dateOfDeath": null,
+        "isDeleted": false,
+        "deletedAt": null
+      },
+      "access": [
+        {
+          "role": {
+            "id": "f76b997a-9bd8-4f7b-899f-fcd85d35669f",
+            "code": "revisor",
+            "urn": "urn:altinn:external-role:ccr:revisor",
+            "legacyurn ": "urn:altinn:rolecode:revi",
+            "children": null
+          },
+          "packages": [
+            {
+              "id": "96120c32-389d-46eb-8212-0a6540540c25",
+              "urn": "urn:altinn:accesspackage:revisormedarbeider",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            },
+            {
+              "id": "2f176732-b1e9-449b-9918-090d1fa986f6",
+              "urn": "urn:altinn:accesspackage:ansvarlig-revisor",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "client": {
+        "id": "52220548-84ff-47e1-8175-cfb4f5d7fe17",
+        "name": "FORNUFTIG FYLDIG TIGER AS",
+        "type": "Organisasjon",
+        "variant": "AS",
+        "parent": null,
+        "children": null,
+        "partyid": 51332652,
+        "userId": null,
+        "username": null,
+        "organizationIdentifier": "313167844",
+        "personIdentifier": null,
+        "dateOfBirth": null,
+        "dateOfDeath": null,
+        "isDeleted": false,
+        "deletedAt": null
+      },
+      "access": [
+        {
+          "role": {
+            "id": "f76b997a-9bd8-4f7b-899f-fcd85d35669f",
+            "code": "revisor",
+            "urn": "urn:altinn:external-role:ccr:revisor",
+            "legacyurn ": "urn:altinn:rolecode:revi",
+            "children": null
+          },
+          "packages": [
+            {
+              "id": "2f176732-b1e9-449b-9918-090d1fa986f6",
+              "urn": "urn:altinn:accesspackage:ansvarlig-revisor",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            },
+            {
+              "id": "96120c32-389d-46eb-8212-0a6540540c25",
+              "urn": "urn:altinn:accesspackage:revisormedarbeider",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "client": {
+        "id": "5362bbb9-bd97-4174-823f-a1c3750671a0",
+        "name": "TOÅRIG SOFISTIKERT ISBJØRN SA",
+        "type": "Organisasjon",
+        "variant": "SA",
+        "parent": null,
+        "children": null,
+        "partyid": 51109723,
+        "userId": null,
+        "username": null,
+        "organizationIdentifier": "314239520",
+        "personIdentifier": null,
+        "dateOfBirth": null,
+        "dateOfDeath": null,
+        "isDeleted": false,
+        "deletedAt": null
+      },
+      "access": [
+        {
+          "role": {
+            "id": "f76b997a-9bd8-4f7b-899f-fcd85d35669f",
+            "code": "revisor",
+            "urn": "urn:altinn:external-role:ccr:revisor",
+            "legacyurn ": "urn:altinn:rolecode:revi",
+            "children": null
+          },
+          "packages": [
+            {
+              "id": "2f176732-b1e9-449b-9918-090d1fa986f6",
+              "urn": "urn:altinn:accesspackage:ansvarlig-revisor",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            },
+            {
+              "id": "96120c32-389d-46eb-8212-0a6540540c25",
+              "urn": "urn:altinn:accesspackage:revisormedarbeider",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "client": {
+        "id": "5561e013-4503-49e9-ab72-28ddb104b2fc",
+        "name": "VELKOMMEN OPPLYST TIGER AS",
+        "type": "Organisasjon",
+        "variant": "AS",
+        "parent": null,
+        "children": null,
+        "partyid": 51438061,
+        "userId": null,
+        "username": null,
+        "organizationIdentifier": "312440911",
+        "personIdentifier": null,
+        "dateOfBirth": null,
+        "dateOfDeath": null,
+        "isDeleted": false,
+        "deletedAt": null
+      },
+      "access": [
+        {
+          "role": {
+            "id": "f76b997a-9bd8-4f7b-899f-fcd85d35669f",
+            "code": "revisor",
+            "urn": "urn:altinn:external-role:ccr:revisor",
+            "legacyurn ": "urn:altinn:rolecode:revi",
+            "children": null
+          },
+          "packages": [
+            {
+              "id": "2f176732-b1e9-449b-9918-090d1fa986f6",
+              "urn": "urn:altinn:accesspackage:ansvarlig-revisor",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            },
+            {
+              "id": "96120c32-389d-46eb-8212-0a6540540c25",
+              "urn": "urn:altinn:accesspackage:revisormedarbeider",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "client": {
+        "id": "56212425-b6e3-454c-9464-145316d613ff",
+        "name": "SYMPATISK SOSIAL TIGER AS",
+        "type": "Organisasjon",
+        "variant": "AS",
+        "parent": null,
+        "children": null,
+        "partyid": 51472368,
+        "userId": null,
+        "username": null,
+        "organizationIdentifier": "312929384",
+        "personIdentifier": null,
+        "dateOfBirth": null,
+        "dateOfDeath": null,
+        "isDeleted": false,
+        "deletedAt": null
+      },
+      "access": [
+        {
+          "role": {
+            "id": "f76b997a-9bd8-4f7b-899f-fcd85d35669f",
+            "code": "revisor",
+            "urn": "urn:altinn:external-role:ccr:revisor",
+            "legacyurn ": "urn:altinn:rolecode:revi",
+            "children": null
+          },
+          "packages": [
+            {
+              "id": "96120c32-389d-46eb-8212-0a6540540c25",
+              "urn": "urn:altinn:accesspackage:revisormedarbeider",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            },
+            {
+              "id": "2f176732-b1e9-449b-9918-090d1fa986f6",
+              "urn": "urn:altinn:accesspackage:ansvarlig-revisor",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "client": {
+        "id": "56a8e9f4-355c-4030-ac86-9f6814316799",
+        "name": "OVERFØLSOM SNILL TIGER AS",
+        "type": "Organisasjon",
+        "variant": "AS",
+        "parent": null,
+        "children": null,
+        "partyid": 51564059,
+        "userId": null,
+        "username": null,
+        "organizationIdentifier": "314277104",
+        "personIdentifier": null,
+        "dateOfBirth": null,
+        "dateOfDeath": null,
+        "isDeleted": false,
+        "deletedAt": null
+      },
+      "access": [
+        {
+          "role": {
+            "id": "f76b997a-9bd8-4f7b-899f-fcd85d35669f",
+            "code": "revisor",
+            "urn": "urn:altinn:external-role:ccr:revisor",
+            "legacyurn ": "urn:altinn:rolecode:revi",
+            "children": null
+          },
+          "packages": [
+            {
+              "id": "96120c32-389d-46eb-8212-0a6540540c25",
+              "urn": "urn:altinn:accesspackage:revisormedarbeider",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            },
+            {
+              "id": "2f176732-b1e9-449b-9918-090d1fa986f6",
+              "urn": "urn:altinn:accesspackage:ansvarlig-revisor",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "client": {
+        "id": "5a6d4389-f14a-4816-ad0a-dec448d262bd",
+        "name": "JORDNÆR SNÅL HEST BORETTSLAG",
+        "type": "Organisasjon",
+        "variant": "BRL",
+        "parent": null,
+        "children": null,
+        "partyid": 51278385,
+        "userId": null,
+        "username": null,
+        "organizationIdentifier": "311041509",
+        "personIdentifier": null,
+        "dateOfBirth": null,
+        "dateOfDeath": null,
+        "isDeleted": false,
+        "deletedAt": null
+      },
+      "access": [
+        {
+          "role": {
+            "id": "f76b997a-9bd8-4f7b-899f-fcd85d35669f",
+            "code": "revisor",
+            "urn": "urn:altinn:external-role:ccr:revisor",
+            "legacyurn ": "urn:altinn:rolecode:revi",
+            "children": null
+          },
+          "packages": [
+            {
+              "id": "2f176732-b1e9-449b-9918-090d1fa986f6",
+              "urn": "urn:altinn:accesspackage:ansvarlig-revisor",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            },
+            {
+              "id": "96120c32-389d-46eb-8212-0a6540540c25",
+              "urn": "urn:altinn:accesspackage:revisormedarbeider",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "client": {
+        "id": "5f1589be-d74a-4fee-afce-33b6275db557",
+        "name": "RØD GREI TIGER AS",
+        "type": "Organisasjon",
+        "variant": "AS",
+        "parent": null,
+        "children": null,
+        "partyid": 51230779,
+        "userId": null,
+        "username": null,
+        "organizationIdentifier": "310505617",
+        "personIdentifier": null,
+        "dateOfBirth": null,
+        "dateOfDeath": null,
+        "isDeleted": false,
+        "deletedAt": null
+      },
+      "access": [
+        {
+          "role": {
+            "id": "f76b997a-9bd8-4f7b-899f-fcd85d35669f",
+            "code": "revisor",
+            "urn": "urn:altinn:external-role:ccr:revisor",
+            "legacyurn ": "urn:altinn:rolecode:revi",
+            "children": null
+          },
+          "packages": [
+            {
+              "id": "2f176732-b1e9-449b-9918-090d1fa986f6",
+              "urn": "urn:altinn:accesspackage:ansvarlig-revisor",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            },
+            {
+              "id": "96120c32-389d-46eb-8212-0a6540540c25",
+              "urn": "urn:altinn:accesspackage:revisormedarbeider",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "client": {
+        "id": "62219550-9275-43fe-8c89-88ab6ae835fe",
+        "name": "KLARTENKT ELEGANT TIGER AS",
+        "type": "Organisasjon",
+        "variant": "AS",
+        "parent": null,
+        "children": null,
+        "partyid": 51358123,
+        "userId": null,
+        "username": null,
+        "organizationIdentifier": "314277120",
+        "personIdentifier": null,
+        "dateOfBirth": null,
+        "dateOfDeath": null,
+        "isDeleted": false,
+        "deletedAt": null
+      },
+      "access": [
+        {
+          "role": {
+            "id": "f76b997a-9bd8-4f7b-899f-fcd85d35669f",
+            "code": "revisor",
+            "urn": "urn:altinn:external-role:ccr:revisor",
+            "legacyurn ": "urn:altinn:rolecode:revi",
+            "children": null
+          },
+          "packages": [
+            {
+              "id": "96120c32-389d-46eb-8212-0a6540540c25",
+              "urn": "urn:altinn:accesspackage:revisormedarbeider",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            },
+            {
+              "id": "2f176732-b1e9-449b-9918-090d1fa986f6",
+              "urn": "urn:altinn:accesspackage:ansvarlig-revisor",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "client": {
+        "id": "649d9261-b5b2-494c-9de7-dd826b1c4f23",
+        "name": "DEDIKERT DYP TIGER AS",
+        "type": "Organisasjon",
+        "variant": "AS",
+        "parent": null,
+        "children": null,
+        "partyid": 51300199,
+        "userId": null,
+        "username": null,
+        "organizationIdentifier": "312427761",
+        "personIdentifier": null,
+        "dateOfBirth": null,
+        "dateOfDeath": null,
+        "isDeleted": false,
+        "deletedAt": null
+      },
+      "access": [
+        {
+          "role": {
+            "id": "f76b997a-9bd8-4f7b-899f-fcd85d35669f",
+            "code": "revisor",
+            "urn": "urn:altinn:external-role:ccr:revisor",
+            "legacyurn ": "urn:altinn:rolecode:revi",
+            "children": null
+          },
+          "packages": [
+            {
+              "id": "2f176732-b1e9-449b-9918-090d1fa986f6",
+              "urn": "urn:altinn:accesspackage:ansvarlig-revisor",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            },
+            {
+              "id": "96120c32-389d-46eb-8212-0a6540540c25",
+              "urn": "urn:altinn:accesspackage:revisormedarbeider",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "client": {
+        "id": "65b8b9a3-4c62-46e9-a8d6-02e566b67228",
+        "name": "FREDELIG REALISTISK TIGER AS",
+        "type": "Organisasjon",
+        "variant": "AS",
+        "parent": null,
+        "children": null,
+        "partyid": 51433594,
+        "userId": null,
+        "username": null,
+        "organizationIdentifier": "312679612",
+        "personIdentifier": null,
+        "dateOfBirth": null,
+        "dateOfDeath": null,
+        "isDeleted": false,
+        "deletedAt": null
+      },
+      "access": [
+        {
+          "role": {
+            "id": "f76b997a-9bd8-4f7b-899f-fcd85d35669f",
+            "code": "revisor",
+            "urn": "urn:altinn:external-role:ccr:revisor",
+            "legacyurn ": "urn:altinn:rolecode:revi",
+            "children": null
+          },
+          "packages": [
+            {
+              "id": "2f176732-b1e9-449b-9918-090d1fa986f6",
+              "urn": "urn:altinn:accesspackage:ansvarlig-revisor",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            },
+            {
+              "id": "96120c32-389d-46eb-8212-0a6540540c25",
+              "urn": "urn:altinn:accesspackage:revisormedarbeider",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "client": {
+        "id": "6d343bdc-e844-4b49-b97b-bc0f4f3dda0a",
+        "name": "DOBBEL MATT TIGER AS",
+        "type": "Organisasjon",
+        "variant": "AS",
+        "parent": null,
+        "children": null,
+        "partyid": 51440349,
+        "userId": null,
+        "username": null,
+        "organizationIdentifier": "312474042",
+        "personIdentifier": null,
+        "dateOfBirth": null,
+        "dateOfDeath": null,
+        "isDeleted": false,
+        "deletedAt": null
+      },
+      "access": [
+        {
+          "role": {
+            "id": "f76b997a-9bd8-4f7b-899f-fcd85d35669f",
+            "code": "revisor",
+            "urn": "urn:altinn:external-role:ccr:revisor",
+            "legacyurn ": "urn:altinn:rolecode:revi",
+            "children": null
+          },
+          "packages": [
+            {
+              "id": "2f176732-b1e9-449b-9918-090d1fa986f6",
+              "urn": "urn:altinn:accesspackage:ansvarlig-revisor",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            },
+            {
+              "id": "96120c32-389d-46eb-8212-0a6540540c25",
+              "urn": "urn:altinn:accesspackage:revisormedarbeider",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "client": {
+        "id": "774d9583-232e-4920-a458-062f0cd8ff91",
+        "name": "LØSNINGSORIENTERT PRODUKTIV TIGER AS",
+        "type": "Organisasjon",
+        "variant": "AS",
+        "parent": null,
+        "children": null,
+        "partyid": 51110803,
+        "userId": null,
+        "username": null,
+        "organizationIdentifier": "312288087",
+        "personIdentifier": null,
+        "dateOfBirth": null,
+        "dateOfDeath": null,
+        "isDeleted": false,
+        "deletedAt": null
+      },
+      "access": [
+        {
+          "role": {
+            "id": "f76b997a-9bd8-4f7b-899f-fcd85d35669f",
+            "code": "revisor",
+            "urn": "urn:altinn:external-role:ccr:revisor",
+            "legacyurn ": "urn:altinn:rolecode:revi",
+            "children": null
+          },
+          "packages": [
+            {
+              "id": "96120c32-389d-46eb-8212-0a6540540c25",
+              "urn": "urn:altinn:accesspackage:revisormedarbeider",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            },
+            {
+              "id": "2f176732-b1e9-449b-9918-090d1fa986f6",
+              "urn": "urn:altinn:accesspackage:ansvarlig-revisor",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "client": {
+        "id": "78a53225-a883-4cf8-977b-e18420665580",
+        "name": "TYPISK SJENERT TIGER AS",
+        "type": "Organisasjon",
+        "variant": "AS",
+        "parent": null,
+        "children": null,
+        "partyid": 51375449,
+        "userId": null,
+        "username": null,
+        "organizationIdentifier": "313582345",
+        "personIdentifier": null,
+        "dateOfBirth": null,
+        "dateOfDeath": null,
+        "isDeleted": false,
+        "deletedAt": null
+      },
+      "access": [
+        {
+          "role": {
+            "id": "f76b997a-9bd8-4f7b-899f-fcd85d35669f",
+            "code": "revisor",
+            "urn": "urn:altinn:external-role:ccr:revisor",
+            "legacyurn ": "urn:altinn:rolecode:revi",
+            "children": null
+          },
+          "packages": [
+            {
+              "id": "2f176732-b1e9-449b-9918-090d1fa986f6",
+              "urn": "urn:altinn:accesspackage:ansvarlig-revisor",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            },
+            {
+              "id": "96120c32-389d-46eb-8212-0a6540540c25",
+              "urn": "urn:altinn:accesspackage:revisormedarbeider",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "client": {
+        "id": "790e8d87-d72f-4b9b-a262-d2de2d17920a",
+        "name": "ALMINNELIG FESTLIG TIGER AS",
+        "type": "Organisasjon",
+        "variant": "AS",
+        "parent": null,
+        "children": null,
+        "partyid": 51113068,
+        "userId": null,
+        "username": null,
+        "organizationIdentifier": "314241746",
+        "personIdentifier": null,
+        "dateOfBirth": null,
+        "dateOfDeath": null,
+        "isDeleted": false,
+        "deletedAt": null
+      },
+      "access": [
+        {
+          "role": {
+            "id": "f76b997a-9bd8-4f7b-899f-fcd85d35669f",
+            "code": "revisor",
+            "urn": "urn:altinn:external-role:ccr:revisor",
+            "legacyurn ": "urn:altinn:rolecode:revi",
+            "children": null
+          },
+          "packages": [
+            {
+              "id": "96120c32-389d-46eb-8212-0a6540540c25",
+              "urn": "urn:altinn:accesspackage:revisormedarbeider",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            },
+            {
+              "id": "2f176732-b1e9-449b-9918-090d1fa986f6",
+              "urn": "urn:altinn:accesspackage:ansvarlig-revisor",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "client": {
+        "id": "7af67ac5-a1ff-49d3-9b61-def01dc46038",
+        "name": "FORSKJELLIG MODERAT TIGER AS",
+        "type": "Organisasjon",
+        "variant": "AS",
+        "parent": null,
+        "children": null,
+        "partyid": 51260446,
+        "userId": null,
+        "username": null,
+        "organizationIdentifier": "310839582",
+        "personIdentifier": null,
+        "dateOfBirth": null,
+        "dateOfDeath": null,
+        "isDeleted": false,
+        "deletedAt": null
+      },
+      "access": [
+        {
+          "role": {
+            "id": "f76b997a-9bd8-4f7b-899f-fcd85d35669f",
+            "code": "revisor",
+            "urn": "urn:altinn:external-role:ccr:revisor",
+            "legacyurn ": "urn:altinn:rolecode:revi",
+            "children": null
+          },
+          "packages": [
+            {
+              "id": "96120c32-389d-46eb-8212-0a6540540c25",
+              "urn": "urn:altinn:accesspackage:revisormedarbeider",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            },
+            {
+              "id": "2f176732-b1e9-449b-9918-090d1fa986f6",
+              "urn": "urn:altinn:accesspackage:ansvarlig-revisor",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "client": {
+        "id": "7ba05c59-871c-4201-9c6e-09f4a8074ee1",
+        "name": "SPRUDLENDE KRY TIGER AS",
+        "type": "Organisasjon",
+        "variant": "AS",
+        "parent": null,
+        "children": null,
+        "partyid": 51298339,
+        "userId": null,
+        "username": null,
+        "organizationIdentifier": "312403072",
+        "personIdentifier": null,
+        "dateOfBirth": null,
+        "dateOfDeath": null,
+        "isDeleted": false,
+        "deletedAt": null
+      },
+      "access": [
+        {
+          "role": {
+            "id": "f76b997a-9bd8-4f7b-899f-fcd85d35669f",
+            "code": "revisor",
+            "urn": "urn:altinn:external-role:ccr:revisor",
+            "legacyurn ": "urn:altinn:rolecode:revi",
+            "children": null
+          },
+          "packages": [
+            {
+              "id": "96120c32-389d-46eb-8212-0a6540540c25",
+              "urn": "urn:altinn:accesspackage:revisormedarbeider",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            },
+            {
+              "id": "2f176732-b1e9-449b-9918-090d1fa986f6",
+              "urn": "urn:altinn:accesspackage:ansvarlig-revisor",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "client": {
+        "id": "7d5b5b43-1da1-4843-8eee-048fb9d26fc9",
+        "name": "KOMPETENT NETT TIGER AS",
+        "type": "Organisasjon",
+        "variant": "AS",
+        "parent": null,
+        "children": null,
+        "partyid": 51180152,
+        "userId": null,
+        "username": null,
+        "organizationIdentifier": "312432528",
+        "personIdentifier": null,
+        "dateOfBirth": null,
+        "dateOfDeath": null,
+        "isDeleted": false,
+        "deletedAt": null
+      },
+      "access": [
+        {
+          "role": {
+            "id": "46e27685-b3ba-423e-8b42-faab54de5817",
+            "code": "regnskapsforer",
+            "urn": "urn:altinn:external-role:ccr:regnskapsforer",
+            "legacyurn ": "urn:altinn:rolecode:regn",
+            "children": null
+          },
+          "packages": [
+            {
+              "id": "a5f7f72a-9b89-445d-85bb-06f678a3d4d1",
+              "urn": "urn:altinn:accesspackage:regnskapsforer-uten-signeringsrettighet",
+              "areaId": "64cbcdc8-01c9-448c-b3d2-eb9582beb3c2"
+            },
+            {
+              "id": "955d5779-3e2b-4098-b11d-0431dc41ddbe",
+              "urn": "urn:altinn:accesspackage:regnskapsforer-med-signeringsrettighet",
+              "areaId": "64cbcdc8-01c9-448c-b3d2-eb9582beb3c2"
+            },
+            {
+              "id": "43becc6a-8c6c-4e9e-bb2f-08fe588ada21",
+              "urn": "urn:altinn:accesspackage:regnskapsforer-lonn",
+              "areaId": "64cbcdc8-01c9-448c-b3d2-eb9582beb3c2"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "client": {
+        "id": "8039fac3-4610-4ee0-87a2-292ee1cd81a6",
+        "name": "OFFISIELL TROFAST TIGER AS",
+        "type": "Organisasjon",
+        "variant": "AS",
+        "parent": null,
+        "children": null,
+        "partyid": 51238900,
+        "userId": null,
+        "username": null,
+        "organizationIdentifier": "310596892",
+        "personIdentifier": null,
+        "dateOfBirth": null,
+        "dateOfDeath": null,
+        "isDeleted": false,
+        "deletedAt": null
+      },
+      "access": [
+        {
+          "role": {
+            "id": "f76b997a-9bd8-4f7b-899f-fcd85d35669f",
+            "code": "revisor",
+            "urn": "urn:altinn:external-role:ccr:revisor",
+            "legacyurn ": "urn:altinn:rolecode:revi",
+            "children": null
+          },
+          "packages": [
+            {
+              "id": "96120c32-389d-46eb-8212-0a6540540c25",
+              "urn": "urn:altinn:accesspackage:revisormedarbeider",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            },
+            {
+              "id": "2f176732-b1e9-449b-9918-090d1fa986f6",
+              "urn": "urn:altinn:accesspackage:ansvarlig-revisor",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "client": {
+        "id": "82a76e5f-a2d2-487e-935e-14334335d9ef",
+        "name": "OPPLAGT FREIDIG TIGER AS",
+        "type": "Organisasjon",
+        "variant": "AS",
+        "parent": null,
+        "children": null,
+        "partyid": 51519755,
+        "userId": null,
+        "username": null,
+        "organizationIdentifier": "313607046",
+        "personIdentifier": null,
+        "dateOfBirth": null,
+        "dateOfDeath": null,
+        "isDeleted": false,
+        "deletedAt": null
+      },
+      "access": [
+        {
+          "role": {
+            "id": "f76b997a-9bd8-4f7b-899f-fcd85d35669f",
+            "code": "revisor",
+            "urn": "urn:altinn:external-role:ccr:revisor",
+            "legacyurn ": "urn:altinn:rolecode:revi",
+            "children": null
+          },
+          "packages": [
+            {
+              "id": "96120c32-389d-46eb-8212-0a6540540c25",
+              "urn": "urn:altinn:accesspackage:revisormedarbeider",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            },
+            {
+              "id": "2f176732-b1e9-449b-9918-090d1fa986f6",
+              "urn": "urn:altinn:accesspackage:ansvarlig-revisor",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "client": {
+        "id": "8336f353-7770-4ac5-b64c-6b7185456964",
+        "name": "SPENNENDE TURKIS TIGER AS",
+        "type": "Organisasjon",
+        "variant": "AS",
+        "parent": null,
+        "children": null,
+        "partyid": 51341276,
+        "userId": null,
+        "username": null,
+        "organizationIdentifier": "313572986",
+        "personIdentifier": null,
+        "dateOfBirth": null,
+        "dateOfDeath": null,
+        "isDeleted": false,
+        "deletedAt": null
+      },
+      "access": [
+        {
+          "role": {
+            "id": "f76b997a-9bd8-4f7b-899f-fcd85d35669f",
+            "code": "revisor",
+            "urn": "urn:altinn:external-role:ccr:revisor",
+            "legacyurn ": "urn:altinn:rolecode:revi",
+            "children": null
+          },
+          "packages": [
+            {
+              "id": "96120c32-389d-46eb-8212-0a6540540c25",
+              "urn": "urn:altinn:accesspackage:revisormedarbeider",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            },
+            {
+              "id": "2f176732-b1e9-449b-9918-090d1fa986f6",
+              "urn": "urn:altinn:accesspackage:ansvarlig-revisor",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "client": {
+        "id": "84e5ee56-aa09-45d0-942d-aec9d3445777",
+        "name": "STORARTET AKUSTISK TIGER AS",
+        "type": "Organisasjon",
+        "variant": "AS",
+        "parent": null,
+        "children": null,
+        "partyid": 51522656,
+        "userId": null,
+        "username": null,
+        "organizationIdentifier": "313648737",
+        "personIdentifier": null,
+        "dateOfBirth": null,
+        "dateOfDeath": null,
+        "isDeleted": false,
+        "deletedAt": null
+      },
+      "access": [
+        {
+          "role": {
+            "id": "f76b997a-9bd8-4f7b-899f-fcd85d35669f",
+            "code": "revisor",
+            "urn": "urn:altinn:external-role:ccr:revisor",
+            "legacyurn ": "urn:altinn:rolecode:revi",
+            "children": null
+          },
+          "packages": [
+            {
+              "id": "2f176732-b1e9-449b-9918-090d1fa986f6",
+              "urn": "urn:altinn:accesspackage:ansvarlig-revisor",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            },
+            {
+              "id": "96120c32-389d-46eb-8212-0a6540540c25",
+              "urn": "urn:altinn:accesspackage:revisormedarbeider",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "client": {
+        "id": "852d2885-7cfa-4daa-b90b-80d47f04b48c",
+        "name": "SAKTE VIKTIG APE",
+        "type": "Organisasjon",
+        "variant": "FLI",
+        "parent": null,
+        "children": null,
+        "partyid": 51267154,
+        "userId": null,
+        "username": null,
+        "organizationIdentifier": "310915270",
+        "personIdentifier": null,
+        "dateOfBirth": null,
+        "dateOfDeath": null,
+        "isDeleted": false,
+        "deletedAt": null
+      },
+      "access": [
+        {
+          "role": {
+            "id": "f76b997a-9bd8-4f7b-899f-fcd85d35669f",
+            "code": "revisor",
+            "urn": "urn:altinn:external-role:ccr:revisor",
+            "legacyurn ": "urn:altinn:rolecode:revi",
+            "children": null
+          },
+          "packages": [
+            {
+              "id": "2f176732-b1e9-449b-9918-090d1fa986f6",
+              "urn": "urn:altinn:accesspackage:ansvarlig-revisor",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            },
+            {
+              "id": "96120c32-389d-46eb-8212-0a6540540c25",
+              "urn": "urn:altinn:accesspackage:revisormedarbeider",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "client": {
+        "id": "877f07a4-b18c-4538-a243-a60b7648c8fe",
+        "name": "SLITEN SAKTE TIGER AS",
+        "type": "Organisasjon",
+        "variant": "AS",
+        "parent": null,
+        "children": null,
+        "partyid": 51160791,
+        "userId": null,
+        "username": null,
+        "organizationIdentifier": "310248185",
+        "personIdentifier": null,
+        "dateOfBirth": null,
+        "dateOfDeath": null,
+        "isDeleted": false,
+        "deletedAt": null
+      },
+      "access": [
+        {
+          "role": {
+            "id": "f76b997a-9bd8-4f7b-899f-fcd85d35669f",
+            "code": "revisor",
+            "urn": "urn:altinn:external-role:ccr:revisor",
+            "legacyurn ": "urn:altinn:rolecode:revi",
+            "children": null
+          },
+          "packages": [
+            {
+              "id": "2f176732-b1e9-449b-9918-090d1fa986f6",
+              "urn": "urn:altinn:accesspackage:ansvarlig-revisor",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            },
+            {
+              "id": "96120c32-389d-46eb-8212-0a6540540c25",
+              "urn": "urn:altinn:accesspackage:revisormedarbeider",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "client": {
+        "id": "88484a29-4a64-4915-83b0-010c627bfc65",
+        "name": "ØDE NATURSTRIDIG TIGER AS",
+        "type": "Organisasjon",
+        "variant": "AS",
+        "parent": null,
+        "children": null,
+        "partyid": 51351111,
+        "userId": null,
+        "username": null,
+        "organizationIdentifier": "312959429",
+        "personIdentifier": null,
+        "dateOfBirth": null,
+        "dateOfDeath": null,
+        "isDeleted": false,
+        "deletedAt": null
+      },
+      "access": [
+        {
+          "role": {
+            "id": "f76b997a-9bd8-4f7b-899f-fcd85d35669f",
+            "code": "revisor",
+            "urn": "urn:altinn:external-role:ccr:revisor",
+            "legacyurn ": "urn:altinn:rolecode:revi",
+            "children": null
+          },
+          "packages": [
+            {
+              "id": "96120c32-389d-46eb-8212-0a6540540c25",
+              "urn": "urn:altinn:accesspackage:revisormedarbeider",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            },
+            {
+              "id": "2f176732-b1e9-449b-9918-090d1fa986f6",
+              "urn": "urn:altinn:accesspackage:ansvarlig-revisor",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "client": {
+        "id": "8a029222-dcf6-4e12-b8d9-57af424c5d5a",
+        "name": "SAMEIET NESNØDD NYBAKT LØVE",
+        "type": "Organisasjon",
+        "variant": "ESEK",
+        "parent": null,
+        "children": null,
+        "partyid": 51203580,
+        "userId": null,
+        "username": null,
+        "organizationIdentifier": "310202320",
+        "personIdentifier": null,
+        "dateOfBirth": null,
+        "dateOfDeath": null,
+        "isDeleted": false,
+        "deletedAt": null
+      },
+      "access": [
+        {
+          "role": {
+            "id": "f76b997a-9bd8-4f7b-899f-fcd85d35669f",
+            "code": "revisor",
+            "urn": "urn:altinn:external-role:ccr:revisor",
+            "legacyurn ": "urn:altinn:rolecode:revi",
+            "children": null
+          },
+          "packages": [
+            {
+              "id": "96120c32-389d-46eb-8212-0a6540540c25",
+              "urn": "urn:altinn:accesspackage:revisormedarbeider",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            },
+            {
+              "id": "2f176732-b1e9-449b-9918-090d1fa986f6",
+              "urn": "urn:altinn:accesspackage:ansvarlig-revisor",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "client": {
+        "id": "8cf15852-f2dc-46ac-930d-ed2a31edf2da",
+        "name": "SPESIFIKK OPPSTEMT TIGER AS",
+        "type": "Organisasjon",
+        "variant": "AS",
+        "parent": null,
+        "children": null,
+        "partyid": 51125322,
+        "userId": null,
+        "username": null,
+        "organizationIdentifier": "310599298",
+        "personIdentifier": null,
+        "dateOfBirth": null,
+        "dateOfDeath": null,
+        "isDeleted": false,
+        "deletedAt": null
+      },
+      "access": [
+        {
+          "role": {
+            "id": "f76b997a-9bd8-4f7b-899f-fcd85d35669f",
+            "code": "revisor",
+            "urn": "urn:altinn:external-role:ccr:revisor",
+            "legacyurn ": "urn:altinn:rolecode:revi",
+            "children": null
+          },
+          "packages": [
+            {
+              "id": "96120c32-389d-46eb-8212-0a6540540c25",
+              "urn": "urn:altinn:accesspackage:revisormedarbeider",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            },
+            {
+              "id": "2f176732-b1e9-449b-9918-090d1fa986f6",
+              "urn": "urn:altinn:accesspackage:ansvarlig-revisor",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "client": {
+        "id": "90f68a43-18cd-4d25-8313-ba98a2b2f68e",
+        "name": "LITT UEMOSJONELL TIGER AS",
+        "type": "Organisasjon",
+        "variant": "AS",
+        "parent": null,
+        "children": null,
+        "partyid": 51153015,
+        "userId": null,
+        "username": null,
+        "organizationIdentifier": "213630652",
+        "personIdentifier": null,
+        "dateOfBirth": null,
+        "dateOfDeath": null,
+        "isDeleted": false,
+        "deletedAt": null
+      },
+      "access": [
+        {
+          "role": {
+            "id": "f76b997a-9bd8-4f7b-899f-fcd85d35669f",
+            "code": "revisor",
+            "urn": "urn:altinn:external-role:ccr:revisor",
+            "legacyurn ": "urn:altinn:rolecode:revi",
+            "children": null
+          },
+          "packages": [
+            {
+              "id": "96120c32-389d-46eb-8212-0a6540540c25",
+              "urn": "urn:altinn:accesspackage:revisormedarbeider",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            },
+            {
+              "id": "2f176732-b1e9-449b-9918-090d1fa986f6",
+              "urn": "urn:altinn:accesspackage:ansvarlig-revisor",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "client": {
+        "id": "920c37b7-e5c3-4623-9d67-48b337afabb1",
+        "name": "KOMPETENT ØDE TIGER AS",
+        "type": "Organisasjon",
+        "variant": "AS",
+        "parent": null,
+        "children": null,
+        "partyid": 51540974,
+        "userId": null,
+        "username": null,
+        "organizationIdentifier": "313912787",
+        "personIdentifier": null,
+        "dateOfBirth": null,
+        "dateOfDeath": null,
+        "isDeleted": false,
+        "deletedAt": null
+      },
+      "access": [
+        {
+          "role": {
+            "id": "f76b997a-9bd8-4f7b-899f-fcd85d35669f",
+            "code": "revisor",
+            "urn": "urn:altinn:external-role:ccr:revisor",
+            "legacyurn ": "urn:altinn:rolecode:revi",
+            "children": null
+          },
+          "packages": [
+            {
+              "id": "2f176732-b1e9-449b-9918-090d1fa986f6",
+              "urn": "urn:altinn:accesspackage:ansvarlig-revisor",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            },
+            {
+              "id": "96120c32-389d-46eb-8212-0a6540540c25",
+              "urn": "urn:altinn:accesspackage:revisormedarbeider",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "client": {
+        "id": "9397a7f3-43bd-4850-a31f-dab2c865e4b9",
+        "name": "KJEMPENDE FREDFULL APE",
+        "type": "Organisasjon",
+        "variant": "FLI",
+        "parent": null,
+        "children": null,
+        "partyid": 51447037,
+        "userId": null,
+        "username": null,
+        "organizationIdentifier": "312568853",
+        "personIdentifier": null,
+        "dateOfBirth": null,
+        "dateOfDeath": null,
+        "isDeleted": false,
+        "deletedAt": null
+      },
+      "access": [
+        {
+          "role": {
+            "id": "f76b997a-9bd8-4f7b-899f-fcd85d35669f",
+            "code": "revisor",
+            "urn": "urn:altinn:external-role:ccr:revisor",
+            "legacyurn ": "urn:altinn:rolecode:revi",
+            "children": null
+          },
+          "packages": [
+            {
+              "id": "96120c32-389d-46eb-8212-0a6540540c25",
+              "urn": "urn:altinn:accesspackage:revisormedarbeider",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            },
+            {
+              "id": "2f176732-b1e9-449b-9918-090d1fa986f6",
+              "urn": "urn:altinn:accesspackage:ansvarlig-revisor",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "client": {
+        "id": "9591bb6f-0ac5-404c-b42c-f6d28187d733",
+        "name": "FORNEM UTTRYKKSFULL TIGER AS",
+        "type": "Organisasjon",
+        "variant": "AS",
+        "parent": null,
+        "children": null,
+        "partyid": 51157674,
+        "userId": null,
+        "username": null,
+        "organizationIdentifier": "214120062",
+        "personIdentifier": null,
+        "dateOfBirth": null,
+        "dateOfDeath": null,
+        "isDeleted": false,
+        "deletedAt": null
+      },
+      "access": [
+        {
+          "role": {
+            "id": "f76b997a-9bd8-4f7b-899f-fcd85d35669f",
+            "code": "revisor",
+            "urn": "urn:altinn:external-role:ccr:revisor",
+            "legacyurn ": "urn:altinn:rolecode:revi",
+            "children": null
+          },
+          "packages": [
+            {
+              "id": "96120c32-389d-46eb-8212-0a6540540c25",
+              "urn": "urn:altinn:accesspackage:revisormedarbeider",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            },
+            {
+              "id": "2f176732-b1e9-449b-9918-090d1fa986f6",
+              "urn": "urn:altinn:accesspackage:ansvarlig-revisor",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "client": {
+        "id": "97871744-a6f7-4bc9-bc52-183297731d2b",
+        "name": "ANSVARSFULL PÅPASSELIG APE",
+        "type": "Organisasjon",
+        "variant": "FLI",
+        "parent": null,
+        "children": null,
+        "partyid": 51258002,
+        "userId": null,
+        "username": null,
+        "organizationIdentifier": "310812048",
+        "personIdentifier": null,
+        "dateOfBirth": null,
+        "dateOfDeath": null,
+        "isDeleted": false,
+        "deletedAt": null
+      },
+      "access": [
+        {
+          "role": {
+            "id": "f76b997a-9bd8-4f7b-899f-fcd85d35669f",
+            "code": "revisor",
+            "urn": "urn:altinn:external-role:ccr:revisor",
+            "legacyurn ": "urn:altinn:rolecode:revi",
+            "children": null
+          },
+          "packages": [
+            {
+              "id": "2f176732-b1e9-449b-9918-090d1fa986f6",
+              "urn": "urn:altinn:accesspackage:ansvarlig-revisor",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            },
+            {
+              "id": "96120c32-389d-46eb-8212-0a6540540c25",
+              "urn": "urn:altinn:accesspackage:revisormedarbeider",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "client": {
+        "id": "98e80a46-7d8a-496b-bd3e-d90edd326cda",
+        "name": "TØRR SUNN TIGER AS",
+        "type": "Organisasjon",
+        "variant": "AS",
+        "parent": null,
+        "children": null,
+        "partyid": 51485256,
+        "userId": null,
+        "username": null,
+        "organizationIdentifier": "313112845",
+        "personIdentifier": null,
+        "dateOfBirth": null,
+        "dateOfDeath": null,
+        "isDeleted": false,
+        "deletedAt": null
+      },
+      "access": [
+        {
+          "role": {
+            "id": "f76b997a-9bd8-4f7b-899f-fcd85d35669f",
+            "code": "revisor",
+            "urn": "urn:altinn:external-role:ccr:revisor",
+            "legacyurn ": "urn:altinn:rolecode:revi",
+            "children": null
+          },
+          "packages": [
+            {
+              "id": "2f176732-b1e9-449b-9918-090d1fa986f6",
+              "urn": "urn:altinn:accesspackage:ansvarlig-revisor",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            },
+            {
+              "id": "96120c32-389d-46eb-8212-0a6540540c25",
+              "urn": "urn:altinn:accesspackage:revisormedarbeider",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "client": {
+        "id": "9cbc1197-f3aa-421f-b5c5-7ffeec0b48f1",
+        "name": "SKJØR GLUPSK TIGER AS",
+        "type": "Organisasjon",
+        "variant": "AS",
+        "parent": null,
+        "children": null,
+        "partyid": 51494703,
+        "userId": null,
+        "username": null,
+        "organizationIdentifier": "313247198",
+        "personIdentifier": null,
+        "dateOfBirth": null,
+        "dateOfDeath": null,
+        "isDeleted": false,
+        "deletedAt": null
+      },
+      "access": [
+        {
+          "role": {
+            "id": "f76b997a-9bd8-4f7b-899f-fcd85d35669f",
+            "code": "revisor",
+            "urn": "urn:altinn:external-role:ccr:revisor",
+            "legacyurn ": "urn:altinn:rolecode:revi",
+            "children": null
+          },
+          "packages": [
+            {
+              "id": "96120c32-389d-46eb-8212-0a6540540c25",
+              "urn": "urn:altinn:accesspackage:revisormedarbeider",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            },
+            {
+              "id": "2f176732-b1e9-449b-9918-090d1fa986f6",
+              "urn": "urn:altinn:accesspackage:ansvarlig-revisor",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "client": {
+        "id": "9fdbc882-5ff6-4c12-9995-ca8afc02dd82",
+        "name": "VASSEN HANDLEKRAFTIG TIGER AS",
+        "type": "Organisasjon",
+        "variant": "AS",
+        "parent": null,
+        "children": null,
+        "partyid": 51474634,
+        "userId": null,
+        "username": null,
+        "organizationIdentifier": "312961709",
+        "personIdentifier": null,
+        "dateOfBirth": null,
+        "dateOfDeath": null,
+        "isDeleted": false,
+        "deletedAt": null
+      },
+      "access": [
+        {
+          "role": {
+            "id": "f76b997a-9bd8-4f7b-899f-fcd85d35669f",
+            "code": "revisor",
+            "urn": "urn:altinn:external-role:ccr:revisor",
+            "legacyurn ": "urn:altinn:rolecode:revi",
+            "children": null
+          },
+          "packages": [
+            {
+              "id": "96120c32-389d-46eb-8212-0a6540540c25",
+              "urn": "urn:altinn:accesspackage:revisormedarbeider",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            },
+            {
+              "id": "2f176732-b1e9-449b-9918-090d1fa986f6",
+              "urn": "urn:altinn:accesspackage:ansvarlig-revisor",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "client": {
+        "id": "a117294d-ab60-4dc7-a4ed-01dfa6c86212",
+        "name": "VELDIG FLAT TIGER AS",
+        "type": "Organisasjon",
+        "variant": "AS",
+        "parent": null,
+        "children": null,
+        "partyid": 51507149,
+        "userId": null,
+        "username": null,
+        "organizationIdentifier": "313426475",
+        "personIdentifier": null,
+        "dateOfBirth": null,
+        "dateOfDeath": null,
+        "isDeleted": false,
+        "deletedAt": null
+      },
+      "access": [
+        {
+          "role": {
+            "id": "46e27685-b3ba-423e-8b42-faab54de5817",
+            "code": "regnskapsforer",
+            "urn": "urn:altinn:external-role:ccr:regnskapsforer",
+            "legacyurn ": "urn:altinn:rolecode:regn",
+            "children": null
+          },
+          "packages": [
+            {
+              "id": "a5f7f72a-9b89-445d-85bb-06f678a3d4d1",
+              "urn": "urn:altinn:accesspackage:regnskapsforer-uten-signeringsrettighet",
+              "areaId": "64cbcdc8-01c9-448c-b3d2-eb9582beb3c2"
+            },
+            {
+              "id": "43becc6a-8c6c-4e9e-bb2f-08fe588ada21",
+              "urn": "urn:altinn:accesspackage:regnskapsforer-lonn",
+              "areaId": "64cbcdc8-01c9-448c-b3d2-eb9582beb3c2"
+            },
+            {
+              "id": "955d5779-3e2b-4098-b11d-0431dc41ddbe",
+              "urn": "urn:altinn:accesspackage:regnskapsforer-med-signeringsrettighet",
+              "areaId": "64cbcdc8-01c9-448c-b3d2-eb9582beb3c2"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "client": {
+        "id": "a205e604-7adc-4d62-84f3-e0f688583915",
+        "name": "VÅKEN ALFABETISK TIGER AS",
+        "type": "Organisasjon",
+        "variant": "AS",
+        "parent": null,
+        "children": null,
+        "partyid": 51113544,
+        "userId": null,
+        "username": null,
+        "organizationIdentifier": "314241525",
+        "personIdentifier": null,
+        "dateOfBirth": null,
+        "dateOfDeath": null,
+        "isDeleted": false,
+        "deletedAt": null
+      },
+      "access": [
+        {
+          "role": {
+            "id": "f76b997a-9bd8-4f7b-899f-fcd85d35669f",
+            "code": "revisor",
+            "urn": "urn:altinn:external-role:ccr:revisor",
+            "legacyurn ": "urn:altinn:rolecode:revi",
+            "children": null
+          },
+          "packages": [
+            {
+              "id": "96120c32-389d-46eb-8212-0a6540540c25",
+              "urn": "urn:altinn:accesspackage:revisormedarbeider",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            },
+            {
+              "id": "2f176732-b1e9-449b-9918-090d1fa986f6",
+              "urn": "urn:altinn:accesspackage:ansvarlig-revisor",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "client": {
+        "id": "a20ced73-7680-4c4b-8809-c4f86e3e8410",
+        "name": "MARITIM KJÆRLIG TIGER AS",
+        "type": "Organisasjon",
+        "variant": "AS",
+        "parent": null,
+        "children": null,
+        "partyid": 51560829,
+        "userId": null,
+        "username": null,
+        "organizationIdentifier": "314198603",
+        "personIdentifier": null,
+        "dateOfBirth": null,
+        "dateOfDeath": null,
+        "isDeleted": false,
+        "deletedAt": null
+      },
+      "access": [
+        {
+          "role": {
+            "id": "f76b997a-9bd8-4f7b-899f-fcd85d35669f",
+            "code": "revisor",
+            "urn": "urn:altinn:external-role:ccr:revisor",
+            "legacyurn ": "urn:altinn:rolecode:revi",
+            "children": null
+          },
+          "packages": [
+            {
+              "id": "96120c32-389d-46eb-8212-0a6540540c25",
+              "urn": "urn:altinn:accesspackage:revisormedarbeider",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            },
+            {
+              "id": "2f176732-b1e9-449b-9918-090d1fa986f6",
+              "urn": "urn:altinn:accesspackage:ansvarlig-revisor",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "client": {
+        "id": "a255f099-f87a-4b7a-8c74-f3d671b7d74d",
+        "name": "GLUPSK VIRKELIG TIGER AS",
+        "type": "Organisasjon",
+        "variant": "AS",
+        "parent": null,
+        "children": null,
+        "partyid": 51361843,
+        "userId": null,
+        "username": null,
+        "organizationIdentifier": "311724460",
+        "personIdentifier": null,
+        "dateOfBirth": null,
+        "dateOfDeath": null,
+        "isDeleted": false,
+        "deletedAt": null
+      },
+      "access": [
+        {
+          "role": {
+            "id": "f76b997a-9bd8-4f7b-899f-fcd85d35669f",
+            "code": "revisor",
+            "urn": "urn:altinn:external-role:ccr:revisor",
+            "legacyurn ": "urn:altinn:rolecode:revi",
+            "children": null
+          },
+          "packages": [
+            {
+              "id": "2f176732-b1e9-449b-9918-090d1fa986f6",
+              "urn": "urn:altinn:accesspackage:ansvarlig-revisor",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            },
+            {
+              "id": "96120c32-389d-46eb-8212-0a6540540c25",
+              "urn": "urn:altinn:accesspackage:revisormedarbeider",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "client": {
+        "id": "a287f4ce-9179-4d4e-b78a-f5b3460a1973",
+        "name": "SØT OVERFØLSOM TIGER AS",
+        "type": "Organisasjon",
+        "variant": "AS",
+        "parent": null,
+        "children": null,
+        "partyid": 51241605,
+        "userId": null,
+        "username": null,
+        "organizationIdentifier": "310627208",
+        "personIdentifier": null,
+        "dateOfBirth": null,
+        "dateOfDeath": null,
+        "isDeleted": false,
+        "deletedAt": null
+      },
+      "access": [
+        {
+          "role": {
+            "id": "f76b997a-9bd8-4f7b-899f-fcd85d35669f",
+            "code": "revisor",
+            "urn": "urn:altinn:external-role:ccr:revisor",
+            "legacyurn ": "urn:altinn:rolecode:revi",
+            "children": null
+          },
+          "packages": [
+            {
+              "id": "2f176732-b1e9-449b-9918-090d1fa986f6",
+              "urn": "urn:altinn:accesspackage:ansvarlig-revisor",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            },
+            {
+              "id": "96120c32-389d-46eb-8212-0a6540540c25",
+              "urn": "urn:altinn:accesspackage:revisormedarbeider",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "client": {
+        "id": "a94ffc18-ab90-4779-a57f-b943cd96d60b",
+        "name": "ELEKTRONISK SALT TIGER AS",
+        "type": "Organisasjon",
+        "variant": "AS",
+        "parent": null,
+        "children": null,
+        "partyid": 51441557,
+        "userId": null,
+        "username": null,
+        "organizationIdentifier": "312491362",
+        "personIdentifier": null,
+        "dateOfBirth": null,
+        "dateOfDeath": null,
+        "isDeleted": false,
+        "deletedAt": null
+      },
+      "access": [
+        {
+          "role": {
+            "id": "f76b997a-9bd8-4f7b-899f-fcd85d35669f",
+            "code": "revisor",
+            "urn": "urn:altinn:external-role:ccr:revisor",
+            "legacyurn ": "urn:altinn:rolecode:revi",
+            "children": null
+          },
+          "packages": [
+            {
+              "id": "96120c32-389d-46eb-8212-0a6540540c25",
+              "urn": "urn:altinn:accesspackage:revisormedarbeider",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            },
+            {
+              "id": "2f176732-b1e9-449b-9918-090d1fa986f6",
+              "urn": "urn:altinn:accesspackage:ansvarlig-revisor",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "client": {
+        "id": "a9ff531b-f47b-43bc-a11f-155c8fbc2253",
+        "name": "TILFREDSSTILLENDE VARM TIGER AS",
+        "type": "Organisasjon",
+        "variant": "AS",
+        "parent": null,
+        "children": null,
+        "partyid": 51193966,
+        "userId": null,
+        "username": null,
+        "organizationIdentifier": "310096164",
+        "personIdentifier": null,
+        "dateOfBirth": null,
+        "dateOfDeath": null,
+        "isDeleted": false,
+        "deletedAt": null
+      },
+      "access": [
+        {
+          "role": {
+            "id": "f76b997a-9bd8-4f7b-899f-fcd85d35669f",
+            "code": "revisor",
+            "urn": "urn:altinn:external-role:ccr:revisor",
+            "legacyurn ": "urn:altinn:rolecode:revi",
+            "children": null
+          },
+          "packages": [
+            {
+              "id": "96120c32-389d-46eb-8212-0a6540540c25",
+              "urn": "urn:altinn:accesspackage:revisormedarbeider",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            },
+            {
+              "id": "2f176732-b1e9-449b-9918-090d1fa986f6",
+              "urn": "urn:altinn:accesspackage:ansvarlig-revisor",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "client": {
+        "id": "abb5ba69-d777-4ef5-8caf-fbc9c9f65548",
+        "name": "UMUSIKALSK UNDERLIG TIGER AS",
+        "type": "Organisasjon",
+        "variant": "AS",
+        "parent": null,
+        "children": null,
+        "partyid": 51348540,
+        "userId": null,
+        "username": null,
+        "organizationIdentifier": "314108582",
+        "personIdentifier": null,
+        "dateOfBirth": null,
+        "dateOfDeath": null,
+        "isDeleted": false,
+        "deletedAt": null
+      },
+      "access": [
+        {
+          "role": {
+            "id": "f76b997a-9bd8-4f7b-899f-fcd85d35669f",
+            "code": "revisor",
+            "urn": "urn:altinn:external-role:ccr:revisor",
+            "legacyurn ": "urn:altinn:rolecode:revi",
+            "children": null
+          },
+          "packages": [
+            {
+              "id": "96120c32-389d-46eb-8212-0a6540540c25",
+              "urn": "urn:altinn:accesspackage:revisormedarbeider",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            },
+            {
+              "id": "2f176732-b1e9-449b-9918-090d1fa986f6",
+              "urn": "urn:altinn:accesspackage:ansvarlig-revisor",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "client": {
+        "id": "abccf889-6cd4-496f-9959-3f8f68d932dc",
+        "name": "SKAPENDE USELVISK TIGER AS",
+        "type": "Organisasjon",
+        "variant": "AS",
+        "parent": null,
+        "children": null,
+        "partyid": 51494973,
+        "userId": null,
+        "username": null,
+        "organizationIdentifier": "313251136",
+        "personIdentifier": null,
+        "dateOfBirth": null,
+        "dateOfDeath": null,
+        "isDeleted": false,
+        "deletedAt": null
+      },
+      "access": [
+        {
+          "role": {
+            "id": "f76b997a-9bd8-4f7b-899f-fcd85d35669f",
+            "code": "revisor",
+            "urn": "urn:altinn:external-role:ccr:revisor",
+            "legacyurn ": "urn:altinn:rolecode:revi",
+            "children": null
+          },
+          "packages": [
+            {
+              "id": "2f176732-b1e9-449b-9918-090d1fa986f6",
+              "urn": "urn:altinn:accesspackage:ansvarlig-revisor",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            },
+            {
+              "id": "96120c32-389d-46eb-8212-0a6540540c25",
+              "urn": "urn:altinn:accesspackage:revisormedarbeider",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "client": {
+        "id": "b061a3c3-068a-442a-a3e7-6f0391acac09",
+        "name": "OPPSTEMT KJÆR TIGER AS",
+        "type": "Organisasjon",
+        "variant": "AS",
+        "parent": null,
+        "children": null,
+        "partyid": 51228116,
+        "userId": null,
+        "username": null,
+        "organizationIdentifier": "310476099",
+        "personIdentifier": null,
+        "dateOfBirth": null,
+        "dateOfDeath": null,
+        "isDeleted": false,
+        "deletedAt": null
+      },
+      "access": [
+        {
+          "role": {
+            "id": "f76b997a-9bd8-4f7b-899f-fcd85d35669f",
+            "code": "revisor",
+            "urn": "urn:altinn:external-role:ccr:revisor",
+            "legacyurn ": "urn:altinn:rolecode:revi",
+            "children": null
+          },
+          "packages": [
+            {
+              "id": "96120c32-389d-46eb-8212-0a6540540c25",
+              "urn": "urn:altinn:accesspackage:revisormedarbeider",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            },
+            {
+              "id": "2f176732-b1e9-449b-9918-090d1fa986f6",
+              "urn": "urn:altinn:accesspackage:ansvarlig-revisor",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "client": {
+        "id": "b0cbfed3-2966-400c-a694-ee65436715cf",
+        "name": "STERK KOMPLEKS TIGER AS",
+        "type": "Organisasjon",
+        "variant": "AS",
+        "parent": null,
+        "children": null,
+        "partyid": 51362727,
+        "userId": null,
+        "username": null,
+        "organizationIdentifier": "311735500",
+        "personIdentifier": null,
+        "dateOfBirth": null,
+        "dateOfDeath": null,
+        "isDeleted": false,
+        "deletedAt": null
+      },
+      "access": [
+        {
+          "role": {
+            "id": "f76b997a-9bd8-4f7b-899f-fcd85d35669f",
+            "code": "revisor",
+            "urn": "urn:altinn:external-role:ccr:revisor",
+            "legacyurn ": "urn:altinn:rolecode:revi",
+            "children": null
+          },
+          "packages": [
+            {
+              "id": "96120c32-389d-46eb-8212-0a6540540c25",
+              "urn": "urn:altinn:accesspackage:revisormedarbeider",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            },
+            {
+              "id": "2f176732-b1e9-449b-9918-090d1fa986f6",
+              "urn": "urn:altinn:accesspackage:ansvarlig-revisor",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "client": {
+        "id": "b3d81e7b-c700-4a4c-9989-cbfb82d2d45f",
+        "name": "ROSA PARAT TIGER AS",
+        "type": "Organisasjon",
+        "variant": "AS",
+        "parent": null,
+        "children": null,
+        "partyid": 51269369,
+        "userId": null,
+        "username": null,
+        "organizationIdentifier": "310940259",
+        "personIdentifier": null,
+        "dateOfBirth": null,
+        "dateOfDeath": null,
+        "isDeleted": false,
+        "deletedAt": null
+      },
+      "access": [
+        {
+          "role": {
+            "id": "f76b997a-9bd8-4f7b-899f-fcd85d35669f",
+            "code": "revisor",
+            "urn": "urn:altinn:external-role:ccr:revisor",
+            "legacyurn ": "urn:altinn:rolecode:revi",
+            "children": null
+          },
+          "packages": [
+            {
+              "id": "2f176732-b1e9-449b-9918-090d1fa986f6",
+              "urn": "urn:altinn:accesspackage:ansvarlig-revisor",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            },
+            {
+              "id": "96120c32-389d-46eb-8212-0a6540540c25",
+              "urn": "urn:altinn:accesspackage:revisormedarbeider",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "client": {
+        "id": "b50a1acf-0dfc-4cc2-99d8-a95b3cfc0979",
+        "name": "GYLDEN MINKENDE TIGER AS",
+        "type": "Organisasjon",
+        "variant": "AS",
+        "parent": null,
+        "children": null,
+        "partyid": 51350278,
+        "userId": null,
+        "username": null,
+        "organizationIdentifier": "312770393",
+        "personIdentifier": null,
+        "dateOfBirth": null,
+        "dateOfDeath": null,
+        "isDeleted": false,
+        "deletedAt": null
+      },
+      "access": [
+        {
+          "role": {
+            "id": "f76b997a-9bd8-4f7b-899f-fcd85d35669f",
+            "code": "revisor",
+            "urn": "urn:altinn:external-role:ccr:revisor",
+            "legacyurn ": "urn:altinn:rolecode:revi",
+            "children": null
+          },
+          "packages": [
+            {
+              "id": "96120c32-389d-46eb-8212-0a6540540c25",
+              "urn": "urn:altinn:accesspackage:revisormedarbeider",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            },
+            {
+              "id": "2f176732-b1e9-449b-9918-090d1fa986f6",
+              "urn": "urn:altinn:accesspackage:ansvarlig-revisor",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "client": {
+        "id": "b72124a7-b651-4637-99fc-5953f288b5af",
+        "name": "SEIN FLINK TIGER AS",
+        "type": "Organisasjon",
+        "variant": "AS",
+        "parent": null,
+        "children": null,
+        "partyid": 51147919,
+        "userId": null,
+        "username": null,
+        "organizationIdentifier": "213097202",
+        "personIdentifier": null,
+        "dateOfBirth": null,
+        "dateOfDeath": null,
+        "isDeleted": false,
+        "deletedAt": null
+      },
+      "access": [
+        {
+          "role": {
+            "id": "f76b997a-9bd8-4f7b-899f-fcd85d35669f",
+            "code": "revisor",
+            "urn": "urn:altinn:external-role:ccr:revisor",
+            "legacyurn ": "urn:altinn:rolecode:revi",
+            "children": null
+          },
+          "packages": [
+            {
+              "id": "2f176732-b1e9-449b-9918-090d1fa986f6",
+              "urn": "urn:altinn:accesspackage:ansvarlig-revisor",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            },
+            {
+              "id": "96120c32-389d-46eb-8212-0a6540540c25",
+              "urn": "urn:altinn:accesspackage:revisormedarbeider",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "client": {
+        "id": "ba89d0d2-cbe5-41f5-a1d5-5960bc90253c",
+        "name": "DYP KJÆR TIGER AS",
+        "type": "Organisasjon",
+        "variant": "AS",
+        "parent": null,
+        "children": null,
+        "partyid": 51561381,
+        "userId": null,
+        "username": null,
+        "organizationIdentifier": "314206606",
+        "personIdentifier": null,
+        "dateOfBirth": null,
+        "dateOfDeath": null,
+        "isDeleted": false,
+        "deletedAt": null
+      },
+      "access": [
+        {
+          "role": {
+            "id": "f76b997a-9bd8-4f7b-899f-fcd85d35669f",
+            "code": "revisor",
+            "urn": "urn:altinn:external-role:ccr:revisor",
+            "legacyurn ": "urn:altinn:rolecode:revi",
+            "children": null
+          },
+          "packages": [
+            {
+              "id": "96120c32-389d-46eb-8212-0a6540540c25",
+              "urn": "urn:altinn:accesspackage:revisormedarbeider",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            },
+            {
+              "id": "2f176732-b1e9-449b-9918-090d1fa986f6",
+              "urn": "urn:altinn:accesspackage:ansvarlig-revisor",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "client": {
+        "id": "c0b2c94d-7a75-4d86-8ebe-69a19a78c297",
+        "name": "GRUNN GLAD TIGER AS",
+        "type": "Organisasjon",
+        "variant": "AS",
+        "parent": null,
+        "children": null,
+        "partyid": 51522644,
+        "userId": null,
+        "username": null,
+        "organizationIdentifier": "313648559",
+        "personIdentifier": null,
+        "dateOfBirth": null,
+        "dateOfDeath": null,
+        "isDeleted": false,
+        "deletedAt": null
+      },
+      "access": [
+        {
+          "role": {
+            "id": "f76b997a-9bd8-4f7b-899f-fcd85d35669f",
+            "code": "revisor",
+            "urn": "urn:altinn:external-role:ccr:revisor",
+            "legacyurn ": "urn:altinn:rolecode:revi",
+            "children": null
+          },
+          "packages": [
+            {
+              "id": "96120c32-389d-46eb-8212-0a6540540c25",
+              "urn": "urn:altinn:accesspackage:revisormedarbeider",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            },
+            {
+              "id": "2f176732-b1e9-449b-9918-090d1fa986f6",
+              "urn": "urn:altinn:accesspackage:ansvarlig-revisor",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "client": {
+        "id": "c20512dd-373c-4d85-97bd-f70364d78aa3",
+        "name": "UPOPULÆR BEMERKELSESVERDIG TIGER AS",
+        "type": "Organisasjon",
+        "variant": "AS",
+        "parent": null,
+        "children": null,
+        "partyid": 51116709,
+        "userId": null,
+        "username": null,
+        "organizationIdentifier": "314248538",
+        "personIdentifier": null,
+        "dateOfBirth": null,
+        "dateOfDeath": null,
+        "isDeleted": false,
+        "deletedAt": null
+      },
+      "access": [
+        {
+          "role": {
+            "id": "f76b997a-9bd8-4f7b-899f-fcd85d35669f",
+            "code": "revisor",
+            "urn": "urn:altinn:external-role:ccr:revisor",
+            "legacyurn ": "urn:altinn:rolecode:revi",
+            "children": null
+          },
+          "packages": [
+            {
+              "id": "96120c32-389d-46eb-8212-0a6540540c25",
+              "urn": "urn:altinn:accesspackage:revisormedarbeider",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            },
+            {
+              "id": "2f176732-b1e9-449b-9918-090d1fa986f6",
+              "urn": "urn:altinn:accesspackage:ansvarlig-revisor",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "client": {
+        "id": "c2d1428c-c25e-47a4-91fb-f42a168c617b",
+        "name": "PEN UNG TIGER AS",
+        "type": "Organisasjon",
+        "variant": "AS",
+        "parent": null,
+        "children": null,
+        "partyid": 51237132,
+        "userId": null,
+        "username": null,
+        "organizationIdentifier": "310577014",
+        "personIdentifier": null,
+        "dateOfBirth": null,
+        "dateOfDeath": null,
+        "isDeleted": false,
+        "deletedAt": null
+      },
+      "access": [
+        {
+          "role": {
+            "id": "f76b997a-9bd8-4f7b-899f-fcd85d35669f",
+            "code": "revisor",
+            "urn": "urn:altinn:external-role:ccr:revisor",
+            "legacyurn ": "urn:altinn:rolecode:revi",
+            "children": null
+          },
+          "packages": [
+            {
+              "id": "2f176732-b1e9-449b-9918-090d1fa986f6",
+              "urn": "urn:altinn:accesspackage:ansvarlig-revisor",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            },
+            {
+              "id": "96120c32-389d-46eb-8212-0a6540540c25",
+              "urn": "urn:altinn:accesspackage:revisormedarbeider",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "client": {
+        "id": "c46fce2c-845a-4b96-9e14-cd6d7f2ba5c2",
+        "name": "SAMEIET TYKKHUDET SMIGRENDE LØVE",
+        "type": "Organisasjon",
+        "variant": "ESEK",
+        "parent": null,
+        "children": null,
+        "partyid": 51192118,
+        "userId": null,
+        "username": null,
+        "organizationIdentifier": "310075884",
+        "personIdentifier": null,
+        "dateOfBirth": null,
+        "dateOfDeath": null,
+        "isDeleted": false,
+        "deletedAt": null
+      },
+      "access": [
+        {
+          "role": {
+            "id": "f76b997a-9bd8-4f7b-899f-fcd85d35669f",
+            "code": "revisor",
+            "urn": "urn:altinn:external-role:ccr:revisor",
+            "legacyurn ": "urn:altinn:rolecode:revi",
+            "children": null
+          },
+          "packages": [
+            {
+              "id": "2f176732-b1e9-449b-9918-090d1fa986f6",
+              "urn": "urn:altinn:accesspackage:ansvarlig-revisor",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            },
+            {
+              "id": "96120c32-389d-46eb-8212-0a6540540c25",
+              "urn": "urn:altinn:accesspackage:revisormedarbeider",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "client": {
+        "id": "c637bd1a-7a30-42e1-8ad9-fe73c7e82321",
+        "name": "TROFAST PRAKTISK TIGER AS",
+        "type": "Organisasjon",
+        "variant": "AS",
+        "parent": null,
+        "children": null,
+        "partyid": 51443003,
+        "userId": null,
+        "username": null,
+        "organizationIdentifier": "312511894",
+        "personIdentifier": null,
+        "dateOfBirth": null,
+        "dateOfDeath": null,
+        "isDeleted": false,
+        "deletedAt": null
+      },
+      "access": [
+        {
+          "role": {
+            "id": "46e27685-b3ba-423e-8b42-faab54de5817",
+            "code": "regnskapsforer",
+            "urn": "urn:altinn:external-role:ccr:regnskapsforer",
+            "legacyurn ": "urn:altinn:rolecode:regn",
+            "children": null
+          },
+          "packages": [
+            {
+              "id": "a5f7f72a-9b89-445d-85bb-06f678a3d4d1",
+              "urn": "urn:altinn:accesspackage:regnskapsforer-uten-signeringsrettighet",
+              "areaId": "64cbcdc8-01c9-448c-b3d2-eb9582beb3c2"
+            },
+            {
+              "id": "43becc6a-8c6c-4e9e-bb2f-08fe588ada21",
+              "urn": "urn:altinn:accesspackage:regnskapsforer-lonn",
+              "areaId": "64cbcdc8-01c9-448c-b3d2-eb9582beb3c2"
+            },
+            {
+              "id": "955d5779-3e2b-4098-b11d-0431dc41ddbe",
+              "urn": "urn:altinn:accesspackage:regnskapsforer-med-signeringsrettighet",
+              "areaId": "64cbcdc8-01c9-448c-b3d2-eb9582beb3c2"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "client": {
+        "id": "c77bbe80-819a-4f10-8e4a-e8fcbfcfc7ce",
+        "name": "FORDEKT KJÆRLIG TIGER AS",
+        "type": "Organisasjon",
+        "variant": "AS",
+        "parent": null,
+        "children": null,
+        "partyid": 51352247,
+        "userId": null,
+        "username": null,
+        "organizationIdentifier": "313079074",
+        "personIdentifier": null,
+        "dateOfBirth": null,
+        "dateOfDeath": null,
+        "isDeleted": false,
+        "deletedAt": null
+      },
+      "access": [
+        {
+          "role": {
+            "id": "f76b997a-9bd8-4f7b-899f-fcd85d35669f",
+            "code": "revisor",
+            "urn": "urn:altinn:external-role:ccr:revisor",
+            "legacyurn ": "urn:altinn:rolecode:revi",
+            "children": null
+          },
+          "packages": [
+            {
+              "id": "2f176732-b1e9-449b-9918-090d1fa986f6",
+              "urn": "urn:altinn:accesspackage:ansvarlig-revisor",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            },
+            {
+              "id": "96120c32-389d-46eb-8212-0a6540540c25",
+              "urn": "urn:altinn:accesspackage:revisormedarbeider",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "client": {
+        "id": "c82e478e-fd3d-4c5c-b837-ddd5d62d09af",
+        "name": "KOMPLETT POPULÆR TIGER AS",
+        "type": "Organisasjon",
+        "variant": "AS",
+        "parent": null,
+        "children": null,
+        "partyid": 51324014,
+        "userId": null,
+        "username": null,
+        "organizationIdentifier": "313009203",
+        "personIdentifier": null,
+        "dateOfBirth": null,
+        "dateOfDeath": null,
+        "isDeleted": false,
+        "deletedAt": null
+      },
+      "access": [
+        {
+          "role": {
+            "id": "f76b997a-9bd8-4f7b-899f-fcd85d35669f",
+            "code": "revisor",
+            "urn": "urn:altinn:external-role:ccr:revisor",
+            "legacyurn ": "urn:altinn:rolecode:revi",
+            "children": null
+          },
+          "packages": [
+            {
+              "id": "2f176732-b1e9-449b-9918-090d1fa986f6",
+              "urn": "urn:altinn:accesspackage:ansvarlig-revisor",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            },
+            {
+              "id": "96120c32-389d-46eb-8212-0a6540540c25",
+              "urn": "urn:altinn:accesspackage:revisormedarbeider",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "client": {
+        "id": "c93f560f-fb99-4de0-ac50-56aa58cf99dd",
+        "name": "UTNYTTENDE FREIDIG TIGER AS",
+        "type": "Organisasjon",
+        "variant": "AS",
+        "parent": null,
+        "children": null,
+        "partyid": 51254391,
+        "userId": null,
+        "username": null,
+        "organizationIdentifier": "314278356",
+        "personIdentifier": null,
+        "dateOfBirth": null,
+        "dateOfDeath": null,
+        "isDeleted": false,
+        "deletedAt": null
+      },
+      "access": [
+        {
+          "role": {
+            "id": "f76b997a-9bd8-4f7b-899f-fcd85d35669f",
+            "code": "revisor",
+            "urn": "urn:altinn:external-role:ccr:revisor",
+            "legacyurn ": "urn:altinn:rolecode:revi",
+            "children": null
+          },
+          "packages": [
+            {
+              "id": "96120c32-389d-46eb-8212-0a6540540c25",
+              "urn": "urn:altinn:accesspackage:revisormedarbeider",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            },
+            {
+              "id": "2f176732-b1e9-449b-9918-090d1fa986f6",
+              "urn": "urn:altinn:accesspackage:ansvarlig-revisor",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "client": {
+        "id": "c9b5dfe4-b884-4c47-9aa8-3d890b804bb4",
+        "name": "ALLSLAGS KOMPATIBEL TIGER AS",
+        "type": "Organisasjon",
+        "variant": "AS",
+        "parent": null,
+        "children": null,
+        "partyid": 51161414,
+        "userId": null,
+        "username": null,
+        "organizationIdentifier": "310629499",
+        "personIdentifier": null,
+        "dateOfBirth": null,
+        "dateOfDeath": null,
+        "isDeleted": false,
+        "deletedAt": null
+      },
+      "access": [
+        {
+          "role": {
+            "id": "42cae370-2dc1-4fdc-9c67-c2f4b0f0f829",
+            "code": "rettighetshaver",
+            "urn": "urn:altinn:role:rettighetshaver",
+            "legacyurn ": null,
+            "children": null
+          },
+          "packages": [
+            {
+              "id": "ae41bf08-c7ef-4bfe-b2b9-7bf6deb7798f",
+              "urn": "urn:altinn:accesspackage:pensjon",
+              "areaId": "6f7f3b02-8b5a-4823-9468-0f4646d3a790"
+            },
+            {
+              "id": "4f4d4567-2384-49fa-b34b-84b4b77139d8",
+              "urn": "urn:altinn:accesspackage:motorvognavgift",
+              "areaId": "7d32591d-34b7-4afc-8afa-013722f8c05d"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "client": {
+        "id": "ccf12f33-e1af-4908-a406-760779a6123f",
+        "name": "BLOMSTRETE VRIEN TIGER AS",
+        "type": "Organisasjon",
+        "variant": "AS",
+        "parent": null,
+        "children": null,
+        "partyid": 51216776,
+        "userId": null,
+        "username": null,
+        "organizationIdentifier": "310349070",
+        "personIdentifier": null,
+        "dateOfBirth": null,
+        "dateOfDeath": null,
+        "isDeleted": false,
+        "deletedAt": null
+      },
+      "access": [
+        {
+          "role": {
+            "id": "42cae370-2dc1-4fdc-9c67-c2f4b0f0f829",
+            "code": "rettighetshaver",
+            "urn": "urn:altinn:role:rettighetshaver",
+            "legacyurn ": null,
+            "children": null
+          },
+          "packages": [
+            {
+              "id": "ae41bf08-c7ef-4bfe-b2b9-7bf6deb7798f",
+              "urn": "urn:altinn:accesspackage:pensjon",
+              "areaId": "6f7f3b02-8b5a-4823-9468-0f4646d3a790"
+            },
+            {
+              "id": "4f4d4567-2384-49fa-b34b-84b4b77139d8",
+              "urn": "urn:altinn:accesspackage:motorvognavgift",
+              "areaId": "7d32591d-34b7-4afc-8afa-013722f8c05d"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "client": {
+        "id": "cd6e7509-97b3-4265-8ddf-d0e6fe2c8d5d",
+        "name": "LOGISK UTSTRAKT TIGER AS",
+        "type": "Organisasjon",
+        "variant": "AS",
+        "parent": null,
+        "children": null,
+        "partyid": 51110323,
+        "userId": null,
+        "username": null,
+        "organizationIdentifier": "310651907",
+        "personIdentifier": null,
+        "dateOfBirth": null,
+        "dateOfDeath": null,
+        "isDeleted": false,
+        "deletedAt": null
+      },
+      "access": [
+        {
+          "role": {
+            "id": "f76b997a-9bd8-4f7b-899f-fcd85d35669f",
+            "code": "revisor",
+            "urn": "urn:altinn:external-role:ccr:revisor",
+            "legacyurn ": "urn:altinn:rolecode:revi",
+            "children": null
+          },
+          "packages": [
+            {
+              "id": "2f176732-b1e9-449b-9918-090d1fa986f6",
+              "urn": "urn:altinn:accesspackage:ansvarlig-revisor",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            },
+            {
+              "id": "96120c32-389d-46eb-8212-0a6540540c25",
+              "urn": "urn:altinn:accesspackage:revisormedarbeider",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "client": {
+        "id": "cdc9c5ef-caff-4617-b4da-30f405ed373a",
+        "name": "LILLA BLØT TIGER AS",
+        "type": "Organisasjon",
+        "variant": "AS",
+        "parent": null,
+        "children": null,
+        "partyid": 51489343,
+        "userId": null,
+        "username": null,
+        "organizationIdentifier": "313169960",
+        "personIdentifier": null,
+        "dateOfBirth": null,
+        "dateOfDeath": null,
+        "isDeleted": false,
+        "deletedAt": null
+      },
+      "access": [
+        {
+          "role": {
+            "id": "f76b997a-9bd8-4f7b-899f-fcd85d35669f",
+            "code": "revisor",
+            "urn": "urn:altinn:external-role:ccr:revisor",
+            "legacyurn ": "urn:altinn:rolecode:revi",
+            "children": null
+          },
+          "packages": [
+            {
+              "id": "96120c32-389d-46eb-8212-0a6540540c25",
+              "urn": "urn:altinn:accesspackage:revisormedarbeider",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            },
+            {
+              "id": "2f176732-b1e9-449b-9918-090d1fa986f6",
+              "urn": "urn:altinn:accesspackage:ansvarlig-revisor",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "client": {
+        "id": "cf88d447-a2c2-46d5-917d-50901174913b",
+        "name": "UTØRST SKAPENDE TIGER AS",
+        "type": "Organisasjon",
+        "variant": "AS",
+        "parent": null,
+        "children": null,
+        "partyid": 51293284,
+        "userId": null,
+        "username": null,
+        "organizationIdentifier": "312922223",
+        "personIdentifier": null,
+        "dateOfBirth": null,
+        "dateOfDeath": null,
+        "isDeleted": false,
+        "deletedAt": null
+      },
+      "access": [
+        {
+          "role": {
+            "id": "f76b997a-9bd8-4f7b-899f-fcd85d35669f",
+            "code": "revisor",
+            "urn": "urn:altinn:external-role:ccr:revisor",
+            "legacyurn ": "urn:altinn:rolecode:revi",
+            "children": null
+          },
+          "packages": [
+            {
+              "id": "96120c32-389d-46eb-8212-0a6540540c25",
+              "urn": "urn:altinn:accesspackage:revisormedarbeider",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            },
+            {
+              "id": "2f176732-b1e9-449b-9918-090d1fa986f6",
+              "urn": "urn:altinn:accesspackage:ansvarlig-revisor",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "client": {
+        "id": "d30e200e-b587-47cc-82e8-3177cc2947b8",
+        "name": "VARSOM GOD TIGER AS",
+        "type": "Organisasjon",
+        "variant": "AS",
+        "parent": null,
+        "children": null,
+        "partyid": 51274906,
+        "userId": null,
+        "username": null,
+        "organizationIdentifier": "311002503",
+        "personIdentifier": null,
+        "dateOfBirth": null,
+        "dateOfDeath": null,
+        "isDeleted": false,
+        "deletedAt": null
+      },
+      "access": [
+        {
+          "role": {
+            "id": "f76b997a-9bd8-4f7b-899f-fcd85d35669f",
+            "code": "revisor",
+            "urn": "urn:altinn:external-role:ccr:revisor",
+            "legacyurn ": "urn:altinn:rolecode:revi",
+            "children": null
+          },
+          "packages": [
+            {
+              "id": "96120c32-389d-46eb-8212-0a6540540c25",
+              "urn": "urn:altinn:accesspackage:revisormedarbeider",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            },
+            {
+              "id": "2f176732-b1e9-449b-9918-090d1fa986f6",
+              "urn": "urn:altinn:accesspackage:ansvarlig-revisor",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "client": {
+        "id": "d52a18e5-e394-46ac-85c1-e736937f61f0",
+        "name": "KONGE NY APE",
+        "type": "Organisasjon",
+        "variant": "FLI",
+        "parent": null,
+        "children": null,
+        "partyid": 51481154,
+        "userId": null,
+        "username": null,
+        "organizationIdentifier": "313054349",
+        "personIdentifier": null,
+        "dateOfBirth": null,
+        "dateOfDeath": null,
+        "isDeleted": false,
+        "deletedAt": null
+      },
+      "access": [
+        {
+          "role": {
+            "id": "f76b997a-9bd8-4f7b-899f-fcd85d35669f",
+            "code": "revisor",
+            "urn": "urn:altinn:external-role:ccr:revisor",
+            "legacyurn ": "urn:altinn:rolecode:revi",
+            "children": null
+          },
+          "packages": [
+            {
+              "id": "2f176732-b1e9-449b-9918-090d1fa986f6",
+              "urn": "urn:altinn:accesspackage:ansvarlig-revisor",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            },
+            {
+              "id": "96120c32-389d-46eb-8212-0a6540540c25",
+              "urn": "urn:altinn:accesspackage:revisormedarbeider",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "client": {
+        "id": "d8670b83-7236-43e6-9571-ac90b8262f96",
+        "name": "SAMEIET SKEPTISK RASK LØVE",
+        "type": "Organisasjon",
+        "variant": "ESEK",
+        "parent": null,
+        "children": null,
+        "partyid": 51448142,
+        "userId": null,
+        "username": null,
+        "organizationIdentifier": "312584212",
+        "personIdentifier": null,
+        "dateOfBirth": null,
+        "dateOfDeath": null,
+        "isDeleted": false,
+        "deletedAt": null
+      },
+      "access": [
+        {
+          "role": {
+            "id": "f76b997a-9bd8-4f7b-899f-fcd85d35669f",
+            "code": "revisor",
+            "urn": "urn:altinn:external-role:ccr:revisor",
+            "legacyurn ": "urn:altinn:rolecode:revi",
+            "children": null
+          },
+          "packages": [
+            {
+              "id": "96120c32-389d-46eb-8212-0a6540540c25",
+              "urn": "urn:altinn:accesspackage:revisormedarbeider",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            },
+            {
+              "id": "2f176732-b1e9-449b-9918-090d1fa986f6",
+              "urn": "urn:altinn:accesspackage:ansvarlig-revisor",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "client": {
+        "id": "d8cbe767-e7a9-4718-a1ee-4cbf0a79606c",
+        "name": "FANTASILØS FIRKANTET TIGER AS",
+        "type": "Organisasjon",
+        "variant": "AS",
+        "parent": null,
+        "children": null,
+        "partyid": 51147859,
+        "userId": null,
+        "username": null,
+        "organizationIdentifier": "314243048",
+        "personIdentifier": null,
+        "dateOfBirth": null,
+        "dateOfDeath": null,
+        "isDeleted": false,
+        "deletedAt": null
+      },
+      "access": [
+        {
+          "role": {
+            "id": "f76b997a-9bd8-4f7b-899f-fcd85d35669f",
+            "code": "revisor",
+            "urn": "urn:altinn:external-role:ccr:revisor",
+            "legacyurn ": "urn:altinn:rolecode:revi",
+            "children": null
+          },
+          "packages": [
+            {
+              "id": "96120c32-389d-46eb-8212-0a6540540c25",
+              "urn": "urn:altinn:accesspackage:revisormedarbeider",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            },
+            {
+              "id": "2f176732-b1e9-449b-9918-090d1fa986f6",
+              "urn": "urn:altinn:accesspackage:ansvarlig-revisor",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "client": {
+        "id": "da56b321-7256-457d-831f-3e5459676646",
+        "name": "PÅLITELIG ULYDIG TIGER AS",
+        "type": "Organisasjon",
+        "variant": "AS",
+        "parent": null,
+        "children": null,
+        "partyid": 51177900,
+        "userId": null,
+        "username": null,
+        "organizationIdentifier": "314127145",
+        "personIdentifier": null,
+        "dateOfBirth": null,
+        "dateOfDeath": null,
+        "isDeleted": false,
+        "deletedAt": null
+      },
+      "access": [
+        {
+          "role": {
+            "id": "f76b997a-9bd8-4f7b-899f-fcd85d35669f",
+            "code": "revisor",
+            "urn": "urn:altinn:external-role:ccr:revisor",
+            "legacyurn ": "urn:altinn:rolecode:revi",
+            "children": null
+          },
+          "packages": [
+            {
+              "id": "2f176732-b1e9-449b-9918-090d1fa986f6",
+              "urn": "urn:altinn:accesspackage:ansvarlig-revisor",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            },
+            {
+              "id": "96120c32-389d-46eb-8212-0a6540540c25",
+              "urn": "urn:altinn:accesspackage:revisormedarbeider",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "client": {
+        "id": "dbe3dc4b-59e5-4461-b66f-c97ae5cd53d3",
+        "name": "MODIG UTNYTTENDE TIGER AS",
+        "type": "Organisasjon",
+        "variant": "AS",
+        "parent": null,
+        "children": null,
+        "partyid": 51533211,
+        "userId": null,
+        "username": null,
+        "organizationIdentifier": "313801527",
+        "personIdentifier": null,
+        "dateOfBirth": null,
+        "dateOfDeath": null,
+        "isDeleted": false,
+        "deletedAt": null
+      },
+      "access": [
+        {
+          "role": {
+            "id": "f76b997a-9bd8-4f7b-899f-fcd85d35669f",
+            "code": "revisor",
+            "urn": "urn:altinn:external-role:ccr:revisor",
+            "legacyurn ": "urn:altinn:rolecode:revi",
+            "children": null
+          },
+          "packages": [
+            {
+              "id": "2f176732-b1e9-449b-9918-090d1fa986f6",
+              "urn": "urn:altinn:accesspackage:ansvarlig-revisor",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            },
+            {
+              "id": "96120c32-389d-46eb-8212-0a6540540c25",
+              "urn": "urn:altinn:accesspackage:revisormedarbeider",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "client": {
+        "id": "ded13581-3c4a-4f02-8591-03467a9c9c58",
+        "name": "FORNUFTIG OPPLAGT TIGER AS",
+        "type": "Organisasjon",
+        "variant": "AS",
+        "parent": null,
+        "children": null,
+        "partyid": 51473927,
+        "userId": null,
+        "username": null,
+        "organizationIdentifier": "312951541",
+        "personIdentifier": null,
+        "dateOfBirth": null,
+        "dateOfDeath": null,
+        "isDeleted": false,
+        "deletedAt": null
+      },
+      "access": [
+        {
+          "role": {
+            "id": "f76b997a-9bd8-4f7b-899f-fcd85d35669f",
+            "code": "revisor",
+            "urn": "urn:altinn:external-role:ccr:revisor",
+            "legacyurn ": "urn:altinn:rolecode:revi",
+            "children": null
+          },
+          "packages": [
+            {
+              "id": "2f176732-b1e9-449b-9918-090d1fa986f6",
+              "urn": "urn:altinn:accesspackage:ansvarlig-revisor",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            },
+            {
+              "id": "96120c32-389d-46eb-8212-0a6540540c25",
+              "urn": "urn:altinn:accesspackage:revisormedarbeider",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "client": {
+        "id": "dfc8cc7c-1f69-444d-a976-546ab9c172f6",
+        "name": "USANNFERDIG NORMAL TIGER AS",
+        "type": "Organisasjon",
+        "variant": "AS",
+        "parent": null,
+        "children": null,
+        "partyid": 51297282,
+        "userId": null,
+        "username": null,
+        "organizationIdentifier": "314046838",
+        "personIdentifier": null,
+        "dateOfBirth": null,
+        "dateOfDeath": null,
+        "isDeleted": false,
+        "deletedAt": null
+      },
+      "access": [
+        {
+          "role": {
+            "id": "f76b997a-9bd8-4f7b-899f-fcd85d35669f",
+            "code": "revisor",
+            "urn": "urn:altinn:external-role:ccr:revisor",
+            "legacyurn ": "urn:altinn:rolecode:revi",
+            "children": null
+          },
+          "packages": [
+            {
+              "id": "2f176732-b1e9-449b-9918-090d1fa986f6",
+              "urn": "urn:altinn:accesspackage:ansvarlig-revisor",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            },
+            {
+              "id": "96120c32-389d-46eb-8212-0a6540540c25",
+              "urn": "urn:altinn:accesspackage:revisormedarbeider",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "client": {
+        "id": "e29b2673-ef42-4f4a-bf2d-3c68218eb04c",
+        "name": "MOTVILLIG MATEMATISK TIGER AS",
+        "type": "Organisasjon",
+        "variant": "AS",
+        "parent": null,
+        "children": null,
+        "partyid": 51474855,
+        "userId": null,
+        "username": null,
+        "organizationIdentifier": "312964740",
+        "personIdentifier": null,
+        "dateOfBirth": null,
+        "dateOfDeath": null,
+        "isDeleted": false,
+        "deletedAt": null
+      },
+      "access": [
+        {
+          "role": {
+            "id": "f76b997a-9bd8-4f7b-899f-fcd85d35669f",
+            "code": "revisor",
+            "urn": "urn:altinn:external-role:ccr:revisor",
+            "legacyurn ": "urn:altinn:rolecode:revi",
+            "children": null
+          },
+          "packages": [
+            {
+              "id": "96120c32-389d-46eb-8212-0a6540540c25",
+              "urn": "urn:altinn:accesspackage:revisormedarbeider",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            },
+            {
+              "id": "2f176732-b1e9-449b-9918-090d1fa986f6",
+              "urn": "urn:altinn:accesspackage:ansvarlig-revisor",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "client": {
+        "id": "e30cf880-3477-48dc-8042-07c689110a07",
+        "name": "KLOK SPESIELL TIGER AS",
+        "type": "Organisasjon",
+        "variant": "AS",
+        "parent": null,
+        "children": null,
+        "partyid": 51483670,
+        "userId": null,
+        "username": null,
+        "organizationIdentifier": "313089789",
+        "personIdentifier": null,
+        "dateOfBirth": null,
+        "dateOfDeath": null,
+        "isDeleted": false,
+        "deletedAt": null
+      },
+      "access": [
+        {
+          "role": {
+            "id": "42cae370-2dc1-4fdc-9c67-c2f4b0f0f829",
+            "code": "rettighetshaver",
+            "urn": "urn:altinn:role:rettighetshaver",
+            "legacyurn ": null,
+            "children": null
+          },
+          "packages": [
+            {
+              "id": "ae41bf08-c7ef-4bfe-b2b9-7bf6deb7798f",
+              "urn": "urn:altinn:accesspackage:pensjon",
+              "areaId": "6f7f3b02-8b5a-4823-9468-0f4646d3a790"
+            },
+            {
+              "id": "4f4d4567-2384-49fa-b34b-84b4b77139d8",
+              "urn": "urn:altinn:accesspackage:motorvognavgift",
+              "areaId": "7d32591d-34b7-4afc-8afa-013722f8c05d"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "client": {
+        "id": "e7a0ec09-b70a-41c9-b9ae-1ffd4cd24a0d",
+        "name": "SAMLET FORSTÅELSESFULL TIGER AS",
+        "type": "Organisasjon",
+        "variant": "AS",
+        "parent": null,
+        "children": null,
+        "partyid": 51274008,
+        "userId": null,
+        "username": null,
+        "organizationIdentifier": "310992410",
+        "personIdentifier": null,
+        "dateOfBirth": null,
+        "dateOfDeath": null,
+        "isDeleted": false,
+        "deletedAt": null
+      },
+      "access": [
+        {
+          "role": {
+            "id": "f76b997a-9bd8-4f7b-899f-fcd85d35669f",
+            "code": "revisor",
+            "urn": "urn:altinn:external-role:ccr:revisor",
+            "legacyurn ": "urn:altinn:rolecode:revi",
+            "children": null
+          },
+          "packages": [
+            {
+              "id": "2f176732-b1e9-449b-9918-090d1fa986f6",
+              "urn": "urn:altinn:accesspackage:ansvarlig-revisor",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            },
+            {
+              "id": "96120c32-389d-46eb-8212-0a6540540c25",
+              "urn": "urn:altinn:accesspackage:revisormedarbeider",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "client": {
+        "id": "e8600a2c-2ef3-4bb0-b232-eb6caf6c3993",
+        "name": "EKSPLOSIV SVENSK TIGER AS",
+        "type": "Organisasjon",
+        "variant": "AS",
+        "parent": null,
+        "children": null,
+        "partyid": 51145009,
+        "userId": null,
+        "username": null,
+        "organizationIdentifier": "212795402",
+        "personIdentifier": null,
+        "dateOfBirth": null,
+        "dateOfDeath": null,
+        "isDeleted": false,
+        "deletedAt": null
+      },
+      "access": [
+        {
+          "role": {
+            "id": "f76b997a-9bd8-4f7b-899f-fcd85d35669f",
+            "code": "revisor",
+            "urn": "urn:altinn:external-role:ccr:revisor",
+            "legacyurn ": "urn:altinn:rolecode:revi",
+            "children": null
+          },
+          "packages": [
+            {
+              "id": "96120c32-389d-46eb-8212-0a6540540c25",
+              "urn": "urn:altinn:accesspackage:revisormedarbeider",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            },
+            {
+              "id": "2f176732-b1e9-449b-9918-090d1fa986f6",
+              "urn": "urn:altinn:accesspackage:ansvarlig-revisor",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "client": {
+        "id": "e9390366-4246-474f-832d-00fb62221bdb",
+        "name": "AUTORISERT VEIK TIGER AS",
+        "type": "Organisasjon",
+        "variant": "AS",
+        "parent": null,
+        "children": null,
+        "partyid": 51240025,
+        "userId": null,
+        "username": null,
+        "organizationIdentifier": "310609544",
+        "personIdentifier": null,
+        "dateOfBirth": null,
+        "dateOfDeath": null,
+        "isDeleted": false,
+        "deletedAt": null
+      },
+      "access": [
+        {
+          "role": {
+            "id": "f76b997a-9bd8-4f7b-899f-fcd85d35669f",
+            "code": "revisor",
+            "urn": "urn:altinn:external-role:ccr:revisor",
+            "legacyurn ": "urn:altinn:rolecode:revi",
+            "children": null
+          },
+          "packages": [
+            {
+              "id": "2f176732-b1e9-449b-9918-090d1fa986f6",
+              "urn": "urn:altinn:accesspackage:ansvarlig-revisor",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            },
+            {
+              "id": "96120c32-389d-46eb-8212-0a6540540c25",
+              "urn": "urn:altinn:accesspackage:revisormedarbeider",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "client": {
+        "id": "e9c0f3bc-dc8e-4853-8c70-153a4aee9cc9",
+        "name": "FAST PESSIMISTISK TIGER AS",
+        "type": "Organisasjon",
+        "variant": "AS",
+        "parent": null,
+        "children": null,
+        "partyid": 51433935,
+        "userId": null,
+        "username": null,
+        "organizationIdentifier": "313185877",
+        "personIdentifier": null,
+        "dateOfBirth": null,
+        "dateOfDeath": null,
+        "isDeleted": false,
+        "deletedAt": null
+      },
+      "access": [
+        {
+          "role": {
+            "id": "f76b997a-9bd8-4f7b-899f-fcd85d35669f",
+            "code": "revisor",
+            "urn": "urn:altinn:external-role:ccr:revisor",
+            "legacyurn ": "urn:altinn:rolecode:revi",
+            "children": null
+          },
+          "packages": [
+            {
+              "id": "2f176732-b1e9-449b-9918-090d1fa986f6",
+              "urn": "urn:altinn:accesspackage:ansvarlig-revisor",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            },
+            {
+              "id": "96120c32-389d-46eb-8212-0a6540540c25",
+              "urn": "urn:altinn:accesspackage:revisormedarbeider",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "client": {
+        "id": "ec998e19-391e-4094-9fee-bf63d2896a1b",
+        "name": "ENGASJERT MOTSTANDSDYKTIG LØVE BOLIGSAMEIE",
+        "type": "Organisasjon",
+        "variant": "ESEK",
+        "parent": null,
+        "children": null,
+        "partyid": 51556979,
+        "userId": null,
+        "username": null,
+        "organizationIdentifier": "314142934",
+        "personIdentifier": null,
+        "dateOfBirth": null,
+        "dateOfDeath": null,
+        "isDeleted": false,
+        "deletedAt": null
+      },
+      "access": [
+        {
+          "role": {
+            "id": "f76b997a-9bd8-4f7b-899f-fcd85d35669f",
+            "code": "revisor",
+            "urn": "urn:altinn:external-role:ccr:revisor",
+            "legacyurn ": "urn:altinn:rolecode:revi",
+            "children": null
+          },
+          "packages": [
+            {
+              "id": "96120c32-389d-46eb-8212-0a6540540c25",
+              "urn": "urn:altinn:accesspackage:revisormedarbeider",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            },
+            {
+              "id": "2f176732-b1e9-449b-9918-090d1fa986f6",
+              "urn": "urn:altinn:accesspackage:ansvarlig-revisor",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "client": {
+        "id": "ef28ff55-aad0-4908-90c0-4680558fcd9c",
+        "name": "BERIKENDE STANDHAFTIG APE",
+        "type": "Organisasjon",
+        "variant": "FLI",
+        "parent": null,
+        "children": null,
+        "partyid": 51498994,
+        "userId": null,
+        "username": null,
+        "organizationIdentifier": "313308936",
+        "personIdentifier": null,
+        "dateOfBirth": null,
+        "dateOfDeath": null,
+        "isDeleted": false,
+        "deletedAt": null
+      },
+      "access": [
+        {
+          "role": {
+            "id": "f76b997a-9bd8-4f7b-899f-fcd85d35669f",
+            "code": "revisor",
+            "urn": "urn:altinn:external-role:ccr:revisor",
+            "legacyurn ": "urn:altinn:rolecode:revi",
+            "children": null
+          },
+          "packages": [
+            {
+              "id": "96120c32-389d-46eb-8212-0a6540540c25",
+              "urn": "urn:altinn:accesspackage:revisormedarbeider",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            },
+            {
+              "id": "2f176732-b1e9-449b-9918-090d1fa986f6",
+              "urn": "urn:altinn:accesspackage:ansvarlig-revisor",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "client": {
+        "id": "f0507cd2-edfd-4b27-89ce-3a8cc2db0e20",
+        "name": "USEDVANLIG OFFISIELL TIGER AS",
+        "type": "Organisasjon",
+        "variant": "AS",
+        "parent": null,
+        "children": null,
+        "partyid": 51563578,
+        "userId": null,
+        "username": null,
+        "organizationIdentifier": "314237889",
+        "personIdentifier": null,
+        "dateOfBirth": null,
+        "dateOfDeath": null,
+        "isDeleted": false,
+        "deletedAt": null
+      },
+      "access": [
+        {
+          "role": {
+            "id": "f76b997a-9bd8-4f7b-899f-fcd85d35669f",
+            "code": "revisor",
+            "urn": "urn:altinn:external-role:ccr:revisor",
+            "legacyurn ": "urn:altinn:rolecode:revi",
+            "children": null
+          },
+          "packages": [
+            {
+              "id": "2f176732-b1e9-449b-9918-090d1fa986f6",
+              "urn": "urn:altinn:accesspackage:ansvarlig-revisor",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            },
+            {
+              "id": "96120c32-389d-46eb-8212-0a6540540c25",
+              "urn": "urn:altinn:accesspackage:revisormedarbeider",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "client": {
+        "id": "f24e1530-b331-4a3b-bc48-ce7f802aaa80",
+        "name": "UNDERLIG URETTFERDIG TIGER AS",
+        "type": "Organisasjon",
+        "variant": "AS",
+        "parent": null,
+        "children": null,
+        "partyid": 51512687,
+        "userId": null,
+        "username": null,
+        "organizationIdentifier": "313506371",
+        "personIdentifier": null,
+        "dateOfBirth": null,
+        "dateOfDeath": null,
+        "isDeleted": false,
+        "deletedAt": null
+      },
+      "access": [
+        {
+          "role": {
+            "id": "f76b997a-9bd8-4f7b-899f-fcd85d35669f",
+            "code": "revisor",
+            "urn": "urn:altinn:external-role:ccr:revisor",
+            "legacyurn ": "urn:altinn:rolecode:revi",
+            "children": null
+          },
+          "packages": [
+            {
+              "id": "2f176732-b1e9-449b-9918-090d1fa986f6",
+              "urn": "urn:altinn:accesspackage:ansvarlig-revisor",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            },
+            {
+              "id": "96120c32-389d-46eb-8212-0a6540540c25",
+              "urn": "urn:altinn:accesspackage:revisormedarbeider",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "client": {
+        "id": "f2863238-594c-4acf-8017-8d6e548c9609",
+        "name": "AVANSERT PLUTSELIG TIGER AS",
+        "type": "Organisasjon",
+        "variant": "AS",
+        "parent": null,
+        "children": null,
+        "partyid": 51277653,
+        "userId": null,
+        "username": null,
+        "organizationIdentifier": "311033271",
+        "personIdentifier": null,
+        "dateOfBirth": null,
+        "dateOfDeath": null,
+        "isDeleted": false,
+        "deletedAt": null
+      },
+      "access": [
+        {
+          "role": {
+            "id": "f76b997a-9bd8-4f7b-899f-fcd85d35669f",
+            "code": "revisor",
+            "urn": "urn:altinn:external-role:ccr:revisor",
+            "legacyurn ": "urn:altinn:rolecode:revi",
+            "children": null
+          },
+          "packages": [
+            {
+              "id": "96120c32-389d-46eb-8212-0a6540540c25",
+              "urn": "urn:altinn:accesspackage:revisormedarbeider",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            },
+            {
+              "id": "2f176732-b1e9-449b-9918-090d1fa986f6",
+              "urn": "urn:altinn:accesspackage:ansvarlig-revisor",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "client": {
+        "id": "f50b0856-6287-4ee9-b25a-b254b214bdf0",
+        "name": "ALLSIDIG TRÅDLØS TIGER AS",
+        "type": "Organisasjon",
+        "variant": "AS",
+        "parent": null,
+        "children": null,
+        "partyid": 51247462,
+        "userId": null,
+        "username": null,
+        "organizationIdentifier": "310692999",
+        "personIdentifier": null,
+        "dateOfBirth": null,
+        "dateOfDeath": null,
+        "isDeleted": false,
+        "deletedAt": null
+      },
+      "access": [
+        {
+          "role": {
+            "id": "f76b997a-9bd8-4f7b-899f-fcd85d35669f",
+            "code": "revisor",
+            "urn": "urn:altinn:external-role:ccr:revisor",
+            "legacyurn ": "urn:altinn:rolecode:revi",
+            "children": null
+          },
+          "packages": [
+            {
+              "id": "2f176732-b1e9-449b-9918-090d1fa986f6",
+              "urn": "urn:altinn:accesspackage:ansvarlig-revisor",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            },
+            {
+              "id": "96120c32-389d-46eb-8212-0a6540540c25",
+              "urn": "urn:altinn:accesspackage:revisormedarbeider",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "client": {
+        "id": "f5e6e571-01ad-4fca-a008-3d6318bb238b",
+        "name": "FYLDIG KOSTBAR TIGER AS",
+        "type": "Organisasjon",
+        "variant": "AS",
+        "parent": null,
+        "children": null,
+        "partyid": 51223591,
+        "userId": null,
+        "username": null,
+        "organizationIdentifier": "313171019",
+        "personIdentifier": null,
+        "dateOfBirth": null,
+        "dateOfDeath": null,
+        "isDeleted": false,
+        "deletedAt": null
+      },
+      "access": [
+        {
+          "role": {
+            "id": "f76b997a-9bd8-4f7b-899f-fcd85d35669f",
+            "code": "revisor",
+            "urn": "urn:altinn:external-role:ccr:revisor",
+            "legacyurn ": "urn:altinn:rolecode:revi",
+            "children": null
+          },
+          "packages": [
+            {
+              "id": "2f176732-b1e9-449b-9918-090d1fa986f6",
+              "urn": "urn:altinn:accesspackage:ansvarlig-revisor",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            },
+            {
+              "id": "96120c32-389d-46eb-8212-0a6540540c25",
+              "urn": "urn:altinn:accesspackage:revisormedarbeider",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "client": {
+        "id": "f861040f-0131-4e95-bdf0-396d8613b948",
+        "name": "INNESLUTTET MOTIVERT TIGER AS",
+        "type": "Organisasjon",
+        "variant": "AS",
+        "parent": null,
+        "children": null,
+        "partyid": 51466984,
+        "userId": null,
+        "username": null,
+        "organizationIdentifier": "312852810",
+        "personIdentifier": null,
+        "dateOfBirth": null,
+        "dateOfDeath": null,
+        "isDeleted": false,
+        "deletedAt": null
+      },
+      "access": [
+        {
+          "role": {
+            "id": "f76b997a-9bd8-4f7b-899f-fcd85d35669f",
+            "code": "revisor",
+            "urn": "urn:altinn:external-role:ccr:revisor",
+            "legacyurn ": "urn:altinn:rolecode:revi",
+            "children": null
+          },
+          "packages": [
+            {
+              "id": "96120c32-389d-46eb-8212-0a6540540c25",
+              "urn": "urn:altinn:accesspackage:revisormedarbeider",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            },
+            {
+              "id": "2f176732-b1e9-449b-9918-090d1fa986f6",
+              "urn": "urn:altinn:accesspackage:ansvarlig-revisor",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "client": {
+        "id": "fcbbcece-ef8f-48f8-b627-20488aeed189",
+        "name": "OPPFARENDE GRETTEN TIGER AS",
+        "type": "Organisasjon",
+        "variant": "AS",
+        "parent": null,
+        "children": null,
+        "partyid": 51454668,
+        "userId": null,
+        "username": null,
+        "organizationIdentifier": "312677237",
+        "personIdentifier": null,
+        "dateOfBirth": null,
+        "dateOfDeath": null,
+        "isDeleted": false,
+        "deletedAt": null
+      },
+      "access": [
+        {
+          "role": {
+            "id": "f76b997a-9bd8-4f7b-899f-fcd85d35669f",
+            "code": "revisor",
+            "urn": "urn:altinn:external-role:ccr:revisor",
+            "legacyurn ": "urn:altinn:rolecode:revi",
+            "children": null
+          },
+          "packages": [
+            {
+              "id": "2f176732-b1e9-449b-9918-090d1fa986f6",
+              "urn": "urn:altinn:accesspackage:ansvarlig-revisor",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            },
+            {
+              "id": "96120c32-389d-46eb-8212-0a6540540c25",
+              "urn": "urn:altinn:accesspackage:revisormedarbeider",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "client": {
+        "id": "fd0db0a9-2eb0-4282-b303-0ed6eace2f81",
+        "name": "STA TRIST TIGER AS",
+        "type": "Organisasjon",
+        "variant": "AS",
+        "parent": null,
+        "children": null,
+        "partyid": 51285135,
+        "userId": null,
+        "username": null,
+        "organizationIdentifier": "311117211",
+        "personIdentifier": null,
+        "dateOfBirth": null,
+        "dateOfDeath": null,
+        "isDeleted": false,
+        "deletedAt": null
+      },
+      "access": [
+        {
+          "role": {
+            "id": "f76b997a-9bd8-4f7b-899f-fcd85d35669f",
+            "code": "revisor",
+            "urn": "urn:altinn:external-role:ccr:revisor",
+            "legacyurn ": "urn:altinn:rolecode:revi",
+            "children": null
+          },
+          "packages": [
+            {
+              "id": "2f176732-b1e9-449b-9918-090d1fa986f6",
+              "urn": "urn:altinn:accesspackage:ansvarlig-revisor",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            },
+            {
+              "id": "96120c32-389d-46eb-8212-0a6540540c25",
+              "urn": "urn:altinn:accesspackage:revisormedarbeider",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "client": {
+        "id": "fd26efd4-7ad8-48dc-b30e-17e7883dbb8c",
+        "name": "TYDELIG LITEN LØVE SAMEIE",
+        "type": "Organisasjon",
+        "variant": "ESEK",
+        "parent": null,
+        "children": null,
+        "partyid": 51515720,
+        "userId": null,
+        "username": null,
+        "organizationIdentifier": "313549178",
+        "personIdentifier": null,
+        "dateOfBirth": null,
+        "dateOfDeath": null,
+        "isDeleted": false,
+        "deletedAt": null
+      },
+      "access": [
+        {
+          "role": {
+            "id": "f76b997a-9bd8-4f7b-899f-fcd85d35669f",
+            "code": "revisor",
+            "urn": "urn:altinn:external-role:ccr:revisor",
+            "legacyurn ": "urn:altinn:rolecode:revi",
+            "children": null
+          },
+          "packages": [
+            {
+              "id": "2f176732-b1e9-449b-9918-090d1fa986f6",
+              "urn": "urn:altinn:accesspackage:ansvarlig-revisor",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            },
+            {
+              "id": "96120c32-389d-46eb-8212-0a6540540c25",
+              "urn": "urn:altinn:accesspackage:revisormedarbeider",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "client": {
+        "id": "fd706203-3075-4ffb-a642-1a7cb477fea4",
+        "name": "SUBJEKTIV PRESIS TIGER AS",
+        "type": "Organisasjon",
+        "variant": "AS",
+        "parent": null,
+        "children": null,
+        "partyid": 51296092,
+        "userId": null,
+        "username": null,
+        "organizationIdentifier": "313506703",
+        "personIdentifier": null,
+        "dateOfBirth": null,
+        "dateOfDeath": null,
+        "isDeleted": false,
+        "deletedAt": null
+      },
+      "access": [
+        {
+          "role": {
+            "id": "f76b997a-9bd8-4f7b-899f-fcd85d35669f",
+            "code": "revisor",
+            "urn": "urn:altinn:external-role:ccr:revisor",
+            "legacyurn ": "urn:altinn:rolecode:revi",
+            "children": null
+          },
+          "packages": [
+            {
+              "id": "96120c32-389d-46eb-8212-0a6540540c25",
+              "urn": "urn:altinn:accesspackage:revisormedarbeider",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            },
+            {
+              "id": "2f176732-b1e9-449b-9918-090d1fa986f6",
+              "urn": "urn:altinn:accesspackage:ansvarlig-revisor",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "client": {
+        "id": "fdebbfbb-49c2-438b-b6b0-d2e30740784f",
+        "name": "ANONYM AKSEPTABEL TIGER AS",
+        "type": "Organisasjon",
+        "variant": "AS",
+        "parent": null,
+        "children": null,
+        "partyid": 51130845,
+        "userId": null,
+        "username": null,
+        "organizationIdentifier": "314259114",
+        "personIdentifier": null,
+        "dateOfBirth": null,
+        "dateOfDeath": null,
+        "isDeleted": false,
+        "deletedAt": null
+      },
+      "access": [
+        {
+          "role": {
+            "id": "f76b997a-9bd8-4f7b-899f-fcd85d35669f",
+            "code": "revisor",
+            "urn": "urn:altinn:external-role:ccr:revisor",
+            "legacyurn ": "urn:altinn:rolecode:revi",
+            "children": null
+          },
+          "packages": [
+            {
+              "id": "2f176732-b1e9-449b-9918-090d1fa986f6",
+              "urn": "urn:altinn:accesspackage:ansvarlig-revisor",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            },
+            {
+              "id": "96120c32-389d-46eb-8212-0a6540540c25",
+              "urn": "urn:altinn:accesspackage:revisormedarbeider",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "client": {
+        "id": "ff254c60-d02a-4ae8-bcd1-34cce38a823a",
+        "name": "USELVISK GILD TIGER AS",
+        "type": "Organisasjon",
+        "variant": "AS",
+        "parent": null,
+        "children": null,
+        "partyid": 51465317,
+        "userId": null,
+        "username": null,
+        "organizationIdentifier": "312828782",
+        "personIdentifier": null,
+        "dateOfBirth": null,
+        "dateOfDeath": null,
+        "isDeleted": false,
+        "deletedAt": null
+      },
+      "access": [
+        {
+          "role": {
+            "id": "f76b997a-9bd8-4f7b-899f-fcd85d35669f",
+            "code": "revisor",
+            "urn": "urn:altinn:external-role:ccr:revisor",
+            "legacyurn ": "urn:altinn:rolecode:revi",
+            "children": null
+          },
+          "packages": [
+            {
+              "id": "96120c32-389d-46eb-8212-0a6540540c25",
+              "urn": "urn:altinn:accesspackage:revisormedarbeider",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            },
+            {
+              "id": "2f176732-b1e9-449b-9918-090d1fa986f6",
+              "urn": "urn:altinn:accesspackage:ansvarlig-revisor",
+              "areaId": "7df15290-f43c-4831-a1b4-3edfa43e526d"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

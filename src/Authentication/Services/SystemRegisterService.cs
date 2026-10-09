@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using Altinn.Platform.Authentication.Core.Models;
@@ -27,6 +28,17 @@ namespace Altinn.Platform.Authentication.Services
         private readonly IResourceRegistryClient _resourceRegistryClient;
         private readonly IAccessManagementClient _accessManagementClient;
 
+        private static readonly HashSet<ResourceType> WhitelistedResourceTypes = new()
+        {
+            ResourceType.AltinnApp,
+            ResourceType.Systemresource,
+            ResourceType.Default,
+            ResourceType.CorrespondenceService,
+            ResourceType.BrokerService,
+            ResourceType.GenericAccessResource,
+            ResourceType.MigratedApp
+        };
+
         /// <summary>
         /// The constructor
         /// </summary>
@@ -45,7 +57,13 @@ namespace Altinn.Platform.Authentication.Services
         /// <inheritdoc/>
         public Task<List<RegisteredSystemResponse>> GetListRegSys(CancellationToken cancellation = default)
         {
-            return _systemRegisterRepository.GetAllActiveSystems();
+            return _systemRegisterRepository.GetAllActiveSystems(cancellation);
+        }
+
+        /// <inheritdoc/>
+        public Task<List<RegisteredSystemResponse>> GetListOfSystemsForVendor(string vendorOrgNumber, CancellationToken cancellationToken = default)
+        {
+            return _systemRegisterRepository.GetAllSystemsForVendor(vendorOrgNumber, cancellationToken);
         }
 
         /// <inheritdoc/>
@@ -80,7 +98,7 @@ namespace Altinn.Platform.Authentication.Services
         /// <returns></returns>
         public Task<RegisteredSystemResponse?> GetRegisteredSystemInfo(string systemId, CancellationToken cancellation = default)
         {
-            return _systemRegisterRepository.GetRegisteredSystemById(systemId);
+            return _systemRegisterRepository.GetRegisteredSystemById(systemId, cancellation);
         }
 
         /// <inheritdoc/>
@@ -126,10 +144,44 @@ namespace Altinn.Platform.Authentication.Services
                     {
                         return false;
                     }
-                }                
+                }
             }
 
             return true;
+        }
+
+        /// <inheritdoc/>
+        public async Task<(List<string> InvalidFormatResourceIds, List<string> NotFoundResourceIds, List<string> NotDelegableResourceIds)> GetInvalidResourceIdsDetailed(List<Right> rights, CancellationToken cancellationToken)
+        {
+            ServiceResource? resource = null;
+            var invalidFormatResourceIds = new List<string>();
+            var notFoundResourceIds = new List<string>();
+            var notDelegableResourceIds = new List<string>();
+            foreach (Right right in rights)
+            {
+                foreach (AttributePair resourceId in right.Resource)
+                {
+                    string pattern = @"^urn:altinn:resource$";
+                    if (!Regex.IsMatch(resourceId.Id, pattern, RegexOptions.None, TimeSpan.FromSeconds(2)))
+                    {
+                        invalidFormatResourceIds.Add(resourceId.Value);
+                    }
+                    else
+                    {
+                        resource = await _resourceRegistryClient.GetResource(resourceId.Value);
+                        if (resource == null)
+                        {
+                            notFoundResourceIds.Add(resourceId.Value);
+                        }
+                        else if (!WhitelistedResourceTypes.Contains(resource.ResourceType))
+                        {
+                            notDelegableResourceIds.Add(resourceId.Value);
+                        }
+                    }
+                }
+            }
+
+            return (invalidFormatResourceIds, notFoundResourceIds, notDelegableResourceIds);
         }
 
         /// <inheritdoc/>
@@ -138,8 +190,7 @@ namespace Altinn.Platform.Authentication.Services
             Package? package = null;
             foreach (AccessPackage accessPackage in accessPackages)
             {
-                // get the urn value from the access package f.eks get regnskapsforer-med-signeringsrettighet from urn:altinn:accesspackage:regnskapsforer-med-signeringsrettighet
-                string urnValue = accessPackage.Urn.Split(":")[3];
+                string urnValue = accessPackage.Urn!;
                 package = await _accessManagementClient.GetAccessPackage(urnValue);
                 if (package == null || !package.IsDelegable)
                 {
@@ -151,44 +202,55 @@ namespace Altinn.Platform.Authentication.Services
         }
 
         /// <inheritdoc/>
-        public async Task<(List<string> InvalidFormatUrns, List<string> NotFoundUrns, List<string> NotDelegableUrns)>
+        public async Task<(List<string> InvalidFormatUrns, List<string> NotFoundUrns, List<string> NotDelegableUrns, List<string> NonAssignableUrns)>
             GetInvalidAccessPackageUrnsDetailed(List<AccessPackage> accessPackages, CancellationToken cancellationToken)
         {
             var invalidFormatUrns = new List<string>();
             var notFoundUrns = new List<string>();
             var notDelegableUrns = new List<string>();
+            var nonAssignableUrns = new List<string>();
 
-            foreach (AccessPackage accessPackage in accessPackages)
+            if (accessPackages != null && accessPackages.Count > 0)
             {
-                string? urn = accessPackage.Urn;
-
-                if (string.IsNullOrEmpty(urn))
+                foreach (AccessPackage accessPackage in accessPackages!)
                 {
-                    invalidFormatUrns.Add(urn ?? string.Empty);
-                    continue;
-                }
+                    string? urn = accessPackage.Urn;
 
-                string[] urnParts = urn.Split(':');
-                if (urnParts.Length < 4)
-                {
-                    invalidFormatUrns.Add(urn);
-                    continue;
-                }
+                    if (string.IsNullOrEmpty(urn))
+                    {
+                        invalidFormatUrns.Add(urn ?? string.Empty);
+                        continue;
+                    }
 
-                string urnValue = urnParts[3];
-                Package? package = await _accessManagementClient.GetAccessPackage(urnValue);
+                    string[] urnParts = urn.Split(':');
+                    if (urnParts.Length < 4)
+                    {
+                        invalidFormatUrns.Add(urn);
+                        continue;
+                    }
 
-                if (package == null)
-                {
-                    notFoundUrns.Add(urn);
-                }
-                else if (!package.IsDelegable && !package.IsAssignable)
-                {
-                    notDelegableUrns.Add(urn);
+                    Package? package = await _accessManagementClient.GetAccessPackage(urn);
+
+                    if (package == null)
+                    {
+                        notFoundUrns.Add(urn);
+                    }
+                    else
+                    {
+                        if (!package.IsDelegable && !package.IsAssignable)
+                        {
+                            notDelegableUrns.Add(urn);
+                        }
+
+                        if (!package.IsAssignable)
+                        {
+                            nonAssignableUrns.Add(urn);
+                        }
+                    }
                 }
             }
 
-            return (invalidFormatUrns, notFoundUrns, notDelegableUrns);
+            return (invalidFormatUrns, notFoundUrns, notDelegableUrns, nonAssignableUrns);
         }
 
         /// <inheritdoc/>

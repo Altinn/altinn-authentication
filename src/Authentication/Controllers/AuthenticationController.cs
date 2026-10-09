@@ -1,65 +1,56 @@
+#nullable enable
 using System;
 using System.Collections.Generic;
 using System.IdentityModel.Tokens.Jwt;
 using System.Linq;
-using System.Net.Http;
 using System.Security.Claims;
-using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
-using System.Text;
-using System.Text.Json;
-using System.Text.RegularExpressions;
+using System.Threading;
 using System.Threading.Tasks;
-using System.Web;
-using Altinn.Authentication.Integration.Configuration;
+using Altinn.Authentication.Core.Clients.Interfaces;
 using Altinn.Common.AccessToken.Services;
 using Altinn.Platform.Authentication.Configuration;
-using Altinn.Platform.Authentication.Core.Constants;
+using Altinn.Platform.Authentication.Core.Helpers;
+using Altinn.Platform.Authentication.Core.Models.Oidc;
+using Altinn.Platform.Authentication.Core.Services.Interfaces;
 using Altinn.Platform.Authentication.Enum;
 using Altinn.Platform.Authentication.Helpers;
-using Altinn.Platform.Authentication.Model;
-using Altinn.Platform.Authentication.Services;
 using Altinn.Platform.Authentication.Services.Interfaces;
-using Altinn.Platform.Profile.Models;
+using Altinn.Register.Contracts.V1;
 using AltinnCore.Authentication.Constants;
-using Microsoft.AspNetCore.Antiforgery;
-using Microsoft.AspNetCore.Authentication;
-using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using Microsoft.Extensions.Primitives;
 using Microsoft.FeatureManagement;
 using Microsoft.IdentityModel.Tokens;
-using Microsoft.Net.Http.Headers;
-
 using Newtonsoft.Json.Linq;
-
+using RegisterContracts = Altinn.Register.Contracts;
 using SameSiteMode = Microsoft.AspNetCore.Http.SameSiteMode;
 
 namespace Altinn.Platform.Authentication.Controllers
 {
     /// <summary>
-    /// Handles the authentication of requests to platform
+    /// Handles authentication of requests to the Altinn platform. Exposes:
+    /// <list type="bullet">
+    /// <item><description><c>GET authentication</c> — browser sign-in for anonymous clients; redirects to the upstream ID-provider.</description></item>
+    /// <item><description><c>GET refresh</c> — refreshes the JWT for an already-authenticated user.</description></item>
+    /// <item><description><c>GET exchange/{tokenProvider}</c> — exchanges a trusted external token (ID-porten/Maskinporten/Altinn Studio) for an Altinn JWT.</description></item>
+    /// </list>
     /// </summary>
     [Route("authentication/api/v1")]
     [ApiController]
     public class AuthenticationController : ControllerBase
     {
-        private const string HeaderValueNoCache = "no-cache";
-        private const string HeaderValueEpocDate = "Thu, 01 Jan 1970 00:00:00 GMT";
         private const string OrganisationIdentity = "OrganisationLogin";
         private const string EndUserSystemIdentity = "EndUserSystemLogin";
         private const string AltinnStudioIdentity = "AltinnStudioDesignerLogin";
         private const string PidClaimName = "pid";
         private const string AuthLevelClaimName = "acr";
         private const string AuthMethodClaimName = "amr";
-        private const string ExternalSessionIdClaimName = "jti";
+        private const string ExternalSessionIdClaimName = "sid";
         private const string IssClaimName = "iss";
-        private const string OriginalIssClaimName = "originaliss";
         private const string IdportenLevel0 = "idporten-loa-low";
         private const string IdportenLevel3 = "idporten-loa-substantial";
         private const string IdportenLevel4 = "idporten-loa-high";
@@ -68,78 +59,52 @@ namespace Altinn.Platform.Authentication.Controllers
         private readonly ILogger _logger;
         private readonly IOrganisationsService _organisationService;
         private readonly IJwtSigningCertificateProvider _certificateProvider;
-        private readonly ISblCookieDecryptionService _cookieDecryptionService;
         private readonly ISigningKeysRetriever _signingKeysRetriever;
-        private readonly IUserProfileService _userProfileService;
-        private readonly IEnterpriseUserAuthenticationService _enterpriseUserAuthenticationService;
         private readonly JwtSecurityTokenHandler _validator;
         private readonly IPublicSigningKeyProvider _designerSigningKeysResolver;
-        private readonly IOidcProvider _oidcProvider;
-        private readonly IProfile _profileService;
-
-        private readonly OidcProviderSettings _oidcProviderSettings;
-        private readonly IAntiforgery _antiforgery;
+        private readonly IPartiesClient _partiesClient;
+        private readonly IOidcServerService _oidcServerService;
+        private readonly TimeProvider _timeProvider;
 
         private readonly IEventLog _eventLog;
         private readonly IFeatureManager _featureManager;
         private readonly IGuidService _guidService;
+        private readonly IAcrValueCatalog _acrValueCatalog;
 
-        private readonly List<string> _partnerScopes;
+        private readonly List<string>? _partnerScopes;
 
         /// <summary>
         /// Initialises a new instance of the <see cref="AuthenticationController"/> class with the given dependencies.
         /// </summary>
-        /// <param name="logger">A generic logger</param>
-        /// <param name="generalSettings">Configuration for the authentication scope.</param>
-        /// <param name="oidcProviderSettings">Configuration for the oidcProviders</param>
-        /// <param name="cookieDecryptionService">A service that can decrypt a .ASPXAUTH cookie.</param>
-        /// <param name="organisationRepository">the repository object that holds valid organisations</param>
-        /// <param name="certificateProvider">Service that can obtain a list of certificates that can be used to generate JSON Web Tokens.</param>
-        /// <param name="userProfileService">Service that can retrieve user profiles.</param>
-        /// <param name="enterpriseUserAuthenticationService">Service that can retrieve enterprise user profile.</param>
-        /// <param name="signingKeysRetriever">The class to use to obtain the signing keys.</param>
-        /// <param name="signingKeysResolver">Signing keys resolver for Altinn Common AccessToken</param>
-        /// <param name="oidcProvider">The OIDC provider</param>
-        /// <param name="antiforgery">The anti forgery service.</param>
-        /// <param name="eventLog">the event logging service</param>
-        /// <param name="featureManager">the feature toggle service</param>
-        /// <param name="guidService">the guid service</param>
-        /// <param name="profileService">the profile service</param>
         public AuthenticationController(
             ILogger<AuthenticationController> logger,
             IOptions<GeneralSettings> generalSettings,
-            IOptions<OidcProviderSettings> oidcProviderSettings,
             ISigningKeysRetriever signingKeysRetriever,
             IJwtSigningCertificateProvider certificateProvider,
-            ISblCookieDecryptionService cookieDecryptionService,
-            IUserProfileService userProfileService,
-            IEnterpriseUserAuthenticationService enterpriseUserAuthenticationService,
             IOrganisationsService organisationRepository,
             IPublicSigningKeyProvider signingKeysResolver,
-            IOidcProvider oidcProvider,
-            IAntiforgery antiforgery,
             IEventLog eventLog,
             IFeatureManager featureManager,
             IGuidService guidService,
-            IProfile profileService)
+            IOidcServerService oidcServerService,
+            TimeProvider timeProvider,
+            IPartiesClient partiesClient,
+            IAcrValueCatalog acrValueCatalog)
         {
+            _acrValueCatalog = acrValueCatalog;
             _logger = logger;
             _generalSettings = generalSettings.Value;
-            _oidcProviderSettings = oidcProviderSettings.Value;
             _signingKeysRetriever = signingKeysRetriever;
             _certificateProvider = certificateProvider;
-            _cookieDecryptionService = cookieDecryptionService;
             _organisationService = organisationRepository;
-            _userProfileService = userProfileService;
-            _enterpriseUserAuthenticationService = enterpriseUserAuthenticationService;
             _designerSigningKeysResolver = signingKeysResolver;
             _validator = new JwtSecurityTokenHandler();
-            _oidcProvider = oidcProvider;
-            _antiforgery = antiforgery;
             _eventLog = eventLog;
             _featureManager = featureManager;
             _guidService = guidService;
-            _profileService = profileService;
+            _oidcServerService = oidcServerService;
+            _timeProvider = timeProvider;
+            _partiesClient = partiesClient;
             if (_generalSettings.PartnerScopes != null)
             {
                 _partnerScopes = _generalSettings.PartnerScopes.Split(";").ToList();
@@ -147,127 +112,135 @@ namespace Altinn.Platform.Authentication.Controllers
         }
 
         /// <summary>
-        /// Request that handles the form authentication cookie from SBL
+        /// Endpoint to authenticate a user requested by anonymous clients like Altinn Apps or Access Management UI.
+        /// - Does not require a client registration in the OIDC server, but will redirect to the upstream ID-provider (ID-porten/FEIDE/UIDP) for authentication. Defaults to ID-porten if no iss query parameter is provided.
+        /// - Supports optional requested authentication level (acr_values) to trigger a step-up if the current session does not meet the requested level.
+        /// - Supports optional goTo parameter to redirect to a specific URL after successful authentication.
         /// </summary>
-        /// <param name="goTo">The url to redirect to if everything validates ok</param>
-        /// <param name="dontChooseReportee">Parameter to indicate disabling of reportee selection in Altinn Portal.</param>
-        /// <returns>redirect to correct url based on the validation of the form authentication sbl cookie</returns>
+        /// <param name="goTo">The url to redirect to if everything validates ok. Only valid to redirect to URLs within the same domain.</param>
+        /// <param name="acrValues">Optional requested authentication level as space-separated acr_values. The current values are
+        /// <c>idporten-loa-substantial</c>, <c>idporten-loa-high</c> and <c>selfregistered-email</c>; the legacy values
+        /// <c>level0</c>, <c>level1</c> and <c>level2</c> are still accepted but deprecated. Any other value yields
+        /// <c>400 Bad Request</c>. The accepted set is derived from the configured ID-providers via
+        /// <see cref="IAcrValueCatalog.AllowedAcrValues"/>, so it grows as providers are added. When the current
+        /// session does not meet the requested level, the user is re-authenticated upstream (step-up).</param>
+        /// <param name="cancellationToken">The cancellation token</param>
+        /// <returns>A 302 redirect: to <paramref name="goTo"/> when an existing session already satisfies the request, otherwise to the upstream ID-provider login.</returns>
         [AllowAnonymous]
         [ProducesResponseType(StatusCodes.Status302Found)]
         [ProducesResponseType(typeof(string), StatusCodes.Status400BadRequest)]
         [ProducesResponseType(typeof(void), StatusCodes.Status503ServiceUnavailable)]
         [HttpGet("authentication")]
-        public async Task<ActionResult> AuthenticateUser([FromQuery] string goTo, [FromQuery] bool dontChooseReportee)
+        public async Task<ActionResult> AuthenticateUser([FromQuery] string? goTo, [FromQuery(Name = "acr_values")] string? acrValues = null, CancellationToken cancellationToken = default)
         {
-            string originalToken = null;
+            System.Net.IPAddress? ip = HttpContext.Connection.RemoteIpAddress;
+
+            // Optional requested authentication level (acr_values). Lets unregistered clients (e.g. Altinn Apps)
+            // ask for a higher level than the user's current session — i.e. trigger a step-up (level 3 -> 4).
+            if (!AuthenticationHelper.TryParseAcrValues(acrValues, _acrValueCatalog, out string[] requestedAcrValues))
+            {
+                return BadRequest("Invalid acr_values.");
+            }
+
             if (string.IsNullOrEmpty(goTo) && HttpContext.Request.Cookies[_generalSettings.AuthnGoToCookieName] != null)
             {
                 goTo = HttpContext.Request.Cookies[_generalSettings.AuthnGoToCookieName];
             }
 
-            if (!Uri.TryCreate(goTo, UriKind.Absolute, out Uri goToUri) || !IsValidRedirectUri(goToUri.Host))
+            // Validate goTo url. It has to be a valid uri and on the same host or subdomain as this authentication service. Example skd.apps.altinn.no/skattemelding/ is allowed when altinn.no is the host domain
+            if (!Uri.TryCreate(goTo, UriKind.Absolute, out var validatedGoToUri) || !IsSafeSameOrSubdomainHttps(validatedGoToUri, _generalSettings.HostName))
             {
-                return Redirect($"{_generalSettings.BaseUrl}");
+                return Redirect(_generalSettings.BaseUrl); // known-safe constant
             }
 
-            string platformReturnUrl = $"{_generalSettings.PlatformEndpoint}authentication/api/v1/authentication?goto={goTo}";
+            string? oidcissuer = Request.Query["iss"];
 
-            if (dontChooseReportee)
+            // Authentication responses (including the early session-reuse redirects below) must never
+            // be cached.
+            Response.Headers.CacheControl = "no-store";
+            Response.Headers.Pragma = "no-cache";
+
+            // Verify if the user is already authenticated. Then just go directly to the target URL.
+            if (User?.Identity != null && User.Identity.IsAuthenticated)
             {
-                platformReturnUrl += "&DontChooseReportee=true";
-            }
-
-            string encodedGoToUrl = HttpUtility.UrlEncode(platformReturnUrl);
-            string sblRedirectUrl = $"{_generalSettings.SBLRedirectEndpoint}?goTo={encodedGoToUrl}";
-
-            string oidcissuer = Request.Query["iss"];
-            UserAuthenticationModel userAuthentication;
-            if (_generalSettings.EnableOidc && (!string.IsNullOrEmpty(oidcissuer) || _generalSettings.ForceOidc))
-            {
-                OidcProvider provider = GetOidcProvider(oidcissuer);
-
-                string code = Request.Query["code"];
-                string state = Request.Query["state"];
-
-                if (!string.IsNullOrEmpty(code))
-                {
-                    if (string.IsNullOrEmpty(state))
-                    {
-                        return BadRequest("Missing state param");
-                    }
-
-                    HttpContext.Request.Headers.Add("X-XSRF-TOKEN", state);
-
-                    try
-                    {
-                        await _antiforgery.ValidateRequestAsync(HttpContext);
-                    }
-                    catch (Exception ex)
-                    {
-                        _logger.LogInformation("Validateion of state failed", ex.ToString());
-                        return BadRequest("Invalid state param");
-                    }
-
-                    OidcCodeResponse oidcCodeResponse = await _oidcProvider.GetTokens(code, provider, GetRedirectUri(provider));
-                    originalToken = oidcCodeResponse.IdToken;
-                    JwtSecurityToken jwtSecurityToken = await ValidateAndExtractOidcToken(oidcCodeResponse.IdToken, provider.WellKnownConfigEndpoint);
-                    userAuthentication = AuthenticationHelper.GetUserFromToken(jwtSecurityToken, provider);
-                    if (!ValidateNonce(HttpContext, userAuthentication.Nonce))
-                    {
-                        return BadRequest("Invalid nonce");
-                    }
-
-                    if (userAuthentication.UserID == 0)
-                    {
-                        await IdentifyOrCreateAltinnUser(userAuthentication, provider);
-                    }
-                }
-                else
-                {
-                    // Generates state tokens. One is added to a cookie and another is sent as state parameter to OIDC provider
-                    AntiforgeryTokenSet tokens = _antiforgery.GetAndStoreTokens(HttpContext);
-
-                    // Create Nonce. One is added to a cookie and another is sent as nonce parameter to OIDC provider
-                    string nonce = CreateNonce(HttpContext);
-                    CreateGoToCookie(HttpContext, goTo);
-
-                    // Redirect to OIDC Provider
-                    return Redirect(CreateAuthenticationRequest(provider, tokens.RequestToken, nonce));
-                }
-            }
-            else
-            {
-                if (Request.Cookies[_generalSettings.SblAuthCookieName] == null && Request.Cookies[_generalSettings.SblAuthCookieEnvSpecificName] == null)
-                {
-                    return Redirect(sblRedirectUrl);
-                }
-
                 try
                 {
-                    string cookieName = Request.Cookies[_generalSettings.SblAuthCookieEnvSpecificName] != null ? _generalSettings.SblAuthCookieEnvSpecificName : _generalSettings.SblAuthCookieName;
-                    string encryptedTicket = Request.Cookies[cookieName];
-                    userAuthentication = await _cookieDecryptionService.DecryptTicket(encryptedTicket);
+                    OidcSession? refreshedSession = await _oidcServerService.HandleSessionRefresh(User, cancellationToken);
+
+                    // Only reuse the existing session if it already satisfies the requested level.
+                    // Otherwise fall through and re-authenticate upstream at the higher level (step-up).
+                    if (!AuthenticationHelper.NeedAcrUpgrade(refreshedSession?.Acr, requestedAcrValues, _acrValueCatalog))
+                    {
+                        return Redirect(validatedGoToUri.AbsoluteUri);
+                    }
                 }
-                catch (SblBridgeResponseException sblBridgeException)
+                catch
                 {
-                    _logger.LogWarning(sblBridgeException, "SBL Bridge replied with {StatusCode} - {ReasonPhrase}", sblBridgeException.Response.StatusCode, sblBridgeException.Response.ReasonPhrase);
-                    return StatusCode(StatusCodes.Status503ServiceUnavailable);
+                    // Session was not able to be refreshed. Delete the cookies and continue to re-authenticate.
+                    Response.Cookies.Append(_generalSettings.JwtCookieName, string.Empty, new CookieOptions
+                    {
+                        HttpOnly = true,
+                        Secure = true,
+                        Path = "/",
+                        Domain = _generalSettings.HostName,
+                        Expires = DateTimeOffset.UnixEpoch,
+                        SameSite = SameSiteMode.Lax
+                    });
                 }
             }
 
-            if (userAuthentication.UserID != 0 && userAuthentication.PartyUuid == null)
+            // Check to see if we have a valid Session cookie and recreate JWT based on that. This can happen when user did authenticate for Arbeidsflate, but the JWT has expired. In that case we can reuse the session and create a new JWT for the user.
+            if (Request.Cookies.TryGetValue(_generalSettings.AltinnSessionCookieName, out string? sessionCookieValue))
             {
-                UserProfile profile = await _profileService.GetUserProfile(new UserProfileLookup { UserId = userAuthentication.UserID });
-                userAuthentication.PartyUuid = profile.UserUuid;
-            }
-            
-            if (userAuthentication != null && userAuthentication.IsAuthenticated)
-            {
-                await CreateTokenCookie(userAuthentication);
-                return Redirect(goTo);
+                AuthenticateFromSessionInput sessionCookieInput = new() { SessionHandle = sessionCookieValue };
+                AuthenticateFromSessionResult authenticateFromSessionResult = await _oidcServerService.HandleAuthenticateFromSessionResult(sessionCookieInput, cancellationToken);
+
+                // Reuse the session only when it already meets the requested level; otherwise step up.
+                if (authenticateFromSessionResult.Kind.Equals(AuthenticateFromSessionResultKind.Success)
+                    && !AuthenticationHelper.NeedAcrUpgrade(authenticateFromSessionResult.Acr, requestedAcrValues, _acrValueCatalog))
+                {
+                    foreach (var c in authenticateFromSessionResult.Cookies)
+                    {
+                        Response.Cookies.Append(c.Name, c.Value, new CookieOptions
+                        {
+                            HttpOnly = c.HttpOnly,
+                            Secure = c.Secure,
+                            Path = c.Path ?? "/",
+                            Domain = c.Domain,
+                            Expires = c.Expires,
+                            SameSite = c.SameSite
+                        });
+                    }
+
+                    return Redirect(validatedGoToUri.AbsoluteUri);
+                }
             }
 
-            return Redirect(sblRedirectUrl);
+            string ua = Request.Headers.UserAgent.ToString();
+            string? userAgentHash = string.IsNullOrEmpty(ua) ? null : Hashing.Sha256Base64Url(ua);
+            Guid corr = HttpContext.TraceIdentifier is { Length: > 0 } id && Guid.TryParse(id, out var g) ? g : Guid.CreateVersion7();
+
+            // User was not authenticated, so start a new authorization request for unregistered clients
+            // and redirect to the upstream ID-provider (ID-porten/FEIDE/UIDP).
+            AuthorizeUnregisteredClientRequest authorizeUnregisteredClientRequest = new()
+            {
+                GoTo = goTo,
+                RequestedIss = oidcissuer,
+                ClientIp = ip,
+                UserAgentHash = userAgentHash,
+                CorrelationId = corr,
+                AcrValues = requestedAcrValues
+            };
+
+            AuthorizeResult result = await _oidcServerService.AuthorizeUnregisteredClient(authorizeUnregisteredClientRequest, cancellationToken);
+            return result.Kind switch
+            {
+                AuthorizeResultKind.RedirectUpstream
+                    => Redirect(result.UpstreamAuthorizeUrl!.ToString()),
+                AuthorizeResultKind.LocalError
+                    => StatusCode(result.StatusCode ?? 400, result.LocalErrorMessage),
+                _ => StatusCode(500)
+            };
         }
 
         /// <summary>
@@ -278,7 +251,7 @@ namespace Altinn.Platform.Authentication.Controllers
         [HttpGet("refresh")]
         [ProducesResponseType(typeof(string), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(string), StatusCodes.Status401Unauthorized)]
-        public async Task<ActionResult> RefreshJwtCookie()
+        public async Task<ActionResult> RefreshJwtCookie(bool enrichPid = false, CancellationToken cancellationToken = default)
         {
             _logger.LogInformation("Starting to refresh token...");
 
@@ -286,17 +259,56 @@ namespace Altinn.Platform.Authentication.Controllers
 
             _logger.LogInformation("Refreshing token....");
 
+            if (enrichPid && !principal.Claims.Any(c => c.Type == "pid"))
+            {
+                Guid partyUuid = AuthenticationHelper.GetPartyUuId(HttpContext);
+                if (partyUuid != Guid.Empty)
+                {
+                    Party? party = await _partiesClient.GetPartyByUuId(partyUuid, cancellationToken);
+                    if (party != null && !string.IsNullOrWhiteSpace(party.SSN))
+                    {
+                        ClaimsIdentity? identity = principal.Identity as ClaimsIdentity;
+                        if (identity != null)
+                        {
+                            identity.AddClaim(new Claim("pid", party.SSN, ClaimValueTypes.String, _generalSettings.AltinnOidcIssuerUrl));
+                        }
+                    }
+                }
+            }
+
             string serializedToken = await GenerateToken(principal);
 
-            _eventLog.CreateAuthenticationEventAsync(_featureManager, serializedToken, AuthenticationEventType.Refresh, HttpContext);
+            OidcSession? session = await _oidcServerService.HandleSessionRefresh(principal, cancellationToken);
+
+            _eventLog.CreateAuthenticationEventAsync(_featureManager, serializedToken, AuthenticationEventType.Refresh, HttpContext.Connection.RemoteIpAddress);
             _logger.LogInformation("End of refreshing token");
+
+            // For test we return cookie also as a cookie
+            if (_generalSettings.PlatformEndpoint.Equals("http://localhost/") && HttpContext.Request.Host.Host.Equals("localhost"))
+            {
+                HttpContext.Response.Cookies.Append(
+                    _generalSettings.JwtCookieName,
+                    serializedToken,
+                    new CookieOptions
+                    {
+                        HttpOnly = true,
+                        Secure = true,
+                        SameSite = SameSiteMode.Lax,
+                        Domain = _generalSettings.HostName,
+                    });
+            }
 
             return Ok(serializedToken);
         }
 
         /// <summary>
-        /// Action for exchanging a JWT generated by a trusted token provider with a new JWT for further use as authentication against rest of Altinn.
+        /// Exchanges a JWT issued by a trusted external token provider (supplied as a <c>Bearer</c> token in the
+        /// Authorization header) for a new Altinn JWT used to authenticate against the rest of Altinn.
+        /// Returns <c>401 Unauthorized</c> when the token is missing/unreadable/invalid, <c>400 Bad Request</c>
+        /// for an unknown provider, and <c>429 Too Many Requests</c> when a self-identified account is locked out.
         /// </summary>
+        /// <param name="tokenProvider">The trusted provider that issued the incoming token. One of <c>id-porten</c>, <c>maskinporten</c> or <c>altinnstudio</c> (case-insensitive).</param>
+        /// <param name="test">Only relevant for the Maskinporten path: when <c>true</c> and the consumer org is <c>digdir</c>, the token is treated as a test token (see <see cref="OrgIsDigDirAndTestIsTrue"/>). Ignored for the other providers.</param>
         /// <returns>The result of the action. Contains the new token if the old token was valid and could be exchanged.</returns>
         [AllowAnonymous]
         [ProducesResponseType(typeof(string), StatusCodes.Status200OK)]
@@ -308,7 +320,7 @@ namespace Altinn.Platform.Authentication.Controllers
         {
             string originalToken = string.Empty;
 
-            string authorization = Request.Headers["Authorization"];
+            string? authorization = Request.Headers.Authorization;
 
             if (!string.IsNullOrEmpty(authorization))
             {
@@ -346,6 +358,11 @@ namespace Altinn.Platform.Authentication.Controllers
             }
         }
 
+        /// <summary>
+        /// Validates a JWT issued by Altinn Studio Designer (issuer <c>studio</c>/<c>dev-studio</c>/<c>staging-studio</c>,
+        /// verified against the designer signing keys) and exchanges it for a new Altinn JWT carrying the same claims.
+        /// </summary>
+        /// <returns>The new Altinn token on success, otherwise <c>401 Unauthorized</c>.</returns>
         private async Task<ActionResult> AuthenticateAltinnStudioToken(string originalToken)
         {
             try
@@ -423,8 +440,8 @@ namespace Altinn.Platform.Authentication.Controllers
                 ClaimsPrincipal originalPrincipal = GetClaimsPrincipalAndValidateMaskinportenToken(originalToken, validationParameters, alternativeSigningKeys);
                 _logger.LogInformation("Token is valid");
 
-                string issOriginal = originalPrincipal.Claims.Where(c => c.Type.Equals(IssClaimName)).Select(c => c.Value).FirstOrDefault();
-                string externalSessionId = originalPrincipal.Claims.Where(c => c.Type.Equals(ExternalSessionIdClaimName)).Select(c => c.Value).FirstOrDefault();
+                string? issOriginal = originalPrincipal.Claims.Where(c => c.Type.Equals(IssClaimName)).Select(c => c.Value).FirstOrDefault();
+                string? externalSessionId = originalPrincipal.Claims.Where(c => c.Type.Equals(ExternalSessionIdClaimName)).Select(c => c.Value).FirstOrDefault();
                 if (IsValidIssuer(issOriginal, _generalSettings.MaskinportenWellKnownConfigEndpoint, _generalSettings.MaskinportenWellKnownAlternativeConfigEndpoint))
                 {
                     _logger.LogInformation("Invalid issuer {issOriginal}", issOriginal);
@@ -447,7 +464,7 @@ namespace Altinn.Platform.Authentication.Controllers
 
                 string issuer = _generalSettings.AltinnOidcIssuerUrl;
 
-                string org = null;
+                string? org = null;
 
                 if (HasServiceOwnerScope(originalPrincipal))
                 {
@@ -467,42 +484,35 @@ namespace Altinn.Platform.Authentication.Controllers
 
                 if (!string.IsNullOrEmpty(Request.Headers["X-Altinn-EnterpriseUser-Authentication"]))
                 {
-                    string enterpriseUserHeader = Request.Headers["X-Altinn-EnterpriseUser-Authentication"];
-
-                    (UserAuthenticationResult authenticatedEnterpriseUser, ActionResult error) = await HandleEnterpriseUserLogin(enterpriseUserHeader, orgNumber);
-
-                    if (error != null)
+                    // Enterprise-user (virksomhetsbruker) authentication via SBL Bridge was discontinued
+                    // with the Altinn 2 shutdown (#1979 / #2030). Always reject with 410 Gone, pointing
+                    // callers to Systembruker (system user) or ID-porten.
+                    ProblemDetails problem = new ProblemDetails
                     {
-                        return error;
-                    }
-
-                    if (authenticatedEnterpriseUser != null)
-                    {
-                        authenticatemethod = "virksomhetsbruker";
-
-                        string userID = authenticatedEnterpriseUser.UserID.ToString();
-                        string username = authenticatedEnterpriseUser.Username;
-                        string partyId = authenticatedEnterpriseUser.PartyID.ToString();
-
-                        claims.Add(new Claim(AltinnCoreClaimTypes.UserId, userID, ClaimValueTypes.Integer32, issuer));
-                        claims.Add(new Claim(AltinnCoreClaimTypes.UserName, username, ClaimValueTypes.String, issuer));
-                        claims.Add(new Claim(AltinnCoreClaimTypes.PartyID, partyId, ClaimValueTypes.Integer32, issuer));
-                    }
+                        Status = StatusCodes.Status410Gone,
+                        Title = "Virksomhetsbruker is no longer available",
+                        Detail = "Virksomhetsbruker (enterprise user) is no longer available. It has been replaced by Systembruker (system user) or ID-porten, depending on the use case. See https://docs.altinn.studio for migration guidance.",
+                        Type = "https://docs.altinn.studio"
+                    };
+                    return new ObjectResult(problem) { StatusCode = StatusCodes.Status410Gone };
                 }
 
                 claims.Add(new Claim(AltinnCoreClaimTypes.OrgNumber, orgNumber, ClaimValueTypes.String, issuer));
                 claims.Add(new Claim(AltinnCoreClaimTypes.AuthenticateMethod, authenticatemethod, ClaimValueTypes.String, issuer));
                 claims.Add(new Claim(AltinnCoreClaimTypes.AuthenticationLevel, "3", ClaimValueTypes.Integer32, issuer));
 
-                string[] claimTypesToRemove = { "aud", IssClaimName, "client_amr", "jti" };
+                string[] claimTypesToRemove = { "aud", IssClaimName, "client_amr", "sid" };
                 foreach (string claimType in claimTypesToRemove)
                 {
-                    Claim audClaim = claims.Find(c => c.Type == claimType);
-                    claims.Remove(audClaim);
+                    Claim? audClaim = claims.Find(c => c.Type == claimType);
+                    if (audClaim != null)
+                    {
+                        claims.Remove(audClaim);
+                    }
                 }
 
                 claims.Add(new Claim(IssClaimName, issuer, ClaimValueTypes.String, issuer));
-                claims.Add(new Claim("jti", _guidService.NewGuid(), ClaimValueTypes.String, issuer));
+                claims.Add(new Claim("sid", _guidService.NewGuid(), ClaimValueTypes.String, issuer));
 
                 ClaimsIdentity identity = new ClaimsIdentity(OrganisationIdentity);
 
@@ -510,7 +520,7 @@ namespace Altinn.Platform.Authentication.Controllers
                 ClaimsPrincipal principal = new ClaimsPrincipal(identity);
 
                 string serializedToken = await GenerateToken(principal);
-                _eventLog.CreateAuthenticationEventAsync(_featureManager, serializedToken, AuthenticationEventType.TokenExchange, HttpContext, externalSessionId);
+                await _eventLog.CreateAuthenticationEventAsync(_featureManager, serializedToken, AuthenticationEventType.TokenExchange, HttpContext.Connection.RemoteIpAddress, externalSessionId);
                 return Ok(serializedToken);
             }
             catch (Exception ex)
@@ -518,59 +528,6 @@ namespace Altinn.Platform.Authentication.Controllers
                 _logger.LogWarning(ex, "Organisation authentication failed.");
                 return Unauthorized();
             }
-        }
-
-        private async Task<(UserAuthenticationResult AuthenticatedEnterpriseUser, ActionResult Error)> HandleEnterpriseUserLogin(string enterpriseUserHeader, string orgNumber)
-        {
-            EnterpriseUserCredentials credentials;
-
-            try
-            {
-                credentials = DecodeEnterpriseUserHeader(enterpriseUserHeader, orgNumber);
-            }
-            catch (Exception)
-            {
-                return (null, StatusCode(400));
-            }
-
-            HttpResponseMessage response = await _enterpriseUserAuthenticationService.AuthenticateEnterpriseUser(credentials);
-            string content = await response.Content.ReadAsStringAsync();
-
-            switch (response.StatusCode)
-            {
-                case System.Net.HttpStatusCode.BadRequest:
-                    return (null, StatusCode(400));
-                case System.Net.HttpStatusCode.NotFound:
-                    ObjectResult result = StatusCode(401, "The user either does not exist or the password is incorrect.");
-                    return (null, result);
-                case System.Net.HttpStatusCode.TooManyRequests:
-                    if (response.Headers.RetryAfter != null)
-                    {
-                        Response.Headers.Add("Retry-After", response.Headers.RetryAfter.ToString());
-                    }
-
-                    return (null, StatusCode(429));
-                case System.Net.HttpStatusCode.OK:
-                    UserAuthenticationResult userAuthenticationResult = JsonSerializer.Deserialize<UserAuthenticationResult>(content);
-
-                    return (userAuthenticationResult, null);
-                default:
-                    _logger.LogWarning("Unexpected response from SBLBridge during enterprise user authentication. HttpStatusCode={statusCode} Content={content}", response.StatusCode, content);
-                    return (null, StatusCode(502));
-            }
-        }
-
-        private EnterpriseUserCredentials DecodeEnterpriseUserHeader(string encodedCredentials, string orgNumber)
-        {
-            byte[] decodedCredentials = Convert.FromBase64String(encodedCredentials);
-            string decodedString = Encoding.UTF8.GetString(decodedCredentials);
-
-            string[] decodedStringArray = decodedString.Split(":", 2);
-            string usernameFromRequest = decodedStringArray[0];
-            string password = decodedStringArray[1];
-
-            EnterpriseUserCredentials credentials = new EnterpriseUserCredentials { UserName = usernameFromRequest, Password = password, OrganizationNumber = orgNumber };
-            return credentials;
         }
 
         /// <summary>
@@ -583,11 +540,11 @@ namespace Altinn.Platform.Authentication.Controllers
             {
                 JwtSecurityToken token = await ValidateAndExtractOidcToken(originalToken, _generalSettings.IdPortenWellKnownConfigEndpoint, _generalSettings.IdPortenAlternativeWellKnownConfigEndpoint);
 
-                string pid = token.Claims.Where(c => c.Type.Equals(PidClaimName)).Select(c => c.Value).FirstOrDefault();
-                string authLevel = token.Claims.Where(c => c.Type.Equals(AuthLevelClaimName)).Select(c => c.Value).FirstOrDefault();
-                string authMethod = token.Claims.Where(c => c.Type.Equals(AuthMethodClaimName)).Select(c => c.Value).FirstOrDefault();
-                string externalSessionId = token.Claims.Where(c => c.Type.Equals(ExternalSessionIdClaimName)).Select(c => c.Value).FirstOrDefault();
-                string scope = token.Claims.Where(c => c.Type.Equals(ScopeClaim)).Select(c => c.Value).FirstOrDefault();
+                string? pid = token.Claims.Where(c => c.Type.Equals(PidClaimName)).Select(c => c.Value).FirstOrDefault();
+                string? authLevel = token.Claims.Where(c => c.Type.Equals(AuthLevelClaimName)).Select(c => c.Value).FirstOrDefault();
+                string? authMethod = token.Claims.Where(c => c.Type.Equals(AuthMethodClaimName)).Select(c => c.Value).FirstOrDefault();
+                string? externalSessionId = token.Claims.Where(c => c.Type.Equals(ExternalSessionIdClaimName)).Select(c => c.Value).FirstOrDefault();
+                string? scope = token.Claims.Where(c => c.Type.Equals(ScopeClaim)).Select(c => c.Value).FirstOrDefault();
                 
                 if (!HasAltinnScope(scope) && !HasPartnerScope(scope))
                 {
@@ -606,7 +563,27 @@ namespace Altinn.Platform.Authentication.Controllers
                     authMethod = AuthenticationMethod.NotDefined.ToString();
                 }
 
-                UserProfile userProfile = await _userProfileService.GetUser(pid);
+                // SBL Bridge user lookup is decommissioned. The user fields
+                // (UserId/UserName/PartyId/PartyUuid) are resolved from Register:
+                // POST /register/api/v2/internal/parties/query (fields=uuid,id,user).
+                RegisterContracts.Party? party = await _partiesClient.GetPartyIdentifiersAndUsernameByPersonIdentifier(pid);
+
+                if (party is null || !party.User.HasValue || !party.User.Value.UserId.HasValue)
+                {
+                    _logger.LogInformation("ID-porten exchange: person not found in Register, or has no associated Altinn user.");
+                    return Unauthorized();
+                }
+
+                int userId = (int)party.User.Value.UserId.Value;
+                string userName = party.User.Value.Username.HasValue ? party.User.Value.Username.Value : string.Empty;
+                int partyId = (int)party.PartyId.Value;
+                Guid? partyUuid = party.Uuid;
+
+                if (!partyUuid.HasValue)
+                {
+                    _logger.LogInformation("ID-porten exchange: party UUID missing for user.");
+                    return Unauthorized();
+                }
 
                 string issuer = _generalSettings.AltinnOidcIssuerUrl;
 
@@ -630,15 +607,16 @@ namespace Altinn.Platform.Authentication.Controllers
                 }
 
                 List<Claim> claims = new List<Claim>();
-                claims.Add(new Claim(ClaimTypes.NameIdentifier, userProfile.UserId.ToString(), ClaimValueTypes.String, issuer));
-                claims.Add(new Claim(AltinnCoreClaimTypes.UserId, userProfile.UserId.ToString(), ClaimValueTypes.String, issuer));
-                claims.Add(new Claim(AltinnCoreClaimTypes.UserName, userProfile.UserName, ClaimValueTypes.String, issuer));
-                claims.Add(new Claim(AltinnCoreClaimTypes.PartyID, userProfile.PartyId.ToString(), ClaimValueTypes.Integer32, issuer));
+                claims.Add(new Claim(ClaimTypes.NameIdentifier, userId.ToString(), ClaimValueTypes.String, issuer));
+                claims.Add(new Claim(AltinnCoreClaimTypes.UserId, userId.ToString(), ClaimValueTypes.String, issuer));
+                claims.Add(new Claim(AltinnCoreClaimTypes.UserName, userName, ClaimValueTypes.String, issuer));
+                claims.Add(new Claim(AltinnCoreClaimTypes.PartyID, partyId.ToString(), ClaimValueTypes.Integer32, issuer));
+                claims.Add(new Claim(AltinnCoreClaimTypes.PartyUUID, partyUuid.Value.ToString(), ClaimValueTypes.String, issuer));
                 claims.Add(new Claim(AltinnCoreClaimTypes.AuthenticateMethod, authMethod, ClaimValueTypes.String, issuer));
                 claims.Add(new Claim(AltinnCoreClaimTypes.AuthenticationLevel, authLevelValue, ClaimValueTypes.Integer32, issuer));
                 claims.AddRange(token.Claims);
 
-                string[] claimTypesToRemove = { "aud", IssClaimName, "at_hash", "jti", "sub" };
+                string[] claimTypesToRemove = { "aud", IssClaimName, "at_hash", "sid", "sub" };
                 foreach (string claimType in claimTypesToRemove)
                 {
                     Claim claim = claims.Find(c => c.Type == claimType);
@@ -646,14 +624,14 @@ namespace Altinn.Platform.Authentication.Controllers
                 }
 
                 claims.Add(new Claim(IssClaimName, issuer, ClaimValueTypes.String, issuer));
-                claims.Add(new Claim("jti", _guidService.NewGuid(), ClaimValueTypes.String, issuer));
+                claims.Add(new Claim("sid", _guidService.NewGuid(), ClaimValueTypes.String, issuer));
 
                 ClaimsIdentity identity = new ClaimsIdentity(EndUserSystemIdentity);
                 identity.AddClaims(claims);
                 ClaimsPrincipal principal = new ClaimsPrincipal(identity);
 
                 string serializedToken = await GenerateToken(principal, token.ValidTo);
-                _eventLog.CreateAuthenticationEventAsync(_featureManager, serializedToken, AuthenticationEventType.TokenExchange, HttpContext, externalSessionId);
+                await _eventLog.CreateAuthenticationEventAsync(_featureManager, serializedToken, AuthenticationEventType.TokenExchange, HttpContext.Connection.RemoteIpAddress, externalSessionId);
                 return Ok(serializedToken);
             }
             catch (Exception ex)
@@ -664,57 +642,40 @@ namespace Altinn.Platform.Authentication.Controllers
         }
 
         /// <summary>
-        /// Creates a session cookie meant to be used to hold the generated JSON Web Token and appends it to the response.
-        /// </summary>
-        /// <param name="cookieValue">The cookie value.</param>
-        private void CreateJwtCookieAndAppendToResponse(string cookieValue)
-        {
-            CookieBuilder cookieBuilder = new RequestPathBaseCookieBuilder
-            {
-                Name = _generalSettings.JwtCookieName,
-                //// To support OAuth authentication, a lax mode is required, see https://github.com/aspnet/Security/issues/1231.
-                SameSite = SameSiteMode.Lax,
-                HttpOnly = true,
-                SecurePolicy = CookieSecurePolicy.Always,
-                IsEssential = true,
-                Domain = _generalSettings.HostName
-            };
-
-            CookieOptions cookieOptions = cookieBuilder.Build(HttpContext);
-
-            ICookieManager cookieManager = new ChunkingCookieManager();
-            cookieManager.AppendResponseCookie(
-                HttpContext,
-                cookieBuilder.Name,
-                cookieValue,
-                cookieOptions);
-
-            ApplyHeaders();
-        }
-
-        private void ApplyHeaders()
-        {
-            Response.Headers[HeaderNames.CacheControl] = HeaderValueNoCache;
-            Response.Headers[HeaderNames.Pragma] = HeaderValueNoCache;
-            Response.Headers[HeaderNames.Expires] = HeaderValueEpocDate;
-        }
-
-        /// <summary>
         /// Assumes that the consumer claim follows the ISO 6523. {"Identifier": {"Authority": "iso6523-actorid-upis","ID": "9908:910075918"}}
         /// </summary>
         /// <returns>organisation number found in the ID property of the ISO 6523 record</returns>
-        private static string GetOrganisationNumberFromConsumerClaim(ClaimsPrincipal originalPrincipal)
+        private static string? GetOrganisationNumberFromConsumerClaim(ClaimsPrincipal originalPrincipal)
         {
-            string consumerJson = originalPrincipal.FindFirstValue("consumer");
-            JObject consumer = JObject.Parse(consumerJson);
-
-            string consumerAuthority = consumer["authority"].ToString();
-            if (!"iso6523-actorid-upis".Equals(consumerAuthority))
+            string? consumerJson = originalPrincipal.FindFirstValue("consumer");
+            
+            if (consumerJson == null)
             {
                 return null;
             }
 
-            string consumerId = consumer["ID"].ToString();
+            JObject consumer = JObject.Parse(consumerJson);
+            JToken? consumerAuthorityToken = consumer["authority"];
+            
+            if (consumerAuthorityToken == null)
+            {
+                return null;
+            }   
+
+            string consumerAuthority = consumerAuthorityToken.ToString();
+            if (!"iso6523-actorid-upis".Equals(consumerAuthority))
+            {
+                return null;
+            }
+           
+            JToken? consumerValue = consumer["ID"];
+
+            if (consumerValue == null)
+            {
+                return null;
+            }
+
+            string? consumerId = consumerValue.ToString();
 
             string organisationNumber = consumerId.Split(":")[1];
             return organisationNumber;
@@ -722,9 +683,9 @@ namespace Altinn.Platform.Authentication.Controllers
 
         private static bool HasServiceOwnerScope(ClaimsPrincipal originalPrincipal)
         {
-            string scope = originalPrincipal.FindFirstValue("scope");
+            string? scope = originalPrincipal.FindFirstValue("scope");
 
-            if (scope.Contains("altinn:serviceowner"))
+            if (scope != null && scope.Contains("altinn:serviceowner"))
             {
                 return true;
             }
@@ -732,18 +693,27 @@ namespace Altinn.Platform.Authentication.Controllers
             return false;
         }
 
+        /// <summary>
+        /// Returns <c>true</c> when the space-separated <paramref name="scope"/> string contains at least one
+        /// Altinn scope (any token prefixed <c>altinn:</c>). Used to gate which exchanged tokens are accepted.
+        /// </summary>
         private static bool HasAltinnScope(string scope)
         {
             return scope?.Split(" ").Any(s => s.StartsWith("altinn:")) ?? false;
         }
 
+        /// <summary>
+        /// Returns <c>true</c> when the space-separated <paramref name="scope"/> string contains one of the
+        /// configured partner scopes (<see cref="GeneralSettings.PartnerScopes"/>). Used to gate which exchanged
+        /// tokens are accepted for partner integrations.
+        /// </summary>
         private bool HasPartnerScope(string scope)
         {
-            string[] scopes = scope?.Split(" ");
+            string[]? scopes = scope?.Split(" ");
 
             foreach (string partnerScope in _partnerScopes)
             {
-                if (scopes.Contains(partnerScope))
+                if (scopes?.Contains(partnerScope) == true)
                 {
                     return true;
                 }
@@ -789,66 +759,63 @@ namespace Altinn.Platform.Authentication.Controllers
         }
 
         /// <summary>
-        /// Checks that url is on same host as platform
-        /// </summary>
-        /// <param name="goToHost">The url to redirect to</param>
-        /// <returns>Boolean verifying that goToHost is on current host. </returns>
-        private bool IsValidRedirectUri(string goToHost)
-        {
-            string validHost = _generalSettings.HostName;
-            int segments = _generalSettings.HostName.Split('.').Length;
-
-            List<string> goToList = Enumerable.Reverse(new List<string>(goToHost.Split('.'))).Take(segments).Reverse().ToList();
-            string redirectHost = string.Join(".", goToList);
-
-            return validHost.Equals(redirectHost);
-        }
-
-        /// <summary>
         /// Generates a token and serialize it to a compact format
         /// </summary>
         /// <param name="principal">The claims principal for the token</param>
         /// <param name="expires">The Expiry time of the token</param>
         /// <returns>A serialized version of the generated JSON Web Token.</returns>
-        private async Task<string> GenerateToken(ClaimsPrincipal principal, DateTime? expires = null)
+        private async Task<string> GenerateToken(ClaimsPrincipal principal, DateTimeOffset? expires = null)
         {
             List<X509Certificate2> certificates = await _certificateProvider.GetCertificates();
 
-            X509Certificate2 certificate = GetLatestCertificateWithRolloverDelay(
-                certificates, _generalSettings.JwtSigningCertificateRolloverDelayHours);
+            DateTimeOffset now = _timeProvider.GetUtcNow();
 
-            TimeSpan tokenExpiry = new TimeSpan(0, _generalSettings.JwtValidityMinutes, 0);
-            if (expires == null)
-            {
-                expires = DateTime.UtcNow.AddSeconds(tokenExpiry.TotalSeconds);
-            }
+            // If GetLatestCertificateWithRolloverDelay uses "now", pass it in so it also honors TimeProvider.
+            var certificate = GetLatestCertificateWithRolloverDelay(
+                certificates,
+                _generalSettings.JwtSigningCertificateRolloverDelayHours,
+                now);
 
-            JwtSecurityTokenHandler tokenHandler = new JwtSecurityTokenHandler();
-            SecurityTokenDescriptor tokenDescriptor = new SecurityTokenDescriptor
+            var lifetime = TimeSpan.FromMinutes(_generalSettings.JwtValidityMinutes);
+            var exp = (expires ?? now.Add(lifetime)).UtcDateTime;
+
+            var tokenHandler = new JwtSecurityTokenHandler();
+
+            var descriptor = new SecurityTokenDescriptor
             {
-                Subject = new ClaimsIdentity(principal.Identity),
-                Expires = expires,
-                SigningCredentials = new X509SigningCredentials(certificate)
+                Subject = new ClaimsIdentity(principal.Claims),
+                IssuedAt = now.UtcDateTime,     // iat
+                NotBefore = now.UtcDateTime,    // nbf
+                Expires = exp,                  // exp
+                SigningCredentials = new X509SigningCredentials(certificate),
             };
 
-            SecurityToken token = tokenHandler.CreateToken(tokenDescriptor);
-            string serializedToken = tokenHandler.WriteToken(token);
-
-            return serializedToken;
+            var token = tokenHandler.CreateToken(descriptor);
+            return tokenHandler.WriteToken(token);
         }
 
+        /// <summary>
+        /// Selects the newest signing certificate that has been valid for at least <paramref name="rolloverDelayHours"/>
+        /// hours (by <c>NotBefore</c>). The delay gives a freshly-published certificate time to propagate to token
+        /// consumers before it is used to sign. If no certificate is old enough, it falls back to the newest currently
+        /// valid certificate.
+        /// </summary>
+        /// <param name="certificates">The available signing certificates.</param>
+        /// <param name="rolloverDelayHours">How long a certificate must have existed before it is used for signing.</param>
+        /// <param name="now">The current time (injected for testability).</param>
+        /// <returns>The chosen certificate, or <c>null</c> if none are usable.</returns>
         private X509Certificate2 GetLatestCertificateWithRolloverDelay(
-            List<X509Certificate2> certificates, int rolloverDelayHours)
+            List<X509Certificate2> certificates, int rolloverDelayHours, DateTimeOffset now)
         {
             // First limit the search to just those certificates that have existed longer than the rollover delay.
-            var rolloverCutoff = DateTime.Now.AddHours(-rolloverDelayHours);
+            var rolloverCutoff = now.AddHours(-rolloverDelayHours);
             var potentialCerts =
                 certificates.Where(c => c.NotBefore < rolloverCutoff).ToList();
 
             // If no certs could be found, then widen the search to any usable certificate.
             if (!potentialCerts.Any())
             {
-                potentialCerts = certificates.Where(c => c.NotBefore < DateTime.Now).ToList();
+                potentialCerts = certificates.Where(c => c.NotBefore < now).ToList();
             }
 
             // Of the potential certs, return the newest one.
@@ -857,47 +824,6 @@ namespace Altinn.Platform.Authentication.Controllers
                 .FirstOrDefault();
         }
         
-        private async Task IdentifyOrCreateAltinnUser(UserAuthenticationModel userAuthenticationModel, OidcProvider provider)
-        {
-            UserProfile profile;
-
-            if (!string.IsNullOrEmpty(userAuthenticationModel.ExternalIdentity))
-            {
-                string issExternalIdentity = userAuthenticationModel.Iss + ":" + userAuthenticationModel.ExternalIdentity;
-                profile = await _userProfileService.GetUser(issExternalIdentity);
-
-                if (profile != null)
-                {
-                    userAuthenticationModel.UserID = profile.UserId;
-                    userAuthenticationModel.PartyID = profile.PartyId;
-                    return;
-                }
-
-                UserProfile userToCreate = new()
-                {
-                    ExternalIdentity = issExternalIdentity,
-                    UserName = CreateUserName(userAuthenticationModel, provider),
-                    UserType = Profile.Enums.UserType.SelfIdentified
-                };
-
-                UserProfile userCreated = await _userProfileService.CreateUser(userToCreate);
-                userAuthenticationModel.UserID = userCreated.UserId;
-                userAuthenticationModel.PartyID = userCreated.PartyId;
-            }
-        }
-
-        /// <summary>
-        /// Creates a automatic username based on external identity and prefix.
-        /// </summary>
-        private static string CreateUserName(UserAuthenticationModel userAuthenticationModel, OidcProvider provider)
-        {
-            string hashedIdentity = HashNonce(userAuthenticationModel.ExternalIdentity).Substring(5, 10);
-            Regex rgx = new Regex("[^a-zA-Z0-9 -]");
-            hashedIdentity = rgx.Replace(hashedIdentity, string.Empty);
-
-            return provider.UserNamePrefix + hashedIdentity.ToLower() + DateTime.Now.Millisecond;
-        }
-
         private async Task<JwtSecurityToken> ValidateAndExtractOidcToken(string originalToken, string wellKnownConfigEndpoint, string alternativeWellKnownConfigEndpoint = null)
         {
             try
@@ -960,7 +886,7 @@ namespace Altinn.Platform.Authentication.Controllers
                 ValidateAudience = false,
                 RequireExpirationTime = true,
                 ValidateLifetime = true,
-                ClockSkew = TimeSpan.FromSeconds(10)
+                ClockSkew = TimeSpan.FromSeconds(10),
             };
 
             _validator.ValidateToken(originalToken, validationParameters, out _);
@@ -971,193 +897,51 @@ namespace Altinn.Platform.Authentication.Controllers
         }
 
         /// <summary>
-        /// Find the OIDC provider based on given ISS or default oidc provider.
+        /// Open-redirect guard for the <c>goTo</c> parameter. Returns <c>true</c> only when <paramref name="target"/>
+        /// is safe to redirect an authenticated user to: an absolute <c>https</c> URL, with no embedded credentials,
+        /// whose host equals <paramref name="baseHost"/> or is a subdomain of it (e.g. <c>skd.apps.altinn.no</c> is
+        /// allowed when the service host is <c>altinn.no</c>). This prevents leaking the session/token to an
+        /// attacker-controlled domain via a crafted <c>goTo</c>.
         /// </summary>
-        private OidcProvider GetOidcProvider(string iss)
+        /// <param name="target">The requested redirect target.</param>
+        /// <param name="baseHost">The authentication service host that the target must match or be a subdomain of.</param>
+        /// <returns><c>true</c> if the target is safe to redirect to; otherwise <c>false</c>.</returns>
+        private static bool IsSafeSameOrSubdomainHttps(Uri target, string baseHost)
         {
-            if (!string.IsNullOrEmpty(iss) && _oidcProviderSettings.ContainsKey(iss))
+            if (target is null || !target.IsAbsoluteUri)
             {
-                return _oidcProviderSettings[iss];
+                return false;
             }
 
-            if (!string.IsNullOrEmpty(iss))
+            // 1) Must be HTTPS
+            if (!string.Equals(target.Scheme, Uri.UriSchemeHttps, StringComparison.OrdinalIgnoreCase))
             {
-                return _oidcProviderSettings.Where(kvp => kvp.Value.Issuer.Equals(iss)).Select(kvp => kvp.Value).FirstOrDefault();
+                return false;
             }
 
-            if (!string.IsNullOrEmpty(_generalSettings.DefaultOidcProvider) && _oidcProviderSettings.ContainsKey(_generalSettings.DefaultOidcProvider))
+            // 2) No embedded credentials
+            if (!string.IsNullOrEmpty(target.UserInfo))
             {
-                return _oidcProviderSettings[_generalSettings.DefaultOidcProvider];
+                return false;
             }
 
-            return _oidcProviderSettings.First().Value;
-        }
+            // 3) Normalize hosts
+            static string Norm(string h) => h.Trim().TrimEnd('.').ToLowerInvariant();
 
-        /// <summary>
-        /// Builds URI to redirect for OIDC login for authentication
-        /// Based on https://openid.net/specs/openid-connect-core-1_0.html#AuthRequest
-        /// </summary>
-        private string CreateAuthenticationRequest(OidcProvider provider, string state, string nonce)
-        {
-            string redirect_uri = GetRedirectUri(provider);
-            string authorizationEndpoint = provider.AuthorizationEndpoint;
-            Dictionary<string, string> oidcParams = new Dictionary<string, string>();
-
-            // REQUIRED. Redirection URI to which the response will be sent. This URI MUST exactly match one of the Redirection URI
-            // values for the Client pre-registered at the OpenID Provider, with the matching performed as described in Section 6.2.1 of
-            // [RFC3986] (Simple String Comparison). When using this flow, the Redirection URI SHOULD use the https scheme; however,
-            // it MAY use the http scheme, provided that the Client Type is confidential, as defined in Section 2.1 of OAuth 2.0, and
-            // provided the OP allows the use of http Redirection URIs in this case. The Redirection URI MAY use an alternate scheme,
-            // such as one that is intended to identify a callback into a native application.
-            if (!authorizationEndpoint.Contains('?'))
+            string th = Norm(target.Host);
+            string bh = Norm(baseHost);
+            if (string.IsNullOrEmpty(th) || string.IsNullOrEmpty(bh))
             {
-                authorizationEndpoint += "?redirect_uri=" + redirect_uri;
-            }
-            else
-            {
-                authorizationEndpoint += "&redirect_uri=" + redirect_uri;
+                return false;
             }
 
-            // REQUIRED. OpenID Connect requests MUST contain the openid scope value. If the openid scope value is not present,
-            // the behavior is entirely unspecified. Other scope values MAY be present.
-            // Scope values used that are not understood by an implementation SHOULD be ignored.
-            // See Sections 5.4 and 11 for additional scope values defined by this specification.
-            oidcParams.Add("scope", provider.Scope);
-
-            // REQUIRED. OAuth 2.0 Client Identifier valid at the Authorization Server.
-            oidcParams.Add("client_id", provider.ClientId);
-
-            // REQUIRED. OAuth 2.0 Response Type value that determines the authorization processing flow to be used, including what parameters
-            // are returned from the endpoints used. When using the Authorization Code Flow, this value is code.
-            oidcParams.Add("response_type", provider.ResponseType);
-
-            // RECOMMENDED. Opaque value used to maintain state between the request and the callback.
-            // Typically, Cross-Site Request Forgery (CSRF, XSRF)
-            // mitigation is done by cryptographically binding the value of this parameter with a browser cookie.
-            oidcParams.Add("state", state);
-
-            // OPTIONAL. String value used to associate a Client session with an ID Token, and to mitigate replay attacks.
-            // The value is passed through unmodified from the Authentication Request to the ID Token.
-            // Sufficient entropy MUST be present in the nonce values used to prevent attackers
-            // from guessing values. For implementation notes, see Section 15.5.2.
-            oidcParams.Add("nonce", nonce);
-            string uri = QueryHelpers.AddQueryString(authorizationEndpoint, oidcParams);
-
-            return uri;
-        }
-
-        private string GetRedirectUri(OidcProvider provider)
-        {
-            string redirectUri = $"{_generalSettings.PlatformEndpoint}authentication/api/v1/authentication";
-
-            if (provider.IncludeIssInRedirectUri)
-            {
-                redirectUri = redirectUri + "?iss=" + provider.IssuerKey;
-            }
-
-            return redirectUri;
-        }
-
-        private string CreateNonce(HttpContext httpContext)
-        {
-            string nonce = Guid.NewGuid().ToString();
-            httpContext.Response.Cookies.Append(_generalSettings.OidcNonceCookieName, nonce);
-            return HashNonce(nonce);
-        }
-
-        private void CreateGoToCookie(HttpContext httpContext, string goToUrl)
-        {
-            httpContext.Response.Cookies.Append(_generalSettings.AuthnGoToCookieName, goToUrl);
-        }
-
-        private async Task CreateTokenCookie(UserAuthenticationModel userAuthentication)
-        {
-            List<Claim> claims = new List<Claim>();
-            string issuer = _generalSettings.AltinnOidcIssuerUrl;
-            string sessionId = _guidService.NewGuid();
-            userAuthentication.SessionId = sessionId;
-            claims.Add(new Claim(ClaimTypes.NameIdentifier, userAuthentication.UserID.ToString(), ClaimValueTypes.String, issuer));
-            claims.Add(new Claim(AltinnCoreClaimTypes.UserId, userAuthentication.UserID.ToString(), ClaimValueTypes.String, issuer));
-
-            if (!string.IsNullOrEmpty(userAuthentication.Username))
-            {
-                claims.Add(new Claim(AltinnCoreClaimTypes.UserName, userAuthentication.Username, ClaimValueTypes.String, issuer));
-            }
-
-            if (userAuthentication.PartyUuid != null)
-            {
-               claims.Add(new Claim(AltinnCoreClaimTypes.PartyUUID, userAuthentication.PartyUuid.ToString(), ClaimValueTypes.String, issuer));
-            }
-
-            if (!string.IsNullOrEmpty(userAuthentication.Iss))
-            {
-                claims.Add(new Claim(OriginalIssClaimName, userAuthentication.Iss, ClaimValueTypes.String, issuer));
-            }
-
-            claims.Add(new Claim(AltinnCoreClaimTypes.PartyID, userAuthentication.PartyID.ToString(), ClaimValueTypes.Integer32, issuer));
-            claims.Add(new Claim(AltinnCoreClaimTypes.AuthenticateMethod, userAuthentication.AuthenticationMethod.ToString(), ClaimValueTypes.String, issuer));
-            claims.Add(new Claim(AltinnCoreClaimTypes.AuthenticationLevel, ((int)userAuthentication.AuthenticationLevel).ToString(), ClaimValueTypes.Integer32, issuer));
-            claims.Add(new Claim("jti", sessionId, ClaimValueTypes.String, issuer));
-
-            if (userAuthentication.ProviderClaims != null && userAuthentication.ProviderClaims.Count > 0)
-            {
-                foreach (KeyValuePair<string, List<string>> kvp in userAuthentication.ProviderClaims)
-                {
-                    foreach (string claimvalue in kvp.Value)
-                    {
-                        claims.Add(new Claim(kvp.Key, claimvalue, ClaimValueTypes.String, issuer));
-                    }
-                }
-            }
-
-            if (!claims.Any(c => c.Type == AuthzConstants.CLAIM_SCOPE))
-            {
-                claims.Add(new Claim(AuthzConstants.CLAIM_SCOPE, AuthzConstants.SCOPE_PORTAL, ClaimValueTypes.String, issuer));
-            }
-            else
-            {
-                // Find the existing claim and modify its value
-                Claim existingClaim = claims.FirstOrDefault(c => c.Type == AuthzConstants.CLAIM_SCOPE);
-                if (existingClaim != null)
-                {
-                    claims.Remove(existingClaim);
-
-                    // Adding portal scope to list of scopes
-                    claims.Add(new Claim(AuthzConstants.CLAIM_SCOPE, existingClaim.Value + " " + AuthzConstants.SCOPE_PORTAL, ClaimValueTypes.String, issuer));
-                }
-            }
-
-            ClaimsIdentity identity = new ClaimsIdentity(_generalSettings.ClaimsIdentity);
-            identity.AddClaims(claims);
-            ClaimsPrincipal principal = new ClaimsPrincipal(identity);
-            string serializedToken = await GenerateToken(principal);
-            _eventLog.CreateAuthenticationEventAsync(_featureManager, userAuthentication, AuthenticationEventType.Authenticate, HttpContext);
-            CreateJwtCookieAndAppendToResponse(serializedToken);
-            if (userAuthentication.TicketUpdated)
-            {
-                Response.Cookies.Append(_generalSettings.SblAuthCookieName, userAuthentication.EncryptedTicket);
-            }
-        }
-
-        private static string HashNonce(string nonce)
-        {
-            using (SHA256 nonceHash = SHA256.Create())
-            {
-                byte[] byteArrayResultOfRawData = Encoding.UTF8.GetBytes(nonce);
-                byte[] byteArrayResult = nonceHash.ComputeHash(byteArrayResultOfRawData);
-                return Convert.ToBase64String(byteArrayResult);
-            }
-        }
-
-        private bool ValidateNonce(HttpContext context, string hashedNonce)
-        {
-            string nonceCookie = context.Request.Cookies[_generalSettings.OidcNonceCookieName];
-            if (!string.IsNullOrEmpty(nonceCookie) && HashNonce(nonceCookie).Equals(hashedNonce))
+            // 4) Exact or dot-bounded subdomain
+            if (th == bh)
             {
                 return true;
             }
 
-            return false;
+            return th.Length > bh.Length && th.EndsWith("." + bh, StringComparison.Ordinal);
         }
     }
 }

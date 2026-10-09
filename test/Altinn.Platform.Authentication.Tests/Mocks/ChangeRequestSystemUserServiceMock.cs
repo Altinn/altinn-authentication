@@ -33,7 +33,12 @@ namespace Altinn.Platform.Authentication.Tests.Mocks
             throw new NotImplementedException();
         }
 
-        public Task<Result<ChangeRequestResponse>> CreateChangeRequest(ChangeRequestSystemUser createRequest, OrganisationNumber vendorOrgNo, SystemUser systemUser)
+        public Task<Result<ChangeRequestResponse>> CreateChangeRequest(ChangeRequestSystemUser createRequest, OrganisationNumber vendorOrgNo, SystemUserInternalDTO systemUser)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task<Result<ChangeRequestResponse>> CreateChangeRequest(ChangeRequestSystemUser createRequest, OrganisationNumber vendorOrgNo, SystemUserInternalDTO systemUser, Guid correllationId)
         {
             throw new NotImplementedException();
         }
@@ -68,7 +73,7 @@ namespace Altinn.Platform.Authentication.Tests.Mocks
             return await Task.FromResult("https://smartcloudaltinn.azurewebsites.net/changerequest");
         }
 
-        public Task<Result<bool>> RejectChangeOnSystemUser(Guid requestId, int userId, CancellationToken cancellationToken)
+        public Task<Result<bool>> RejectChangeOnSystemUser(Guid requestId, int partyId, int userId, CancellationToken cancellationToken)
         {
             throw new NotImplementedException();
         }
@@ -78,7 +83,7 @@ namespace Altinn.Platform.Authentication.Tests.Mocks
             throw new NotImplementedException();
         }
 
-        public Task<Result<ChangeRequestResponse>> VerifySetOfRights(ChangeRequestResponse validateSet, OrganisationNumber vendorOrgNo)
+        public Task<Result<ChangeRequestResponse>> VerifySetOfRights(ChangeRequestResponse validateSet, SystemUserInternalDTO systemUser, OrganisationNumber vendorOrgNo)
         {
             throw new NotImplementedException();
         }

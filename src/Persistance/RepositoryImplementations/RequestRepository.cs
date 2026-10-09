@@ -20,7 +20,8 @@ public class RequestRepository : IRequestRepository
     private readonly NpgsqlDataSource _dataSource;
     private readonly ISystemUserRepository _systemUserRepository;
     private readonly ILogger _logger;
-    private const int REQUEST_TIMEOUT_DAYS = 10;
+    private const int REQUEST_TIMEOUT_DAYS = 180;
+    private readonly TimeProvider _timeProvider;
 
     /// <summary>
     /// Constructor
@@ -28,11 +29,13 @@ public class RequestRepository : IRequestRepository
     public RequestRepository(
         NpgsqlDataSource npgsqlDataSource,
         ISystemUserRepository systemUserRepository,
-        ILogger<RequestRepository> logger)
+        ILogger<RequestRepository> logger,
+        TimeProvider timeProvider)
     {
         _dataSource = npgsqlDataSource;
         _systemUserRepository = systemUserRepository;   
         _logger = logger;
+        _timeProvider = timeProvider;
     }
 
     /// <inheritdoc/>
@@ -41,6 +44,7 @@ public class RequestRepository : IRequestRepository
         const string QUERY = /*strpsql*/@"
             INSERT INTO business_application.request(
                 id,
+                integration_title,
                 external_ref,
                 system_id,
                 party_org_no,
@@ -51,6 +55,7 @@ public class RequestRepository : IRequestRepository
                 redirect_urls)
             VALUES(
                 @id,
+                @integration_title,
                 @external_ref,
                 @system_id,
                 @party_org_no,
@@ -58,13 +63,15 @@ public class RequestRepository : IRequestRepository
                 @accesspackages,
                 @status,
                 @systemuser_type,
-                @redirect_urls);";
+                @redirect_urls)
+            RETURNING created;";
 
         try
         {
             await using NpgsqlCommand command = _dataSource.CreateCommand(QUERY);
 
             command.Parameters.AddWithValue("id", createRequest.Id);
+            command.Parameters.AddWithValue("integration_title", createRequest.IntegrationTitle ?? string.Empty);
             command.Parameters.AddWithValue("external_ref", createRequest.ExternalRef!);
             command.Parameters.AddWithValue("system_id", createRequest.SystemId);
             command.Parameters.AddWithValue("party_org_no", createRequest.PartyOrgNo);
@@ -81,9 +88,16 @@ public class RequestRepository : IRequestRepository
             else
             {
                 command.Parameters.Add(new("redirect_urls", NpgsqlDbType.Varchar) { Value = DBNull.Value });
-            }            
+            }
 
-            return await command.ExecuteNonQueryAsync() > 0;
+            await using NpgsqlDataReader reader = await command.ExecuteReaderAsync();
+            if (await reader.ReadAsync())
+            {
+                createRequest.Created = reader.GetFieldValue<DateTime>("created");
+                return true;
+            }
+
+            return false;
         }
         catch (Exception ex)
         {
@@ -98,6 +112,7 @@ public class RequestRepository : IRequestRepository
         const string QUERY = /*strpsql*/@"
             INSERT INTO business_application.request(
                 id,
+                integration_title,
                 external_ref,
                 system_id,
                 party_org_no,
@@ -107,19 +122,22 @@ public class RequestRepository : IRequestRepository
                 redirect_urls)
             VALUES(
                 @id,
+                @integration_title,
                 @external_ref,
                 @system_id,
                 @party_org_no,
                 @accessPackages,
                 @status,
                 @systemuser_type,
-                @redirect_urls);";
+                @redirect_urls)
+            RETURNING created;";
 
         try
         {
             await using NpgsqlCommand command = _dataSource.CreateCommand(QUERY);
 
             command.Parameters.AddWithValue("id", createAgentRequest.Id);
+            command.Parameters.AddWithValue("integration_title", createAgentRequest.IntegrationTitle ?? string.Empty);
             command.Parameters.AddWithValue("external_ref", createAgentRequest.ExternalRef!);
             command.Parameters.AddWithValue("system_id", createAgentRequest.SystemId);
             command.Parameters.AddWithValue("party_org_no", createAgentRequest.PartyOrgNo);
@@ -136,7 +154,14 @@ public class RequestRepository : IRequestRepository
                 command.Parameters.Add(new("redirect_urls", NpgsqlDbType.Varchar) { Value = DBNull.Value });
             }
 
-            return await command.ExecuteNonQueryAsync() > 0;
+            await using NpgsqlDataReader reader = await command.ExecuteReaderAsync();
+            if (await reader.ReadAsync())
+            {
+                createAgentRequest.Created = reader.GetFieldValue<DateTime>("created");
+                return true;
+            }
+
+            return false;
         }
         catch (Exception ex)
         {
@@ -151,6 +176,7 @@ public class RequestRepository : IRequestRepository
         const string QUERY = /*strpsql*/@"
             SELECT 
                 id,
+                integration_title,
                 external_ref,
                 system_id,
                 party_org_no,
@@ -158,6 +184,7 @@ public class RequestRepository : IRequestRepository
                 accesspackages,
                 request_status,
                 redirect_urls,
+                escalated,
                 created
             FROM business_application.request r
             WHERE r.external_ref = @external_ref
@@ -177,7 +204,7 @@ public class RequestRepository : IRequestRepository
             command.Parameters.Add<SystemUserType>("systemuser_type").TypedValue = SystemUserType.Standard;
 
             var dbres = await command.ExecuteEnumerableAsync()
-                .SelectAwait(ConvertFromReaderToRequest)
+                .Select(ConvertFromReaderToRequest)
                 .FirstOrDefaultAsync();
             return dbres;
         }
@@ -194,12 +221,14 @@ public class RequestRepository : IRequestRepository
         const string QUERY = /*strpsql*/@"
             SELECT 
                 id,
+                integration_title,
                 external_ref,
                 system_id,
                 party_org_no,
                 accesspackages,
                 request_status,
                 redirect_urls,
+                escalated,
                 created
             FROM business_application.request r
             WHERE r.external_ref = @external_ref
@@ -218,7 +247,7 @@ public class RequestRepository : IRequestRepository
             command.Parameters.Add<SystemUserType>("systemuser_type").TypedValue = SystemUserType.Agent;
 
             var dbres = await command.ExecuteEnumerableAsync()
-                .SelectAwait(ConvertFromReaderToAgentRequest)
+                .Select(ConvertFromReaderToAgentRequest)
                 .FirstOrDefaultAsync();
             return dbres;
         }
@@ -235,6 +264,7 @@ public class RequestRepository : IRequestRepository
         const string QUERY = /*strpsql*/@"
             SELECT 
                 id,
+                integration_title,
                 external_ref,
                 system_id,
                 party_org_no,
@@ -242,6 +272,7 @@ public class RequestRepository : IRequestRepository
                 accesspackages,
                 request_status,
                 redirect_urls,
+                escalated,
                 created 
             FROM business_application.request r
             WHERE r.id = @request_id
@@ -257,7 +288,7 @@ public class RequestRepository : IRequestRepository
             command.Parameters.Add<SystemUserType>("systemuser_type").TypedValue = SystemUserType.Standard;
 
             return await command.ExecuteEnumerableAsync()
-                .SelectAwait(ConvertFromReaderToRequest)
+                .Select(ConvertFromReaderToRequest)
                 .FirstOrDefaultAsync();
         }
         catch (Exception ex)
@@ -273,6 +304,7 @@ public class RequestRepository : IRequestRepository
         const string QUERY = /*strpsql*/@"
             SELECT 
                 id,
+                integration_title,
                 external_ref,
                 system_id,
                 party_org_no,
@@ -280,6 +312,7 @@ public class RequestRepository : IRequestRepository
                 accesspackages,
                 request_status,
                 redirect_urls,
+                escalated,
                 created 
             FROM business_application.request r
             WHERE r.id = @request_id
@@ -295,7 +328,7 @@ public class RequestRepository : IRequestRepository
             command.Parameters.Add<SystemUserType>("systemuser_type").TypedValue = SystemUserType.Agent;
 
             return await command.ExecuteEnumerableAsync()
-                .SelectAwait(ConvertFromReaderToAgentRequest)
+                .Select(ConvertFromReaderToAgentRequest)
                 .FirstOrDefaultAsync();
         }
         catch (Exception ex)
@@ -330,11 +363,43 @@ public class RequestRepository : IRequestRepository
 
             bool isUpdated = await command.ExecuteNonQueryAsync(cancellationToken) > 0;
                         
-            return true;
+            return isUpdated;
         }
         catch (Exception ex)
         {            
             _logger.LogError(ex, "Authentication // RequestRepository // ApproveAndCreateSystemUser // Exception");
+            throw;
+        }
+    }
+
+    /// <inheritdoc/>  
+    public async Task<bool> SetRequestEscalated(Guid requestId, int userId, CancellationToken cancellationToken = default)
+    {
+        string changed_by = "userId:" + userId.ToString();
+
+        const string QUERY = /*strpsql*/"""
+            UPDATE business_application.request
+            SET escalated = true,
+                last_changed = CURRENT_TIMESTAMP,
+                changed_by = @changed_by
+            WHERE business_application.request.id = @requestId
+            """;
+        await using NpgsqlConnection conn = await _dataSource.OpenConnectionAsync(cancellationToken);
+
+        try
+        {
+            await using NpgsqlCommand command = new NpgsqlCommand(QUERY, conn);
+
+            command.Parameters.AddWithValue("requestId", requestId);
+            command.Parameters.AddWithValue("changed_by", changed_by);
+
+            bool isUpdated = await command.ExecuteNonQueryAsync(cancellationToken) > 0;
+
+            return isUpdated;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Authentication // RequestRepository // SetRequestEscalated // Exception");
             throw;
         }
     }
@@ -369,71 +434,100 @@ public class RequestRepository : IRequestRepository
         }
     }
 
-    private static ValueTask<RequestSystemResponse> ConvertFromReaderToRequest(NpgsqlDataReader reader)
+    private RequestSystemResponse ConvertFromReaderToRequest(NpgsqlDataReader reader)
     {
         string? redirect_url = null;
+        bool escalated = false;
 
         if (!reader.IsDBNull("redirect_urls"))
         {
             redirect_url = reader.GetFieldValue<string?>("redirect_urls");
         }
 
+        if (!reader.IsDBNull("escalated"))
+        {
+            escalated = reader.GetFieldValue<bool>("escalated");
+        }
+
+        string integrationTitle = reader.IsDBNull("integration_title")
+            ? string.Empty
+            : reader.GetFieldValue<string>("integration_title");
+
         RequestSystemResponse response = new()
         {
             Id = reader.GetFieldValue<Guid>("id"),
+            IntegrationTitle = integrationTitle,
             ExternalRef = reader.GetFieldValue<string>("external_ref"),
             SystemId = reader.GetFieldValue<string>("system_id"),
             PartyOrgNo = reader.GetFieldValue<string>("party_org_no"),
             Rights = reader.IsDBNull("rights") ? [] : reader.GetFieldValue<List<Right>>("rights"),
             AccessPackages = reader.IsDBNull("accesspackages") ? [] : reader.GetFieldValue<List<AccessPackage>>("accesspackages"),
             Status = reader.GetFieldValue<string>("request_status"),
+            Escalated = escalated,
             Created = reader.GetFieldValue<DateTime>("created"),
             RedirectUrl = redirect_url
         };
+        
+        var now = _timeProvider.GetUtcNow().DateTime;
 
-        if (response.Created < DateTime.UtcNow.AddDays(-REQUEST_TIMEOUT_DAYS))
+        if (response.Created < _timeProvider.GetUtcNow().UtcDateTime.AddDays(-REQUEST_TIMEOUT_DAYS))
         {
-            response.Status = RequestStatus.Timedout.ToString();
+            response.TimedOut = true;
         }
 
-        return new ValueTask<RequestSystemResponse>(response);
+        return response;
     }
 
-    private static ValueTask<AgentRequestSystemResponse> ConvertFromReaderToAgentRequest(NpgsqlDataReader reader)
+    private AgentRequestSystemResponse ConvertFromReaderToAgentRequest(NpgsqlDataReader reader)
     {
         string? redirect_url = null;
+        bool escalated = false;
 
         if (!reader.IsDBNull("redirect_urls"))
         {
             redirect_url = reader.GetFieldValue<string?>("redirect_urls");
         }
 
+        if (!reader.IsDBNull("escalated"))
+        {
+            escalated = reader.GetFieldValue<bool>("escalated");
+        }
+
+        string integrationTitle = reader.IsDBNull("integration_title")
+            ? string.Empty
+            : reader.GetFieldValue<string>("integration_title");
+
         AgentRequestSystemResponse response = new()
         {
             Id = reader.GetFieldValue<Guid>("id"),
+            IntegrationTitle = integrationTitle,
             ExternalRef = reader.GetFieldValue<string>("external_ref"),
             SystemId = reader.GetFieldValue<string>("system_id"),
             PartyOrgNo = reader.GetFieldValue<string>("party_org_no"),
             AccessPackages = reader.IsDBNull("accesspackages") ? [] : reader.GetFieldValue<List<AccessPackage>>("accesspackages"),
             Status = reader.GetFieldValue<string>("request_status"),
             Created = reader.GetFieldValue<DateTime>("created"),
+            Escalated = escalated,
             RedirectUrl = redirect_url
         };
 
-        if (response.Created < DateTime.UtcNow.AddDays(-REQUEST_TIMEOUT_DAYS))
+        var now = _timeProvider.GetUtcNow().DateTime;
+
+        if (response.Created < _timeProvider.GetUtcNow().UtcDateTime.AddDays(-REQUEST_TIMEOUT_DAYS))
         {
-            response.Status = RequestStatus.Timedout.ToString();
+            response.TimedOut = true;   
         }
 
-        return new ValueTask<AgentRequestSystemResponse>(response);
+        return response;
     }
 
     /// <inheritdoc/>  
-    public async Task<List<RequestSystemResponse>> GetAllRequestsBySystem(string systemId, CancellationToken cancellationToken)
+    public async Task<List<RequestSystemResponse>> GetAllRequestsBySystem(string systemId, Guid continueFrom, int pageSize, CancellationToken cancellationToken)
     {
         const string QUERY = /*strpsql*/@"
             SELECT 
                 id,
+                integration_title,
                 external_ref,
                 system_id,
                 party_org_no,
@@ -441,11 +535,15 @@ public class RequestRepository : IRequestRepository
                 accesspackages,
                 request_status,
                 redirect_urls,
+                escalated,
                 created
             FROM business_application.request r
             WHERE r.system_id = @system_id
+                and r.id >= @continue_from
                 and r.is_deleted = false
-                and systemuser_type = @systemuser_type;";
+                and systemuser_type = @systemuser_type
+            ORDER BY r.id ASC
+            LIMIT @limit;";
 
         try
         {
@@ -453,9 +551,11 @@ public class RequestRepository : IRequestRepository
 
             command.Parameters.AddWithValue("system_id", systemId);
             command.Parameters.Add<SystemUserType>("systemuser_type").TypedValue = SystemUserType.Standard;
+            command.Parameters.AddWithValue("continue_from", continueFrom);
+            command.Parameters.AddWithValue("limit", pageSize + 1);
 
             return await command.ExecuteEnumerableAsync(cancellationToken)
-                .SelectAwait(ConvertFromReaderToRequest)
+                .Select(ConvertFromReaderToRequest)
                 .ToListAsync(cancellationToken);
         }
         catch (Exception ex)
@@ -466,22 +566,68 @@ public class RequestRepository : IRequestRepository
     }
 
     /// <inheritdoc/>  
-    public async Task<List<AgentRequestSystemResponse>> GetAllAgentRequestsBySystem(string systemId, CancellationToken cancellationToken)
+    public async Task<List<RequestSystemResponse>> GetAllPendingStandardRequests(string party_org_no, CancellationToken cancellationToken)
     {
         const string QUERY = /*strpsql*/@"
             SELECT 
                 id,
+                integration_title,
+                external_ref,
+                system_id,
+                party_org_no,
+                rights,
+                accesspackages,
+                request_status,
+                redirect_urls,
+                escalated,
+                created
+            FROM business_application.request r
+            WHERE r.party_org_no = @party_org_no
+                and r.is_deleted = false
+                and r.request_status = @request_status
+                and systemuser_type = @systemuser_type;";
+
+        try
+        {
+            await using NpgsqlCommand command = _dataSource.CreateCommand(QUERY);
+
+            command.Parameters.AddWithValue("party_org_no", party_org_no);            
+            command.Parameters.Add<SystemUserType>("systemuser_type").TypedValue = SystemUserType.Standard;
+            command.Parameters.AddWithValue("request_status", RequestStatus.New.ToString());
+
+            return await command.ExecuteEnumerableAsync(cancellationToken)
+                .Select(ConvertFromReaderToRequest)
+                .ToListAsync(cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Authentication // RequestRepository // GetAllRequestsBySystem // Exception");
+            throw;
+        }
+    }
+
+    /// <inheritdoc/>  
+    public async Task<List<AgentRequestSystemResponse>> GetAllAgentRequestsBySystem(string systemId, Guid continueFrom, int pageSize, CancellationToken cancellationToken)
+    {
+        const string QUERY = /*strpsql*/@"
+            SELECT 
+                id,
+                integration_title,
                 external_ref,
                 system_id,
                 party_org_no,
                 accesspackages,
                 request_status,
                 redirect_urls,
+                escalated,
                 created
             FROM business_application.request r
             WHERE r.system_id = @system_id
+                and r.id >= @continue_from
                 and r.is_deleted = false
-                and systemuser_type = @systemuser_type;";
+                and systemuser_type = @systemuser_type
+            ORDER BY r.id ASC
+            LIMIT @limit;";
 
         try
         {
@@ -489,14 +635,57 @@ public class RequestRepository : IRequestRepository
 
             command.Parameters.AddWithValue("system_id", systemId);
             command.Parameters.Add<SystemUserType>("systemuser_type").TypedValue = SystemUserType.Agent;
+            command.Parameters.AddWithValue("continue_from", continueFrom);
+            command.Parameters.AddWithValue("limit", pageSize + 1);
 
             return await command.ExecuteEnumerableAsync(cancellationToken)
-                .SelectAwait(ConvertFromReaderToAgentRequest)
+                .Select(ConvertFromReaderToAgentRequest)
                 .ToListAsync(cancellationToken);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Authentication // RequestRepository // GetAllAgentRequestsBySystem // Exception");
+            throw;
+        }
+    }
+
+    /// <inheritdoc/>  
+    public async Task<List<AgentRequestSystemResponse>> GetAllPendingAgentRequests(string party_org_no, CancellationToken cancellationToken)
+    {
+        const string QUERY = /*strpsql*/@"
+            SELECT 
+                id,
+                integration_title,
+                external_ref,
+                system_id,
+                party_org_no,
+                accesspackages,
+                request_status,
+                redirect_urls,
+                escalated,
+                created
+            FROM business_application.request r
+            WHERE r.party_org_no = @party_org_no
+                and r.escalated = true
+                and r.is_deleted = false
+                and r.request_status = @request_status
+                and systemuser_type = @systemuser_type;";
+
+        try
+        {
+            await using NpgsqlCommand command = _dataSource.CreateCommand(QUERY);
+
+            command.Parameters.AddWithValue("party_org_no", party_org_no);
+            command.Parameters.Add<SystemUserType>("systemuser_type").TypedValue = SystemUserType.Agent;
+            command.Parameters.AddWithValue("request_status", RequestStatus.New.ToString());
+
+            return await command.ExecuteEnumerableAsync(cancellationToken)
+                .Select(ConvertFromReaderToAgentRequest)
+                .ToListAsync(cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Authentication // RequestRepository // GetAllPendingAgentRequests // Exception");
             throw;
         }
     }
@@ -626,6 +815,7 @@ public class RequestRepository : IRequestRepository
         const string QUERY = /*strpsql*/@"
             SELECT 
                 id,
+                integration_title,
                 external_ref,
                 system_id,
                 party_org_no,
@@ -633,6 +823,7 @@ public class RequestRepository : IRequestRepository
                 accesspackages,
                 request_status,
                 redirect_urls,
+                escalated,
                 created 
             FROM business_application.request_archive r
             WHERE r.id = @request_id
@@ -646,7 +837,7 @@ public class RequestRepository : IRequestRepository
             command.Parameters.AddWithValue("request_id", internalId);
 
             return await command.ExecuteEnumerableAsync()
-                .SelectAwait(ConvertFromReaderToRequest)
+                .Select(ConvertFromReaderToRequest)
                 .FirstOrDefaultAsync();
         }
         catch (Exception ex)

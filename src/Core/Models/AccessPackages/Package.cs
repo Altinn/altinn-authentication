@@ -36,12 +36,12 @@ namespace Altinn.Platform.Authentication.Core.Models.AccessPackages
         /// <summary>
         /// Name
         /// </summary>
-        public string Name { get; set; }
+        public string? Name { get; set; }
 
         /// <summary>
         /// Description
         /// </summary>
-        public string Description { get; set; }
+        public string? Description { get; set; }
 
         /// <summary>
         /// True if the package is one of "REGN", "REVI", "Forretningsfører" roller
@@ -61,7 +61,7 @@ namespace Altinn.Platform.Authentication.Core.Models.AccessPackages
         /// <summary>
         /// Urn
         /// </summary>
-        public string Urn { get; set; }
+        public string? Urn { get; set; }
     }
 
     /// <summary>
@@ -77,7 +77,7 @@ namespace Altinn.Platform.Authentication.Core.Models.AccessPackages
         /// <summary>
         /// Urn
         /// </summary>
-        public string Urn { get; set; }
+        public string? Urn { get; set; }
 
         /// <summary>
         /// AreaId

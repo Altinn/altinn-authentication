@@ -1,3 +1,5 @@
+using System.Collections.Generic;
+
 namespace Altinn.Platform.Authentication.Model
 {
     /// <summary>
@@ -56,6 +58,117 @@ namespace Altinn.Platform.Authentication.Model
         public string ClientSecret { get; set; }
 
         /// <summary>
+        /// PEM-encoded RSA private key used to sign a <c>private_key_jwt</c> client assertion
+        /// instead of sending <see cref="ClientSecret"/>. Accepts PKCS#8 or PKCS#1.
+        /// <para>
+        /// Set this for providers that do not accept a client secret. HelseID's security profile
+        /// permits no other client authentication mechanism, so a client secret there is refused
+        /// with <c>invalid_client</c>. When set, it takes precedence over <see cref="ClientSecret"/>.
+        /// </para>
+        /// </summary>
+        public string ClientAssertionPrivateKeyPem { get; set; }
+
+        /// <summary>
+        /// The <c>kid</c> to put in the assertion header. Must match the key id of the public JWK
+        /// registered with the provider, so it can pick the right key to verify with.
+        /// </summary>
+        public string ClientAssertionKeyId { get; set; }
+
+        /// <summary>
+        /// Private RSA key as a JWK, which is the format providers such as HelseID hand out at
+        /// client registration. Accepted verbatim or base64-encoded.
+        /// <para>
+        /// Mutually exclusive with <see cref="ClientAssertionPrivateKeyPem"/>. Preferred when the
+        /// provider issues a JWK, since <c>kid</c> and <c>alg</c> are then read from the key itself
+        /// rather than configured separately alongside it.
+        /// </para>
+        /// </summary>
+        public string ClientAssertionPrivateKeyJwk { get; set; }
+
+        /// <summary>
+        /// Signing algorithm for the client assertion. Optional.
+        /// <para>
+        /// Resolved as: this setting, then the <c>alg</c> of the configured JWK, then <c>PS256</c>.
+        /// Left unset deliberately rather than defaulted here, so that a JWK stating its own
+        /// algorithm is not silently overridden by a default nobody chose.
+        /// </para>
+        /// </summary>
+        public string ClientAssertionAlgorithm { get; set; }
+
+        /// <summary>
+        /// The <c>aud</c> of the client assertion. Optional — defaults to <see cref="Issuer"/>.
+        /// <para>
+        /// This is the provider's issuer identifier, <em>not</em> its token endpoint. Some
+        /// providers accepted the endpoint URL historically; HelseID documents explicitly that it
+        /// must not be used.
+        /// </para>
+        /// </summary>
+        public string ClientAssertionAudience { get; set; }
+
+        /// <summary>
+        /// The provider's Pushed Authorization Request endpoint (RFC 9126). Setting it makes every
+        /// sign-in with this provider push the authorization parameters back-channel first and
+        /// redirect with only <c>client_id</c> and <c>request_uri</c>.
+        /// <para>
+        /// Required by providers whose profile mandates PAR — HelseID refuses a front-channel
+        /// authorization request with <c>invalid_request: Pushed authorization is required</c>.
+        /// Left unset, the provider keeps the ordinary front-channel flow.
+        /// </para>
+        /// </summary>
+        public string PushedAuthorizationRequestEndpoint { get; set; }
+
+        /// <summary>
+        /// Send a DPoP proof (RFC 9449) with the token request, binding the issued tokens to our
+        /// key. Signed with the client-assertion key, which the profile permits to serve both
+        /// purposes.
+        /// <para>
+        /// HelseID requires this for every grant type, including <c>authorization_code</c>, so it
+        /// is not optional there despite the security requirements describing DPoP under API
+        /// consumption.
+        /// </para>
+        /// </summary>
+        public bool UseDpop { get; set; }
+
+        /// <summary>
+        /// Validate the id_token to the letter of OIDC Core. Applies to id_tokens only — including
+        /// one presented as <c>id_token_hint</c> — and never to access tokens, whose audience is
+        /// the API. Turns on <em>both</em>:
+        /// <list type="bullet">
+        /// <item><description>the <c>aud</c> must contain our <see cref="ClientId"/>;</description></item>
+        /// <item><description>the issuer must match <see cref="Issuer"/> exactly, with no
+        /// trailing-slash normalisation.</description></item>
+        /// </list>
+        /// <para>
+        /// Off by default because the shared validator historically did neither, and requiring them
+        /// globally could start rejecting tokens from providers that rely on that leniency. Each
+        /// provider therefore adopts it deliberately.
+        /// </para>
+        /// </summary>
+        public bool StrictIdTokenValidation { get; set; }
+
+        /// <summary>
+        /// Treat the access token as opaque: do not validate or read it.
+        /// <para>
+        /// HelseID states the client must not inspect or validate it. The token happens to be a
+        /// JWT today, which is exactly why relying on that is fragile — a DPoP-bound or reformatted
+        /// token would break a client that parses it. Granted scopes are taken from the token
+        /// response instead.
+        /// </para>
+        /// </summary>
+        public bool TreatAccessTokenAsOpaque { get; set; }
+
+        /// <summary>
+        /// Require and validate the <c>iss</c> parameter on the upstream callback (RFC 9207)
+        /// against this provider's issuer, before the code is exchanged.
+        /// <para>
+        /// Defends against mix-up attacks, where a response from one provider is replayed to a
+        /// callback expecting another. Off by default: providers that do not send the parameter
+        /// would otherwise fail every sign-in.
+        /// </para>
+        /// </summary>
+        public bool ValidateCallbackIssuer { get; set; }
+
+        /// <summary>
         /// The response type
         /// </summary>
         public string ResponseType { get; set; } = "code";
@@ -84,5 +197,51 @@ namespace Altinn.Platform.Authentication.Model
         /// Defines the default authentication method
         /// </summary>
         public string DefaultAuthenticationMethod { get; set; } = "SelfIdentified";
+
+        /// <summary>
+        /// When true, this provider may only authenticate synthetic (Tenor) test
+        /// persons: a token that does not carry a well-formed synthetic
+        /// fødselsnummer (month 81–92, valid mod11) — including a token with no
+        /// <c>pid</c> claim — is rejected fail-closed. Set this on test-only
+        /// providers (e.g. mockporten) so neither an ordinary national identity
+        /// number nor a non-pid identity can be authenticated through them.
+        /// Default false. See issue #1409 / #1983.
+        /// </summary>
+        public bool RequireSyntheticPid { get; set; } = false;
+
+        /// <summary>
+        /// Which claim in this provider's id_token carries which piece of meaning. Optional —
+        /// when omitted, ID-porten's claim names are assumed (<c>pid</c>, <c>acr</c>, <c>amr</c>).
+        /// Set this for providers outside that convention, e.g. HelseID.
+        /// </summary>
+        public OidcClaimMappings? ClaimMappings { get; set; }
+
+        /// <summary>
+        /// The authentication levels this provider offers. Optional — when omitted, the provider
+        /// is assumed to use ID-porten's acr vocabulary and the built-in level table applies.
+        /// <para>
+        /// Declaring levels here is what makes a provider reachable: the union of every
+        /// configured <see cref="OidcAuthLevel.Acr"/> forms the allow-list for the
+        /// <c>acr_values</c> request parameter, and decides which provider a requested acr
+        /// routes to.
+        /// </para>
+        /// </summary>
+        public List<OidcAuthLevel>? AuthLevels { get; set; }
+
+        /// <summary>
+        /// Maps the values of this provider's authentication-method claim onto Altinn's
+        /// <c>AuthenticationMethod</c> enum, e.g. HelseID's <c>idp</c> value
+        /// <c>bankid-oidc</c> to <c>BankID</c>. Optional — when omitted, ID-porten's amr values
+        /// are assumed. Matched case-insensitively. Unmatched values fall back to
+        /// <see cref="DefaultAuthenticationMethod"/>.
+        /// </summary>
+        public Dictionary<string, string>? AuthMethodMappings { get; set; }
+
+        /// <summary>
+        /// The <c>acr_values</c> to send to this provider's authorize endpoint when the client
+        /// requested no level. Optional. Replaces the hardcoded ID-porten default, which is not
+        /// meaningful for other providers.
+        /// </summary>
+        public string? DefaultUpstreamAcrValues { get; set; }
     }
 }

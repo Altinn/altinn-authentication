@@ -79,7 +79,7 @@
       },
       "AccessPackages": [
         {
-          "Urn": "urn:altinn:accesspackage:skattnaering"
+          "Urn": "urn:altinn:accesspackage:skatt-naering"
         }
       ],
       "AllowedRedirectUrls": [
@@ -109,7 +109,7 @@
     "changedByOrgNumber": "991825827",
     "changedData": [
       {
-        "Urn": "urn:altinn:accesspackage:skattnaering"
+        "Urn": "urn:altinn:accesspackage:skatt-naering"
       }
     ]
   }

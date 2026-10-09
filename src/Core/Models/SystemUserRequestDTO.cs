@@ -16,7 +16,7 @@ namespace Altinn.Platform.Authentication.Core.Models
         /// Even if this DTO allows null, the db field is of course still required   
         /// </summary>
         [JsonPropertyName("integrationTitle")]
-        public string IntegrationTitle { get; set; }
+        public required string IntegrationTitle { get; set; }
 
         /// <summary>
         /// For off the shelf systems.
@@ -25,6 +25,6 @@ namespace Altinn.Platform.Authentication.Core.Models
         /// Retrieved from the SystemRegister, the full CRUD Api is in a different service
         /// </summary>
         [JsonPropertyName("systemId")]
-        public string SystemId { get; set; }
+        public required string SystemId { get; set; }
     }
 }

@@ -1,0 +1,62 @@
+[
+  {
+    "PartyTypeName": 2,
+    "SSN": "null",
+    "OrgNumber": "313801527",
+    "Person": null,
+    "Organization": {
+      "OrgNumber": "313801527",
+      "Name": "MODIG UTNYTTENDE TIGER AS",
+      "UnitType": "AS",
+      "TelephoneNumber": null,
+      "MobileNumber": null,
+      "FaxNumber": null,
+      "EMailAddress": "test@test.test",
+      "InternetAddress": null,
+      "MailingAddress": null,
+      "MailingPostalCode": null,
+      "MailingPostalCity": null,
+      "BusinessAddress": null,
+      "BusinessPostalCode": null,
+      "BusinessPostalCity": null
+    },
+    "PartyId": 500000,
+    "PartyUuid": "fd9d93c7-1dd7-45bc-9772-6ba977b3cd36",
+    "UnitType": "AS",
+    "Name": "MODIG UTNYTTENDE TIGER AS",
+    "IsDeleted": false,
+    "OnlyHierarchyElementWithNoAccess": false,
+    "ChildParties": [
+    ]
+  },
+  {
+    "PartyTypeName": 2,
+    "SSN": "null",
+    "OrgNumber": "312440911",
+    "Person": null,
+    "Organization": {
+      "OrgNumber": "312440911",
+      "Name": "VELKOMMEN OPPLYST TIGER AS",
+      "UnitType": "AS",
+      "TelephoneNumber": null,
+      "MobileNumber": null,
+      "FaxNumber": null,
+      "EMailAddress": "test@test.test",
+      "InternetAddress": null,
+      "MailingAddress": null,
+      "MailingPostalCode": null,
+      "MailingPostalCity": null,
+      "BusinessAddress": null,
+      "BusinessPostalCode": null,
+      "BusinessPostalCity": null
+    },
+    "PartyId": 500004,
+    "PartyUuid": "fa274f2c-4107-4619-9577-9acef1be8352",
+    "UnitType": "AS",
+    "Name": "VELKOMMEN OPPLYST TIGER AS",
+    "IsDeleted": false,
+    "OnlyHierarchyElementWithNoAccess": false,
+    "ChildParties": [
+    ]
+  }
+]

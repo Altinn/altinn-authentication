@@ -1,0 +1,66 @@
+[
+  {
+    "from": [
+      {
+        "id": "urn:altinn:organization:uuid",
+        "value": "2c8481d9-725f-4b21-b037-1de20b03466f"
+      }
+    ],
+    "to": [
+      {
+        "id": "urn:altinn:systemuser:uuid",
+        "value": "ec6831bc-379c-469a-8e41-d37d398772c9"
+      }
+    ],
+    "resource": [
+      {
+        "id": "urn:altinn:resource",
+        "value": "vegardtestressurs"
+      }
+    ]
+  },
+  {
+    "from": [
+      {
+        "id": "urn:altinn:organization:uuid",
+        "value": "2c8481d9-725f-4b21-b037-1de20b03466f"
+      }
+    ],
+    "to": [
+      {
+        "id": "urn:altinn:systemuser:uuid",
+        "value": "ec6831bc-379c-469a-8e41-d37d398772c9"
+      }
+    ],
+    "resource": [
+      {
+        "id": "urn:altinn:resource",
+        "value": "authentication-e2e-test"
+      }
+    ]
+  },
+  {
+    "from": [
+      {
+        "id": "urn:altinn:organization:uuid",
+        "value": "2c8481d9-725f-4b21-b037-1de20b03466f"
+      }
+    ],
+    "to": [
+      {
+        "id": "urn:altinn:systemuser:uuid",
+        "value": "ec6831bc-379c-469a-8e41-d37d398772c9"
+      }
+    ],
+    "resource": [
+      {
+        "id": "urn:altinn:org",
+        "value": "ttd"
+      },
+      {
+        "id": "urn:altinn:app",
+        "value": "endring-av-navn-v2"
+      }
+    ]
+  }
+]

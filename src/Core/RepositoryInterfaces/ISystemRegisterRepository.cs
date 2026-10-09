@@ -14,7 +14,14 @@ public interface ISystemRegisterRepository
     /// Returns the list of currently available (is_deleted = false ) Registered Systems
     /// </summary>
     /// <returns>List of SystemRegister</returns>
-    Task<List<RegisteredSystemResponse>> GetAllActiveSystems();
+    Task<List<RegisteredSystemResponse>> GetAllActiveSystems(CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Retrieves a list of all registered systems associated with the specified vendor.
+    /// </summary>
+    /// <param name="vendorOrgNumber">The organization number of the vendor whose registered systems are to be retrieved.</param>
+    /// <returns>list of systems</returns>
+    Task<List<RegisteredSystemResponse>> GetAllSystemsForVendor(string vendorOrgNumber, CancellationToken cancellationToken);
 
     /// <summary>
     /// Inserts a new Registered System, using an optimistic choice for the ID
@@ -34,7 +41,7 @@ public interface ISystemRegisterRepository
     /// </summary>
     /// <param name="id">The human readable string Id</param>
     /// <returns>The Registered System</returns>
-    Task<RegisteredSystemResponse?> GetRegisteredSystemById(string id);
+    Task<RegisteredSystemResponse?> GetRegisteredSystemById(string id, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// The registered systems may be renamed,

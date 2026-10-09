@@ -16,7 +16,13 @@
   },
   "accessPackages": [
     {
-      "urn": "urn:altinn:accesspackage:skattnaering"
+      "urn": "urn:altinn:accesspackage:skatt-naering"
+    },
+    {
+      "urn": "urn:altinn:accesspackage:konkursbo-tilgangsstyrer"
+    },
+    {
+      "urn": "urn:altinn:accesspackage:regnskapsforer-lonn"
     }
   ],
   "rights": [
@@ -38,5 +44,5 @@
     "https://nrk.no",
     "https://altinn.no"
   ],
-  "isVisible": true
+  "isVisible": false
 }

@@ -1,0 +1,1861 @@
+﻿#nullable enable
+using System;
+using System.Collections.Generic;
+using System.Collections.Specialized;
+using System.Configuration;
+using System.Diagnostics;
+using System.IdentityModel.Tokens.Jwt;
+using System.Linq;
+using System.Net.Http;
+using System.Security.Claims;
+using System.Security.Cryptography;
+using System.Text;
+using System.Text.RegularExpressions;
+using System.Threading;
+using System.Threading.Tasks;
+using Altinn.Authentication.Core.Clients.Interfaces;
+using Altinn.Platform.Authentication.Configuration;
+using Altinn.Platform.Authentication.Core.Clients.Interfaces;
+using Altinn.Platform.Authentication.Core.Constants;
+using Altinn.Platform.Authentication.Core.Helpers;
+using Altinn.Platform.Authentication.Core.Models.Oidc;
+using Altinn.Platform.Authentication.Core.Models.Profile;
+using Altinn.Platform.Authentication.Core.Models.Profile.Enums;
+using Altinn.Platform.Authentication.Core.RepositoryInterfaces;
+using Altinn.Platform.Authentication.Core.Services.Interfaces;
+using Altinn.Platform.Authentication.Enum;
+using Altinn.Platform.Authentication.Helpers;
+using Altinn.Platform.Authentication.Model;
+using Altinn.Platform.Authentication.Services.Interfaces;
+using Altinn.Register.Contracts;
+using Altinn.Urn;
+using AltinnCore.Authentication.Constants;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.WebUtilities;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
+using Microsoft.FeatureManagement;
+using Microsoft.IdentityModel.Tokens;
+
+namespace Altinn.Platform.Authentication.Services
+{
+    /// <summary>
+    /// Service that implements the OIDC <c>/authorize</c> front-channel flow for Altinn Authentication as an OP.
+    /// </summary>
+    public partial class OidcServerService(ILogger<OidcServerService> logger, 
+        IOidcServerClientRepository oidcServerClientRepository, 
+        ILoginTransactionRepository loginTransactionRepository,
+        IUpstreamLoginTransactionRepository upstreamLoginTransactionRepository,
+        IAuthorizeRequestValidator authorizeRequestValidator, 
+        IAuthorizeClientPolicyValidator authorizeClientPolicyValidator,
+        IOptions<OidcProviderSettings> oidcProviderSettings,
+        TimeProvider timeProvider,
+        IOidcProvider oidcProvider,
+        IUpstreamTokenValidator upstreamTokenValidator,
+        IRegisterUserProvisioningClient registerUserProvisioningClient,
+        IProfile profile,
+        IOidcSessionRepository oidcSessionRepository,
+        IAuthorizationCodeRepository authorizationCodeRepository,
+        IOptions<GeneralSettings> generalSettings,
+        ITokenService tokenService,
+        IRefreshTokenRepository refreshTokenRepository,
+        IUnregisteredClientRepository unregisteredClientRequestRepository,
+        IEventLog eventLog,
+        IFeatureManager featureManager, 
+        IOidcDownstreamLogout oidcDownstreamLogout,
+        IAcrValueCatalog acrValueCatalog,
+        ISigningKeysRetriever signingKeysRetriever) : IOidcServerService
+    {
+        private readonly ILogger<OidcServerService> _logger = logger;
+        private readonly IOidcServerClientRepository _oidcServerClientRepository = oidcServerClientRepository;
+        private readonly ILoginTransactionRepository _loginTxRepo = loginTransactionRepository;
+        private readonly IUpstreamLoginTransactionRepository _upstreamLoginTxRepo = upstreamLoginTransactionRepository;
+        private readonly IAuthorizeRequestValidator _basicValidator = authorizeRequestValidator;
+        private readonly IAuthorizeClientPolicyValidator _clientValidator = authorizeClientPolicyValidator;
+        private readonly OidcProviderSettings _oidcProviderSettings = oidcProviderSettings.Value;
+        private readonly IAcrValueCatalog _acrValueCatalog = acrValueCatalog;
+        private readonly ISigningKeysRetriever _signingKeysRetriever = signingKeysRetriever;
+        private readonly TimeProvider _timeProvider = timeProvider;
+        private readonly IOidcProvider _oidcProvider = oidcProvider;
+        private readonly IUpstreamTokenValidator _upstreamTokenValidator = upstreamTokenValidator;
+        private readonly IRegisterUserProvisioningClient _registerUserProvisioningClient = registerUserProvisioningClient;
+        private readonly IProfile _profileService = profile;
+        private readonly IOidcSessionRepository _oidcSessionRepo = oidcSessionRepository;
+        private readonly IAuthorizationCodeRepository _authorizationCodeRepo = authorizationCodeRepository;
+        private readonly GeneralSettings _generalSettings = generalSettings.Value;
+        private readonly ITokenService _tokenService = tokenService;
+        private readonly IRefreshTokenRepository _refreshTokenRepo = refreshTokenRepository;
+        private readonly IUnregisteredClientRepository _unregisteredClientRequestRepository = unregisteredClientRequestRepository;
+        private static readonly string DefaultProviderKey = "idporten";
+        private readonly IEventLog _eventLog = eventLog;
+        private readonly IFeatureManager _featureManager = featureManager;
+        private readonly IOidcDownstreamLogout _oidcDownstreamLogout = oidcDownstreamLogout;
+
+        /// <summary>
+        /// Handles an incoming OIDC <c>/authorize</c> request from a Downstream client in the Altinn Platform.
+        /// This can be Arbeidsflate or other application.
+        /// Identifies the correct Upstream ID Provider like ID-porten, UIDP, Testlogin or other configured provider
+        /// Stores downstream login transaction and upstream transaction before redirecting to the correct upstream ID-provider
+        /// </summary>
+        public async Task<AuthorizeResult> Authorize(AuthorizeRequest request, ClaimsPrincipal principal, string? sessionHandle, CancellationToken cancellationToken)
+        {
+            // Local helper to choose error redirect or local error based on redirect_uri validity
+            // 1) Client lookup
+            OidcClient? client = await _oidcServerClientRepository.GetClientAsync(request.ClientId, cancellationToken);
+            if (client is null)
+            {
+                return Fail(request, new AuthorizeValidationError { Error = "unauthorized_client", Description = $"Unknown client_id '{request.ClientId}'." }, client);
+            }
+
+            // ========= 2) Basic validation =========
+            AuthorizeValidationError? basicError = _basicValidator.ValidateBasics(request);
+            if (basicError is not null)
+            {
+                return Fail(request, basicError, client);
+            }
+
+            // 3) Client-binding validation
+            AuthorizeValidationError? bindError = _clientValidator.ValidateClientBinding(request, client);
+            if (bindError is not null)
+            {
+                return Fail(request, bindError, client);
+            }
+
+            // ========= 3) Handle PAR / JAR if present =========
+            // NOTE Currently no need to support PAR/JAR for our downstream clients since Arbeidsflate does not support it
+
+            // ========= 4) Persist login_transaction(downstream) =========
+            LoginTransaction tx = await PersistLoginTransaction(request, client, cancellationToken);
+
+            List<CookieInstruction>? cookieInstructions = null;
+
+            // ========= 5) Existing IdP session reuse =========
+            // Is request contains a valid AltinnStudioRuntime cookie there will be a autenticated principal on the request
+            OidcSession? existingSession = null;
+            if (principal.Identity != null && principal.Identity.IsAuthenticated)
+            {
+                Claim? sidClaim = principal.Claims.FirstOrDefault(c => c.Type == "sid");
+                if (sidClaim != null)
+                {
+                    existingSession = await _oidcSessionRepo.GetBySidAsync(sidClaim.Value, cancellationToken);
+                }
+            }
+            else if (!string.IsNullOrEmpty(sessionHandle))
+            {
+                byte[] sessionHandleByte = HashHandle(FromBase64Url(sessionHandle));
+                existingSession = await _oidcSessionRepo.GetBySessionHandleHashAsync(sessionHandleByte, cancellationToken);
+            }
+
+            // Verify that found session and Check if existing session meets ACR requirements from request
+            if (existingSession is not null
+                && existingSession.ExpiresAt.HasValue
+                && _timeProvider.GetUtcNow() < existingSession.ExpiresAt.Value
+                && !AuthenticationHelper.NeedAcrUpgrade(existingSession.Acr, request.AcrValues, _acrValueCatalog))
+            {
+                // There is a valid session with high enough ACR. We just create a code an return straight away. Also slide session expiry.
+                await _oidcSessionRepo.SlideExpiryToAsync(existingSession.Sid, _timeProvider.GetUtcNow().AddMinutes(_generalSettings.JwtValidityMinutes), cancellationToken);
+                string code = await CreateDownstreamAuthorizationCode(null, tx, existingSession, cancellationToken);
+                return AuthorizeResult.RedirectToDownstreamBasedOnReusedSession(
+                    request.RedirectUri, // safe because validated
+                    code,
+                    request.State!, 
+                    cookieInstructions);
+            }
+
+            // ========= 6) Choose upstream and derive upstream params =========
+            (OidcProvider provider, string upstreamState, string upstreamNonce, string upstreamPkceChallenge) = await CreateUpstreamLoginTransaction(request, tx, cancellationToken);
+
+            // ========= 8) Build upstream authorize URL =========
+            // A live (non-expired) session means the user is logged in and the request is an ACR
+            // upgrade — in that case we know the user and must not silently widen the requested
+            // acr_values with selfregistered-email. An expired session row counts as anonymous:
+            // session-handle / Altinn-2-ticket lookups above do not check expiry, so we mirror the
+            // validity check from the session-reuse branch.
+            bool hasLiveSession = existingSession is not null
+                && existingSession.ExpiresAt.HasValue
+                && _timeProvider.GetUtcNow() < existingSession.ExpiresAt.Value;
+
+            Uri? authorizeUrl = await ResolveUpstreamAuthorizeUrl(
+                provider,
+                BuildUpstreamAuthorizeParameters(
+                    provider,
+                    upstreamState,
+                    upstreamNonce,
+                    upstreamPkceChallenge,
+                    request,
+                    hasExistingSession: hasLiveSession),
+                cancellationToken);
+
+            // A failed push leaves nothing to send the user upstream to. The cause is already logged
+            // and counted by the provider service. A registered client's redirect_uri was validated
+            // earlier in this flow, so it is safe to return an OIDC error there with the client's
+            // own state — which is what an OIDC client expects, rather than a bare status code.
+            if (authorizeUrl is null)
+            {
+                return AuthorizeResult.ErrorRedirect(
+                    request.RedirectUri,
+                    "temporarily_unavailable",
+                    "Could not start sign-in with the identity provider.",
+                    request.State,
+                    tx.RequestId);
+            }
+
+            // ========= 9) Return redirect upstream =========
+            return AuthorizeResult.RedirectUpstream(authorizeUrl, upstreamState, tx.RequestId);
+        }
+
+        /// <summary>
+        /// Authorize unregistered client is used for flows where no client_id is sent in the authorize request and the result will only be a JWT token inside a cookie.
+        /// </summary>
+        public async Task<AuthorizeResult> AuthorizeUnregisteredClient(AuthorizeUnregisteredClientRequest request, CancellationToken cancellationToken)
+        {
+            OidcProvider provider = ChooseProvider(request);
+
+            UnregisteredClientRequestCreate unregisteredClientRequestCreate = new()
+            {
+                RequestId = Guid.NewGuid(),
+                ExpiresAt = _timeProvider.GetUtcNow().AddMinutes(10),
+                Issuer = provider.Issuer,
+                GotoUrl = request.GoTo,
+                CreatedByIp = request.ClientIp,
+                UserAgentHash = request.UserAgentHash,
+                CorrelationId = request.CorrelationId
+            };
+
+            await _unregisteredClientRequestRepository.InsertAsync(unregisteredClientRequestCreate, cancellationToken);
+
+            (string upstreamState, string upstreamNonce, string upstreamPkceChallenge) = await CreateUpstreamLoginTransaction(unregisteredClientRequestCreate, provider, cancellationToken);
+
+            Uri? authorizeUrl = await ResolveUpstreamAuthorizeUrl(
+                provider,
+                BuildUpstreamAuthorizeParameters(
+                    provider,
+                    upstreamState,
+                    upstreamNonce,
+                    upstreamPkceChallenge,
+                    request),
+                cancellationToken);
+
+            // Nothing to redirect to. This flow has no registered client to send an OIDC error to,
+            // so it must stop locally rather than bounce the browser somewhere and risk a loop.
+            if (authorizeUrl is null)
+            {
+                return AuthorizeResult.LocalError(502, "temporarily_unavailable", "Could not start sign-in with the identity provider.");
+            }
+
+            // ========= 9) Return redirect upstream =========
+            return AuthorizeResult.RedirectUpstream(authorizeUrl, upstreamState, unregisteredClientRequestCreate.RequestId);
+        }
+
+        /// <inheritdoc/>
+        public async Task<UpstreamCallbackResult> HandleUpstreamCallback(UpstreamCallbackInput input, string? existingSessionHandle, CancellationToken cancellationToken)
+        {
+            // ===== 1) Validate input + load upstream transaction =====
+            (UpstreamCallbackResult? callbackResultUpstreamValidation, UpstreamLoginTransaction? upstreamTx) = await ValidateUpstreamCallbackState(input, cancellationToken);
+            if (callbackResultUpstreamValidation != null)
+            {
+                return callbackResultUpstreamValidation;
+            }
+
+            // Check if there is an existing session to be removed
+            if (existingSessionHandle != null)
+            {
+                byte[] handleHash = HashHandle(FromBase64Url(existingSessionHandle));
+
+                OidcSession? currentSession = await _oidcSessionRepo.GetBySessionHandleHashAsync(handleHash, cancellationToken);
+                if (currentSession != null)
+                {
+                    await _oidcSessionRepo.DeleteBySidAsync(currentSession.Sid, cancellationToken);
+                }
+            }
+
+            Debug.Assert(upstreamTx != null);
+
+            int updated = await _upstreamLoginTxRepo.SetCallbackSuccessAsync(
+                upstreamTx.UpstreamRequestId,
+                input.Code!,
+                _timeProvider.GetUtcNow(),
+                cancellationToken);
+            if (updated == 0)
+            {
+                return new UpstreamCallbackResult
+                {
+                    Kind = UpstreamCallbackResultKind.LocalError,
+                    StatusCode = 409,
+                    LocalErrorMessage = "Upstream transaction no longer accepts callbacks."
+                };
+            }
+
+            // ===== 2) Exchange upstream code for upstream tokens =====
+            OidcProvider provider = ChooseProviderByKey(upstreamTx.Provider);
+            UserAuthenticationModel? userIdenity = await ExtractUserIdentityFromUpstream(input, upstreamTx, provider, cancellationToken);
+            if (userIdenity is null)
+            {
+                // The upstream token call was refused/unreachable, or its tokens did not validate.
+                return await BuildUpstreamIdentityFailedResult(upstreamTx, cancellationToken);
+            }
+
+            UserAuthenticationModel? identifiedUser = await IdentifyOrCreateAltinnUser(userIdenity, provider, cancellationToken);
+            if (identifiedUser is null)
+            {
+                // Either self-identified provisioning (via register) failed, or the upstream token
+                // carried no identifier we could resolve to an Altinn user. Either way, do not
+                // continue and create a session from an incomplete identity (missing
+                // UserID/PartyID/PartyUuid). IdentifyOrCreateAltinnUser has logged which.
+                return new UpstreamCallbackResult
+                {
+                    Kind = UpstreamCallbackResultKind.LocalError,
+                    StatusCode = 500,
+                    LocalErrorMessage = "Could not establish an Altinn identity for the user; sign-in cannot complete."
+                };
+            }
+
+            userIdenity = identifiedUser;
+            AddLocalScopes(userIdenity);
+
+            // 3. Create or refresh Altinn session session
+            (OidcSession session, string sessionHandle) = await CreateOrUpdateOidcSession(upstreamTx, userIdenity, cancellationToken);
+
+            string cookieToken = await _tokenService.CreateCookieToken(session, cancellationToken);
+
+            int partyId = userIdenity.PartyID.HasValue ? userIdenity.PartyID.Value : 0;
+            Guid partyUuid = userIdenity.PartyUuid.HasValue ? userIdenity.PartyUuid.Value : Guid.Empty;
+
+            if (userIdenity.PreSelectedPartyId.HasValue && userIdenity.PreSelectedPartyId.Value != partyId 
+                && userIdenity.PreselectedPartyUuid.HasValue && userIdenity.PreselectedPartyUuid.Value != partyUuid)
+            {
+                partyId = userIdenity.PreSelectedPartyId.Value;
+                partyUuid = userIdenity.PreselectedPartyUuid.Value;
+            }
+
+            CookieInstruction altinnPartyCookie = new()
+            {
+                Name = _generalSettings.AltinnPartyCookieName,
+                Value = partyId.ToString(),
+                HttpOnly = false,
+                Secure = true,
+                Path = "/",
+                SameSite = SameSiteMode.Lax,
+                Domain = _generalSettings.HostName,
+            };
+
+            CookieInstruction altinnPartyUuidCookie = new()
+            {
+                Name = _generalSettings.AltinnPartyUuidCookieName,
+                Value = partyUuid.ToString(),
+                HttpOnly = false,
+                Secure = true,
+                Path = "/",
+                SameSite = SameSiteMode.Lax,
+                Domain = _generalSettings.HostName,
+            };
+
+            CookieInstruction altinnStudioRuntime = new()
+            {
+                Name = _generalSettings.JwtCookieName,
+                Value = cookieToken,
+                HttpOnly = true,
+                Secure = true,
+                Path = "/",
+                SameSite = SameSiteMode.Lax,
+                Domain = _generalSettings.HostName,
+            };
+
+            CookieInstruction altinnSessionCookie = new()
+            {
+                Name = _generalSettings.AltinnSessionCookieName,
+                Value = sessionHandle,
+                HttpOnly = true,
+                Secure = true,
+                Path = "/",
+                SameSite = SameSiteMode.Lax,
+                Domain = _generalSettings.HostName,
+            };
+
+            await _eventLog.CreateAuthenticationEventAsync(_featureManager, cookieToken, AuthenticationEventType.Authenticate, input.ClientIp);
+
+            UpstreamCallbackResult? upstreamCallbackResult = null;
+
+            // TODO How to handle first time login with epost bruker from ID porten if we gonna ask them to connect to existing self identified user.
+            if (upstreamTx.RequestId != null)
+            {
+                // 4) Load downstream (original) transaction to get validated redirect_uri & original state =====
+                (UpstreamCallbackResult? downStreamValidationResult, LoginTransaction? loginTx) = await ValidateDownstreamCallbackState(input, upstreamTx, cancellationToken);
+                if (downStreamValidationResult != null)
+                {
+                    return downStreamValidationResult;
+                }
+
+                Debug.Assert(loginTx != null);
+
+                // 5) Issue downstream authorization code
+                string authCode = await CreateDownstreamAuthorizationCode(upstreamTx, loginTx, session, cancellationToken);
+                upstreamCallbackResult = new UpstreamCallbackResult
+                {
+                    Kind = UpstreamCallbackResultKind.RedirectToClient,
+                    ClientRedirectUri = loginTx!.RedirectUri,
+                    DownstreamCode = authCode,
+                    ClientState = loginTx.State,
+                    Cookies = [altinnStudioRuntime, altinnSessionCookie, altinnPartyCookie, altinnPartyUuidCookie]
+                };
+            }
+            else if (upstreamTx.UnregisteredClientRequestId != null)
+            {
+                UnregisteredClientRequest? unregisteredClientRequest = await _unregisteredClientRequestRepository.GetByRequestIdAsync(upstreamTx.UnregisteredClientRequestId.Value, cancellationToken);
+                Debug.Assert(unregisteredClientRequest != null);
+                upstreamCallbackResult = new UpstreamCallbackResult
+                {
+                    Kind = UpstreamCallbackResultKind.RedirectToGoTo,
+                    ClientRedirectUri = new Uri(unregisteredClientRequest.GotoUrl),
+                    DownstreamCode = null,
+                    ClientState = null,
+                    Cookies = [altinnStudioRuntime, altinnSessionCookie, altinnPartyCookie, altinnPartyUuidCookie]
+                };
+            }
+            
+            Debug.Assert(upstreamCallbackResult != null);
+
+            // 6) Mark upstream transaction as completed
+            await MarkUpstreamTokenExchanged(upstreamTx, userIdenity, cancellationToken);
+
+            // 7 Create Session cookie for the user and AltinnStudio runtime cookie with JWT
+
+            // 8) Redirect back to the client with code + original state
+            return upstreamCallbackResult;
+        }
+
+        /// <summary>
+        /// Handles refresh of session basded on claims principal
+        /// -
+        /// </summary>
+        public async Task<OidcSession?> HandleSessionRefresh(ClaimsPrincipal principal, CancellationToken cancellationToken)
+        {
+            Claim? sidClaim = principal.Claims.FirstOrDefault(c => c.Type == "sid");
+            Claim? scopeClaim = principal.Claims.FirstOrDefault(c => c.Type == "scope");
+
+            if (sidClaim == null)
+            {
+                return null;
+            }
+
+            if (scopeClaim != null)
+            {
+                var scopes = scopeClaim.Value.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+                if (!scopes.Contains("altinn:portal/enduser"))
+                {
+                    // Do not refresh session if altinn:portal/enduser is not requested. End user system scenario with exchanged idporten token
+                    return null;
+                }
+            }
+
+            await _oidcSessionRepo.SlideExpiryToAsync(sidClaim.Value, _timeProvider.GetUtcNow().AddMinutes(_generalSettings.JwtValidityMinutes), cancellationToken);
+            var session = await _oidcSessionRepo.GetBySidAsync(sidClaim.Value, cancellationToken);
+            if (session is null)
+            {
+                throw new InvalidOperationException("No valid session found for sid");
+            }
+            
+            return session;
+        }
+
+        /// <summary>
+        /// Ends an OIDC session based on the provided input.
+        /// </summary>
+        public async Task<EndSessionResult> EndSessionAsync(EndSessionInput input, CancellationToken cancellationToken)
+        {
+            ArgumentNullException.ThrowIfNull(input);
+
+            // 1) Resolve sid and (optionally) client_id from id_token_hint
+            string? cookieSid = input.User?.Claims?.FirstOrDefault(c => c.Type == "sid")?.Value;
+            string? hintClientId = null;
+            string? hintSid = null;
+
+            if (!string.IsNullOrWhiteSpace(input.IdTokenHint))
+            {
+                JwtSecurityTokenHandler handler = new();
+                if (handler.CanReadToken(input.IdTokenHint))
+                {
+                    JwtSecurityToken raw = handler.ReadJwtToken(input.IdTokenHint);
+                    try
+                    {
+                        OidcProvider provider = ChooseProviderByIssuer(raw.Issuer);
+                        JwtSecurityToken validated = await _upstreamTokenValidator.ValidateTokenAsync(input.IdTokenHint, provider, UpstreamTokenKind.IdToken, nonce: null, cancellationToken);
+                        hintClientId = validated.Audiences?.FirstOrDefault();
+                        hintSid = validated.Claims.FirstOrDefault(c => c.Type == "sid")?.Value;
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogWarning(ex, "Invalid id_token_hint presented to end_session endpoint.");
+                    }
+                }
+            }
+
+            string? sid = cookieSid ?? hintSid;
+
+            if (string.IsNullOrWhiteSpace(sid))
+            {
+                _logger.LogDebug("EndSession: no sid from cookie or id_token_hint; returning cookie delete only.");
+                List<CookieInstruction> noSidCookies = new()
+                {
+                    new CookieInstruction
+                    {
+                        Name = _generalSettings.JwtCookieName,
+                        Value = string.Empty,
+                        HttpOnly = true,
+                        Secure = true,
+                        Path = "/",
+                        SameSite = SameSiteMode.Lax,
+                        Expires = DateTimeOffset.UnixEpoch,
+                        Domain = _generalSettings.HostName,
+                    },
+                    new CookieInstruction
+                    {
+                        Name = _generalSettings.AltinnSessionCookieName,
+                        Value = string.Empty,
+                        HttpOnly = true,
+                        Secure = true,
+                        Path = "/",
+                        SameSite = SameSiteMode.Lax,
+                        Expires = DateTimeOffset.UnixEpoch,
+                        Domain = _generalSettings.HostName,
+                    }
+                };
+
+                return new EndSessionResult
+                {
+                    RedirectUri = new Uri(_generalSettings.BaseUrl),
+                    State = input.State,
+                    Cookies = noSidCookies
+                };
+            }
+
+            // 2) Validate post_logout_redirect_uri (if provided and if we know the client from the hint)
+            // TODO: We need to discuss if we need to support this. What about apps running outside Altinn. 
+            Uri? redirect = null;
+            if (input.PostLogoutRedirectUri is not null && !string.IsNullOrWhiteSpace(hintClientId))
+            {
+                OidcClient? client = await _oidcServerClientRepository.GetClientAsync(hintClientId!, cancellationToken);
+                if (client?.RedirectUris?.Count > 0 &&
+                    client.RedirectUris.Contains(input.PostLogoutRedirectUri))
+                {
+                    // Append state if any
+                    UriBuilder ub = new(input.PostLogoutRedirectUri);
+                    if (!string.IsNullOrWhiteSpace(input.State))
+                    {
+                        System.Collections.Specialized.NameValueCollection q = System.Web.HttpUtility.ParseQueryString(ub.Query);
+                        q["state"] = input.State;
+                        ub.Query = q.ToString()!;
+                    }
+
+                    redirect = ub.Uri;
+                }
+
+                // else: ignore invalid redirect; return OP page
+            }
+
+            OidcSession? oidcSession = await _oidcSessionRepo.GetBySidAsync(sid!, cancellationToken);
+            if (oidcSession != null)
+            {
+                string issuer = oidcSession.UpstreamIssuer;
+                if (issuer.Equals(AuthzConstants.ISSUER_ALTINN_PORTAL, StringComparison.OrdinalIgnoreCase))
+                {
+                    // Session was created based on an Altinn 2 ticket. Altinn 2 is shut down, so logout
+                    // falls back to BaseUrl.
+                    redirect = new Uri(_generalSettings.BaseUrl);
+                }
+                else
+                {
+                    OidcProvider provider = ChooseProviderByIssuer(issuer);
+                    redirect = new Uri(provider.LogoutEndpoint!);
+
+                    // Build logout URL with query parameters
+                    UriBuilder logoutUriBuilder = new(provider.LogoutEndpoint!);
+                    var queryParams = System.Web.HttpUtility.ParseQueryString(logoutUriBuilder.Query);
+                    queryParams["client_id"] = provider.ClientId;
+                    queryParams["post_logout_redirect_uri"] = $"{_generalSettings.PlatformEndpoint.TrimEnd('/')}/authentication/api/v1/logout/handleloggedout"; 
+                    logoutUriBuilder.Query = queryParams.ToString()!;
+                    redirect = logoutUriBuilder.Uri;
+                }
+            }
+
+            // 3) Server-side invalidation for this session id
+            if (!string.IsNullOrWhiteSpace(sid))
+            {
+                // Delete session row
+                await _oidcSessionRepo.DeleteBySidAsync(sid!, cancellationToken);
+
+                // Revoke all refresh tokens for this sid.
+                IReadOnlyList<Guid> families = await _refreshTokenRepo.GetFamiliesByOpSidAsync(sid!, cancellationToken);
+                if (families?.Any() == true)
+                {
+                    foreach (Guid family in families)
+                    {
+                        await _refreshTokenRepo.RevokeFamilyAsync(family, "logout", cancellationToken);
+                    }
+                }
+
+                // Notify downstream clients of logout
+                await NotifyDownstreamClientsOfLogout(sid!, cancellationToken);
+            }
+
+            // 4) Instruct caller to delete the runtime cookie (attributes must match how it was set)
+            CookieInstruction deleteRuntime = new()
+            {
+                Name = _generalSettings.JwtCookieName,
+                Value = string.Empty,
+                HttpOnly = true,
+                Secure = true,
+                Path = "/",
+                SameSite = SameSiteMode.Lax,
+                Expires = DateTimeOffset.UnixEpoch,
+                Domain = _generalSettings.HostName,
+            };
+
+            CookieInstruction deleteSession = new()
+            {
+                Name = _generalSettings.AltinnSessionCookieName,
+                Value = string.Empty,
+                HttpOnly = true,
+                Secure = true,
+                Path = "/",
+                SameSite = SameSiteMode.Lax,
+                Expires = DateTimeOffset.UnixEpoch,
+                Domain = _generalSettings.HostName,
+            };
+            
+            List<CookieInstruction> finalCookies = new() { deleteRuntime, deleteSession };
+
+            return new EndSessionResult
+            {
+                RedirectUri = redirect,
+                State = input.State,
+                Cookies = finalCookies
+            };
+        }
+
+        /// <summary>
+        /// Handles upstream front-channel logout requests.
+        /// </summary>
+        public async Task<UpstreamFrontChannelLogoutResult> HandleUpstreamFrontChannelLogoutAsync(
+    UpstreamFrontChannelLogoutInput upstreamFrontChannelLogoutInput,
+    CancellationToken cancellationToken)
+        {
+            ArgumentNullException.ThrowIfNull(upstreamFrontChannelLogoutInput);
+
+            // 1) Validate issuer against configured upstreams
+            // Accept either exact Issuer URL or configured key, depending on what the IdP sends.
+            var provider = _oidcProviderSettings.Values.FirstOrDefault(p =>
+                string.Equals(p.Issuer, upstreamFrontChannelLogoutInput.Issuer, StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(p.IssuerKey, upstreamFrontChannelLogoutInput.Issuer, StringComparison.OrdinalIgnoreCase));
+
+            if (provider is null)
+            {
+                _logger.LogWarning("Upstream front-channel logout ignored: unknown issuer {Issuer}", upstreamFrontChannelLogoutInput.Issuer);
+                return new UpstreamFrontChannelLogoutResult { TerminatedSessions = 0 };
+            }
+
+            // 2) Find all local sessions tied to this upstream (issuer + upstream sid)
+            // We fetch SIDs first (for revocation + cookie comparison), then delete.
+            string[] localSids = await _oidcSessionRepo.GetSidsByUpstreamSessionSidAsync(provider.Issuer, upstreamFrontChannelLogoutInput.UpstreamSid, cancellationToken);
+
+            if (localSids.Length == 0)
+            {
+                _logger.LogInformation("Upstream front-channel logout: no local sessions for issuer={Issuer}, sid={Sid}", provider.Issuer, upstreamFrontChannelLogoutInput.UpstreamSid);
+                return new UpstreamFrontChannelLogoutResult { TerminatedSessions = 0 };
+            }
+
+            // 3) Delete sessions (idempotent)
+            int deleted = await _oidcSessionRepo.DeleteByUpstreamSessionSidAsync(provider.Issuer, upstreamFrontChannelLogoutInput.UpstreamSid, cancellationToken);
+
+            // 4) Revoke refresh tokens / invalidate codes for those SIDs (if you have repos)
+            foreach (var sid in localSids)
+            {
+                IReadOnlyList<Guid> families = await _refreshTokenRepo.GetFamiliesByOpSidAsync(sid, cancellationToken);
+                
+                foreach (Guid familyGuid in families)
+                {
+                    await _refreshTokenRepo.RevokeFamilyAsync(familyGuid, "frontchannel_logout", cancellationToken);
+                }
+
+                await NotifyDownstreamClientsOfLogout(sid, cancellationToken);
+            }
+
+            // 5) If this very browser has a cookie principal matching any of these SIDs, clear cookie (best-effort)
+            string? principalSid = upstreamFrontChannelLogoutInput.User?.Claims?.FirstOrDefault(c => c.Type == "sid")?.Value;
+            List<CookieInstruction> cookies = [];
+            if (!string.IsNullOrEmpty(principalSid) && localSids.Contains(principalSid, StringComparer.Ordinal))
+            {
+                cookies.Add(new CookieInstruction
+                {
+                    Name = _generalSettings.JwtCookieName,
+                    Value = string.Empty,
+                    HttpOnly = true,
+                    Secure = true,
+                    Path = "/",
+                    SameSite = SameSiteMode.Lax,
+                    Expires = DateTimeOffset.UnixEpoch,
+                    Domain = _generalSettings.HostName,
+                });
+            }
+
+            return new UpstreamFrontChannelLogoutResult
+            {
+                TerminatedSessions = deleted,
+                Cookies = cookies
+            };
+        }
+
+        /// <summary>
+        /// Handles the authentication process based on the provided session input.
+        /// </summary>
+        public async Task<AuthenticateFromSessionResult> HandleAuthenticateFromSessionResult(AuthenticateFromSessionInput sessionInput, CancellationToken cancellationToken)
+        {
+            byte[] handleHash = HashHandle(FromBase64Url(sessionInput.SessionHandle));
+
+            // Try to load session by handle
+            OidcSession? oidcSession = await _oidcSessionRepo.GetBySessionHandleHashAsync(handleHash, cancellationToken);
+            if (oidcSession is not null
+                  && oidcSession.ExpiresAt.HasValue
+                  && oidcSession.ExpiresAt.Value > _timeProvider.GetUtcNow())
+            { 
+                string token = await _tokenService.CreateCookieToken(oidcSession, cancellationToken);
+                CookieInstruction cookieInstruction
+                    = new()
+                {
+                    Name = _generalSettings.JwtCookieName,
+                    Value = token,
+                    HttpOnly = true,
+                    Secure = true,
+                    Path = "/",
+                    SameSite = SameSiteMode.Lax,
+                    Domain = _generalSettings.HostName,
+                };
+
+                await _oidcSessionRepo.SlideExpiryToAsync(oidcSession.Sid, _timeProvider.GetUtcNow().AddMinutes(_generalSettings.JwtValidityMinutes), cancellationToken);
+                return new AuthenticateFromSessionResult
+                {
+                    Kind = AuthenticateFromSessionResultKind.Success,
+                    Cookies = [cookieInstruction],
+                    Acr = oidcSession.Acr
+                };
+            }
+
+            return new AuthenticateFromSessionResult()
+            {
+                Kind = AuthenticateFromSessionResultKind.NoValidSession
+            };
+        }
+
+        private void AddLocalScopes(UserAuthenticationModel userAuthenticationModel)
+        {
+            string[] localScopes = _generalSettings.DefaultPortalScopes.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+            if (userAuthenticationModel.Scope is null)
+            {
+                userAuthenticationModel.Scope = string.Join(' ', localScopes);
+            }
+            else
+            {
+                HashSet<string> scopes = userAuthenticationModel.Scope.Split(' ', StringSplitOptions.RemoveEmptyEntries).ToHashSet(StringComparer.Ordinal);
+                foreach (string s in localScopes)
+                {
+                    scopes.Add(s);
+                }
+
+                userAuthenticationModel.Scope = string.Join(' ', scopes);
+            }
+        }
+
+        private async Task MarkUpstreamTokenExchanged(UpstreamLoginTransaction upstreamTx, UserAuthenticationModel userIdenity, CancellationToken cancellationToken)
+        {
+            await _upstreamLoginTxRepo.MarkTokenExchangedAsync(
+                upstreamTx.UpstreamRequestId,
+                issuer: userIdenity.TokenIssuer!,
+                sub: userIdenity.TokenSubject!,
+                acr: userIdenity.Acr,
+                authTime: userIdenity.AuthTime,
+                idTokenJti: userIdenity.Jti,
+                upstreamSid: userIdenity.Sid,
+                cancellationToken: cancellationToken);
+        }
+
+        /// <summary>
+        /// Redeems the upstream authorization code and turns the resulting tokens into an identity.
+        /// Returns <c>null</c> when the upstream refused or could not serve the token request, or when
+        /// the tokens it returned did not validate. Both causes are logged and counted further down
+        /// (<c>altinn.authentication.oidc.upstream_token_exchange</c> and
+        /// <c>…upstream_token_validation</c>); the caller only decides what the user sees.
+        /// </summary>
+        private async Task<UserAuthenticationModel?> ExtractUserIdentityFromUpstream(UpstreamCallbackInput input, UpstreamLoginTransaction upstreamTx, OidcProvider provider, CancellationToken cancellationToken)
+        {
+            OidcCodeResponse? codeReponse = await _oidcProvider.GetTokens(input.Code!, provider, upstreamTx.UpstreamRedirectUri.ToString(), upstreamTx.CodeVerifier, cancellationToken);
+            if (codeReponse is null)
+            {
+                return null;
+            }
+
+            try
+            {
+                JwtSecurityToken idToken = await _upstreamTokenValidator.ValidateTokenAsync(codeReponse.IdToken, provider, UpstreamTokenKind.IdToken, upstreamTx.Nonce, cancellationToken);
+
+                // The access token is the API's to inspect, not ours. HelseID states the client
+                // must not read or validate it, and treats it as opaque — it happens to be a JWT
+                // today, which is precisely why depending on that is fragile: a DPoP-bound or
+                // reformatted token would break a client that parses it.
+                JwtSecurityToken? accessToken = provider.TreatAccessTokenAsOpaque
+                    ? null
+                    : await _upstreamTokenValidator.ValidateTokenAsync(codeReponse.AccessToken, provider, UpstreamTokenKind.AccessToken, nonce: null, cancellationToken);
+
+                UserAuthenticationModel userIdenity = AuthenticationHelper.GetUserFromToken(idToken, provider, accessToken, _logger);
+
+                // Granted scopes come from the token response rather than the access token's
+                // contents. The response is the authoritative statement of what was granted, and
+                // it is available whether or not the token can be read.
+                if (provider.TreatAccessTokenAsOpaque)
+                {
+                    if (!string.IsNullOrWhiteSpace(codeReponse.Scope))
+                    {
+                        userIdenity.Scope = codeReponse.Scope;
+                    }
+                    else
+                    {
+                        // Without the access token to fall back on there is no other source, so the
+                        // session ends up with no scopes. Say so once rather than leave someone to
+                        // work out why an otherwise successful sign-in granted nothing.
+                        _logger.LogWarning(
+                            "Provider {Provider} returned no 'scope' in the token response, and its access token is treated as opaque. The session will carry no scopes.",
+                            provider.IssuerKey);
+                    }
+                }
+
+                return userIdenity;
+            }
+            catch (Exception ex) when (ex is SecurityTokenException or ArgumentException or InvalidOperationException or HttpRequestException)
+            {
+                // Fail closed: no session is created. Surfacing this as an OIDC error beats letting it
+                // escape as an unhandled 500, which is what used to happen.
+                _logger.LogError(ex, "Validation of upstream tokens from {Provider} failed", provider.IssuerKey ?? provider.Issuer);
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// Builds the callback result for a sign-in that could not be completed because the upstream
+        /// token exchange or the upstream token validation failed. Prefers an OIDC error redirect back
+        /// to the downstream client, so the user lands on a real error page rather than an unhandled 500.
+        /// </summary>
+        private async Task<UpstreamCallbackResult> BuildUpstreamIdentityFailedResult(UpstreamLoginTransaction upstreamTx, CancellationToken cancellationToken)
+        {
+            const string ErrorDescription = "Could not complete sign-in with the upstream identity provider.";
+
+            if (upstreamTx.RequestId is not null)
+            {
+                LoginTransaction? loginTx = await _loginTxRepo.GetByRequestIdAsync(upstreamTx.RequestId.Value, cancellationToken);
+
+                // Safety: we only ever redirect to the redirect_uri we validated on /authorize.
+                if (loginTx?.RedirectUri is not null && loginTx.RedirectUri.IsAbsoluteUri)
+                {
+                    return new UpstreamCallbackResult
+                    {
+                        Kind = UpstreamCallbackResultKind.ErrorRedirectToClient,
+                        ClientRedirectUri = loginTx.RedirectUri,
+                        ClientState = loginTx.State,
+                        Error = "temporarily_unavailable",
+                        ErrorDescription = ErrorDescription
+                    };
+                }
+            }
+
+            // Unregistered-client (goto) flow, or no usable redirect_uri. Bouncing the user back to the
+            // goto URL without a session would send them straight into another login attempt, so stop here.
+            return new UpstreamCallbackResult
+            {
+                Kind = UpstreamCallbackResultKind.LocalError,
+                StatusCode = 502,
+                LocalErrorMessage = ErrorDescription
+            };
+        }
+
+        /// <summary>
+        /// Validates the downstream callback state by loading the original login transaction.
+        /// </summary>
+        private async Task<(UpstreamCallbackResult? CallbackResultdownstreamValidation, LoginTransaction? LoginTx)> ValidateDownstreamCallbackState(UpstreamCallbackInput input, UpstreamLoginTransaction upstreamTx, CancellationToken cancellationToken)
+        {
+            LoginTransaction? loginTx = await _loginTxRepo.GetByRequestIdAsync(upstreamTx.RequestId!.Value, cancellationToken);
+            if (loginTx is null)
+            {
+                return (CallbackResultdownstreamValidation: new UpstreamCallbackResult
+                {
+                    Kind = UpstreamCallbackResultKind.LocalError,
+                    StatusCode = 500,
+                    LocalErrorMessage = "Downstream transaction not found."
+                }, null);
+            }
+
+            // Safety: We only ever redirect to the redirect_uri we validated on /authorize
+            if (loginTx.RedirectUri is null || !loginTx.RedirectUri.IsAbsoluteUri)
+            {
+                return (CallbackResultdownstreamValidation: new UpstreamCallbackResult
+                {
+                    Kind = UpstreamCallbackResultKind.LocalError,
+                    StatusCode = 500,
+                    LocalErrorMessage = "Stored redirect_uri is invalid."
+                }, loginTx);
+            }
+
+            // ===== 3) If upstream returned an error, map it back to client immediately =====
+            if (!string.IsNullOrWhiteSpace(input.Error))
+            {
+                return (CallbackResultdownstreamValidation: new UpstreamCallbackResult
+                {
+                    Kind = UpstreamCallbackResultKind.ErrorRedirectToClient,
+                    ClientRedirectUri = loginTx.RedirectUri,
+                    ClientState = loginTx.State,
+                    Error = input.Error,
+                    ErrorDescription = input.ErrorDescription
+                }, loginTx);
+            }
+
+            // ===== 4) Require 'code' on success path =====
+            if (string.IsNullOrWhiteSpace(input.Code))
+            {
+                // Missing code → client-facing error
+                return (CallbackResultdownstreamValidation: new UpstreamCallbackResult
+                {
+                    Kind = UpstreamCallbackResultKind.ErrorRedirectToClient,
+                    ClientRedirectUri = loginTx.RedirectUri,
+                    ClientState = loginTx.State,
+                    Error = "access_denied",
+                    ErrorDescription = "Missing authorization code in upstream callback."
+                }, loginTx);
+            }
+
+            return (CallbackResultdownstreamValidation: null, LoginTx: loginTx);
+        }
+
+        /// <summary>
+        /// Validates the upstream callback state by loading the upstream login transaction.
+        /// </summary>
+        private async Task<(UpstreamCallbackResult? CallbackResult, UpstreamLoginTransaction? UpstreamTranscation)> ValidateUpstreamCallbackState(UpstreamCallbackInput input, CancellationToken cancellationToken)
+        {
+            // ===== 0) Guard / basic semantics =====
+            ArgumentNullException.ThrowIfNull(input);
+
+            // We expect either success (code+state) or error(+state). State is required in both.
+            if (string.IsNullOrWhiteSpace(input.State))
+            {
+                return (CallbackResult: new UpstreamCallbackResult
+                {
+                    Kind = UpstreamCallbackResultKind.LocalError,
+                    StatusCode = 400,
+                    LocalErrorMessage = "Missing 'state' in upstream callback."
+                }, UpstreamTranscation: null);
+            }
+
+            // ===== 1) Load upstream login transaction by state =====
+            UpstreamLoginTransaction? upstreamTx = await _upstreamLoginTxRepo.GetForCallbackByStateAsync(input.State, cancellationToken);
+            if (upstreamTx is null)
+            {
+                // We don't know where to redirect safely; local error.
+                return (CallbackResult: new UpstreamCallbackResult
+                {
+                    Kind = UpstreamCallbackResultKind.LocalError,
+                    StatusCode = 400,
+                    LocalErrorMessage = "Unknown or expired upstream state."
+                }, UpstreamTranscation: upstreamTx);
+            }
+
+            // Quickly reject non-pending or expired
+            if (!string.Equals(upstreamTx.Status, "pending", StringComparison.OrdinalIgnoreCase))
+            {
+                return (CallbackResult: new UpstreamCallbackResult
+                {
+                    Kind = UpstreamCallbackResultKind.LocalError,
+                    StatusCode = 400,
+                    LocalErrorMessage = "Upstream transaction is not pending."
+                }, upstreamTx);
+            }
+
+            if (upstreamTx.ExpiresAt <= _timeProvider.GetUtcNow())
+            {
+                return (CallbackResult: new UpstreamCallbackResult
+                {
+                    Kind = UpstreamCallbackResultKind.LocalError,
+                    StatusCode = 400,
+                    LocalErrorMessage = "Upstream transaction has expired."
+                }, upstreamTx);
+            }
+
+            // ===== 4) Validate the issuer the response claims to come from (RFC 9207) =====
+            // The provider is taken from the transaction, never from the callback: letting the
+            // parameter select the provider would defeat the point. Checked before the code is
+            // exchanged and before any session is touched, and for error responses too — a
+            // mix-up attack can just as well replay an error.
+            UpstreamCallbackResult? issuerResult = await ValidateCallbackIssuer(input, upstreamTx, cancellationToken);
+            if (issuerResult is not null)
+            {
+                return (CallbackResult: issuerResult, UpstreamTranscation: upstreamTx);
+            }
+
+            return (CallbackResult: null, UpstreamTranscation: upstreamTx);
+        }
+
+        /// <summary>
+        /// Checks the callback's <c>iss</c> against the provider recorded on the transaction, when
+        /// that provider is configured to require it.
+        /// </summary>
+        /// <remarks>
+        /// Opt-in per provider: a provider that does not send the parameter would otherwise fail
+        /// every sign-in. Where it is required, both a missing and a mismatched value are refused,
+        /// and no trailing-slash normalisation applies.
+        /// </remarks>
+        private async Task<UpstreamCallbackResult?> ValidateCallbackIssuer(UpstreamCallbackInput input, UpstreamLoginTransaction upstreamTx, CancellationToken cancellationToken)
+        {
+            // A transaction naming a provider that is no longer configured cannot be checked
+            // against anything. Refuse rather than treat it as "no check configured": for a
+            // mix-up defence, an unresolvable provider is the wrong direction to fail in.
+            if (!_oidcProviderSettings.TryGetValue(upstreamTx.Provider, out OidcProvider? provider))
+            {
+                _logger.LogError(
+                    "Upstream callback names provider {Provider}, which is not in the current configuration. Refusing the callback.",
+                    upstreamTx.Provider);
+
+                return new UpstreamCallbackResult
+                {
+                    Kind = UpstreamCallbackResultKind.LocalError,
+                    StatusCode = 400,
+                    LocalErrorMessage = "The identity provider the sign-in was started with is no longer configured."
+                };
+            }
+
+            if (!provider.ValidateCallbackIssuer)
+            {
+                return null;
+            }
+
+            // The value to compare against comes from the provider's own discovery document, not
+            // from configuration alone. Configuration says what we believe the issuer to be;
+            // discovery is what the provider asserts. A drift between the two is itself a reason
+            // to stop, and is otherwise invisible — the signing-key fetch reads discovery but never
+            // checks its issuer.
+            string? validatedIssuer = await GetValidatedIssuer(provider, cancellationToken);
+            if (validatedIssuer is null)
+            {
+                return new UpstreamCallbackResult
+                {
+                    Kind = UpstreamCallbackResultKind.LocalError,
+                    StatusCode = 502,
+                    LocalErrorMessage = "Could not establish the identity provider's issuer from its discovery document."
+                };
+            }
+
+            if (string.Equals(input.Iss, validatedIssuer, StringComparison.Ordinal))
+            {
+                return null;
+            }
+
+            // input.Iss is attacker-controlled, so it is sanitised before it reaches the log:
+            // an unescaped newline would let a caller forge log entries.
+            _logger.LogWarning(
+                "Upstream callback for provider {Provider} carried an iss that does not match the expected '{Expected}'. Received: '{Actual}'",
+                upstreamTx.Provider,
+                validatedIssuer,
+                SanitiseForLog(input.Iss));
+
+            return new UpstreamCallbackResult
+            {
+                Kind = UpstreamCallbackResultKind.LocalError,
+                StatusCode = 400,
+                LocalErrorMessage = "Upstream callback issuer did not match the provider the sign-in was started with."
+            };
+        }
+
+        /// <summary>
+        /// The provider's issuer as asserted by its own discovery document, once it has been
+        /// confirmed to match what we have configured.
+        /// </summary>
+        /// <remarks>
+        /// Returns <c>null</c> when discovery is unreachable, states no issuer, or states one that
+        /// disagrees with configuration. All three mean we cannot say what the issuer is, and a
+        /// check we cannot perform must not pass. The document is cached by
+        /// <see cref="ISigningKeysRetriever"/>, so this is not a fetch per callback.
+        /// </remarks>
+        private async Task<string?> GetValidatedIssuer(OidcProvider provider, CancellationToken cancellationToken)
+        {
+            if (string.IsNullOrWhiteSpace(provider.WellKnownConfigEndpoint))
+            {
+                _logger.LogError(
+                    "Provider {Provider} requires callback issuer validation but has no WellKnownConfigEndpoint configured.",
+                    provider.IssuerKey);
+                return null;
+            }
+
+            string? discoveredIssuer;
+            try
+            {
+                discoveredIssuer = await _signingKeysRetriever.GetIssuer(provider.WellKnownConfigEndpoint, cancellationToken);
+            }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+            {
+                throw;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Could not read discovery metadata for provider {Provider}", provider.IssuerKey);
+                return null;
+            }
+
+            if (string.IsNullOrWhiteSpace(discoveredIssuer))
+            {
+                _logger.LogError("Discovery metadata for provider {Provider} states no issuer.", provider.IssuerKey);
+                return null;
+            }
+
+            if (!string.Equals(discoveredIssuer, provider.Issuer, StringComparison.Ordinal))
+            {
+                _logger.LogError(
+                    "Discovery metadata for provider {Provider} states issuer '{Discovered}', but configuration says '{Configured}'.",
+                    provider.IssuerKey,
+                    discoveredIssuer,
+                    provider.Issuer);
+                return null;
+            }
+
+            return discoveredIssuer;
+        }
+
+        /// <summary>
+        /// Makes an attacker-controlled value safe to put in a log line: strips the characters that
+        /// would let a caller forge additional entries, and caps the length.
+        /// </summary>
+        private static string SanitiseForLog(string? value)
+        {
+            if (string.IsNullOrEmpty(value))
+            {
+                return string.Empty;
+            }
+
+            string trimmed = value.Length > 200 ? value[..200] + "..." : value;
+            return trimmed.Replace('\r', ' ').Replace('\n', ' ');
+        }
+
+        private async Task<(OidcProvider Provider, string UpstreamState, string UpstreamNonce, string UpstreamPkceChallenge)> CreateUpstreamLoginTransaction(AuthorizeRequest request, LoginTransaction tx, CancellationToken cancellationToken)
+        {
+            OidcProvider provider = ChooseProvider(request);
+
+            string upstreamState = CryptoHelpers.RandomBase64Url(32);
+            string upstreamNonce = CryptoHelpers.RandomBase64Url(32);
+            string upstreamPkceVerifier = Pkce.RandomPkceVerifier();
+            string upstreamPkceChallenge = Hashing.Sha256Base64Url(upstreamPkceVerifier);
+
+            // ========= 7) Persist login_transaction_upstream =========
+            // NOTE: Store everything you need for callback + token exchange.
+            UpstreamLoginTransactionCreate upstreamCreate = new()
+            {
+                RequestId = tx.RequestId,
+                ExpiresAt = _timeProvider.GetUtcNow().AddMinutes(10),
+               
+                Provider = provider.IssuerKey ?? provider.Issuer, // stable key for routing/ops
+                UpstreamClientId = provider.ClientId,
+
+                UpstreamRedirectUri = BuildUpstreamRedirectUri(),
+
+                State = upstreamState,
+                Nonce = upstreamNonce,
+                Scopes = request.Scopes,
+                AcrValues = request.AcrValues?.Length > 0 ? request.AcrValues : null,
+                Prompts = request.Prompts?.Length > 0 ? request.Prompts : null,
+                UiLocales = request.UiLocales?.Length > 0 ? request.UiLocales : null,
+                MaxAge = request.MaxAge,
+
+                CodeVerifier = upstreamPkceVerifier,
+                CodeChallenge = upstreamPkceChallenge,
+                CodeChallengeMethod = "S256",
+
+                CorrelationId = request.CorrelationId,
+                CreatedByIp = request.ClientIp,
+                UserAgentHash = request.UserAgentHash
+            };
+
+            _ = await _upstreamLoginTxRepo.InsertAsync(upstreamCreate, cancellationToken);
+            return (provider, upstreamState, upstreamNonce, upstreamPkceChallenge);
+        }
+
+        private async Task<(string UpstreamState, string UpstreamNonce, string UpstreamPkceChallenge)> CreateUpstreamLoginTransaction(UnregisteredClientRequestCreate request, OidcProvider provider, CancellationToken cancellationToken)
+        {
+            string upstreamState = CryptoHelpers.RandomBase64Url(32);
+            string upstreamNonce = CryptoHelpers.RandomBase64Url(32);
+            string upstreamPkceVerifier = Pkce.RandomPkceVerifier();
+            string upstreamPkceChallenge = Hashing.Sha256Base64Url(upstreamPkceVerifier);
+
+            // ========= 7) Persist login_transaction_upstream =========
+            // NOTE: Store everything you need for callback + token exchange.
+            UpstreamLoginTransactionCreate upstreamCreate = new()
+            {
+                UnregisteredClientRequestId = request.RequestId, 
+                ExpiresAt = _timeProvider.GetUtcNow().AddMinutes(10),
+
+                Provider = provider.IssuerKey ?? provider.Issuer, // stable key for routing/ops
+                UpstreamClientId = provider.ClientId,
+                UpstreamRedirectUri = BuildUpstreamRedirectUri(),
+
+                State = upstreamState,
+                Nonce = upstreamNonce,
+                Scopes = provider.Scope.Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries),
+
+                CodeVerifier = upstreamPkceVerifier,
+                CodeChallenge = upstreamPkceChallenge,
+                CodeChallengeMethod = "S256",
+
+                CorrelationId = request.CorrelationId,
+                CreatedByIp = request.CreatedByIp,
+                UserAgentHash = request.UserAgentHash
+            };
+
+            _ = await _upstreamLoginTxRepo.InsertAsync(upstreamCreate, cancellationToken);
+            return (upstreamState, upstreamNonce, upstreamPkceChallenge);
+        }
+
+        private Uri BuildUpstreamRedirectUri()
+        {
+            Uri baseUri = new(_generalSettings.PlatformEndpoint);
+            return new Uri(baseUri, "authentication/api/v1/upstream/callback");
+        }
+
+        private async Task<LoginTransaction> PersistLoginTransaction(AuthorizeRequest request, OidcClient client, CancellationToken cancellationToken)
+        {
+            LoginTransactionCreate transaction = new()
+            {
+                ClientId = client.ClientId,
+                RedirectUri = request.RedirectUri!,
+                Scopes = request.Scopes!,
+                State = request.State!,
+                Nonce = request.Nonce!,
+                AcrValues = request.AcrValues,
+                Prompts = request.Prompts,
+                UiLocales = request.UiLocales,
+                MaxAge = request.MaxAge,
+                CodeChallenge = request.CodeChallenge!,
+                CodeChallengeMethod = request.CodeChallengeMethod ?? "S256",
+                RequestUri = request.RequestUri,
+                RequestObjectJwt = request.RequestObject, // if you keep it
+                AuthorizationDetailsJson = null,
+                CreatedByIp = request.ClientIp,                           // captured in controller
+                UserAgentHash = request.UserAgentHash,
+                CorrelationId = request.CorrelationId,
+                ExpiresAt = _timeProvider.GetUtcNow().AddMinutes(10)
+            };
+
+            LoginTransaction tx = await _loginTxRepo.InsertAsync(transaction, cancellationToken);
+            return tx;
+        }
+
+        private async Task<string> CreateDownstreamAuthorizationCode(UpstreamLoginTransaction? upstreamTx, LoginTransaction loginTx, OidcSession session, CancellationToken cancellationToken)
+        {
+            string authCode = CryptoHelpers.RandomBase64Url(32);
+            DateTimeOffset codeTime = _timeProvider.GetUtcNow();
+            DateTimeOffset codeExpires = codeTime.AddSeconds(120);
+
+            await _authorizationCodeRepo.InsertAsync(
+                new AuthorizationCodeCreate
+                {
+                    Code = authCode,
+                    ClientId = loginTx.ClientId,
+                    SubjectId = session.SubjectId, // fallback
+                    ExternalId = session.ExternalId,    
+                    SubjectPartyUuid = session.SubjectPartyUuid,
+                    SubjectPartyId = session.SubjectPartyId,
+                    SubjectUserId = session.SubjectUserId,
+                    SubjectUserName = session.SubjectUserName,
+                    SessionId = session.Sid,
+                    RedirectUri = loginTx.RedirectUri,
+                    Scopes = session.Scopes,
+                    Nonce = loginTx.Nonce,
+                    Acr = session.Acr,
+                    Amr = session.Amr,
+                    AuthTime = session.AuthTime,
+                    CodeChallenge = loginTx.CodeChallenge,
+                    CodeChallengeMethod = loginTx.CodeChallengeMethod ?? "S256",
+                    IssuedAt = codeTime,
+                    ExpiresAt = codeExpires,
+                    CreatedByIp = upstreamTx?.CreatedByIp,
+                    CorrelationId = upstreamTx?.CorrelationId,
+                    ProviderClaims = session.ProviderClaims
+                },
+                cancellationToken);
+            return authCode;
+        }
+
+        /// <summary>
+        /// Creates or updates an OIDC session based on the upstream identity.
+        /// </summary>
+        private async Task<(OidcSession OidcSession, string SessionHandle)> CreateOrUpdateOidcSession(UpstreamLoginTransaction upstreamTx, UserAuthenticationModel userIdenity, CancellationToken cancellationToken)
+        {
+            string[]? scopes = [];
+            if (!string.IsNullOrWhiteSpace(userIdenity.Scope))
+            {
+                scopes = userIdenity.Scope.Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).Distinct(StringComparer.OrdinalIgnoreCase).ToArray();
+            }
+
+            // 1) Generate 256-bit random handle for the cookie
+            byte[] handleBytes = RandomNumberGenerator.GetBytes(32);
+            string sessionHandle = ToBase64Url(handleBytes); // this is what you'll set as the cookie value
+
+            // 2) Hash it for storage (HMAC with server-side pepper)
+            byte[] handleHash = HashHandle(handleBytes);
+
+            string? externalId = null;
+            if (!string.IsNullOrEmpty(userIdenity.SSN))
+            {
+                externalId = $"{AltinnCoreClaimTypes.PersonIdentifier}:{userIdenity.SSN}";
+            }
+            else if (!string.IsNullOrEmpty(userIdenity.Email))
+            {
+                externalId = $"{AltinnCoreClaimTypes.IdPortenEmailPrefix}:{UrnEncoded.Create(userIdenity.Email.ToLowerInvariant()).Encoded}";
+            }
+            else if (!string.IsNullOrEmpty(userIdenity.ExternalIdentity))
+            {
+                externalId = userIdenity.ExternalIdentity;
+            }
+
+            OidcSession session = await _oidcSessionRepo.CreateSession(
+                    new OidcSessionCreate
+                    {
+                        Sid = CryptoHelpers.RandomBase64Url(32),
+                        SessionHandleHash = handleHash, // store hash only
+                        Provider = upstreamTx.Provider,
+                        UpstreamIssuer = userIdenity.TokenIssuer!,
+                        UpstreamSub = userIdenity.TokenSubject!,
+                        SubjectId = $"{AltinnCoreClaimTypes.PartyUUID}:{userIdenity.PartyUuid}",
+                        SubjectPartyUuid = userIdenity.PartyUuid,            // <- Altinn GUID
+                        SubjectPartyId = userIdenity.PartyID,              // <- legacy
+                        SubjectUserId = userIdenity.UserID,
+                        SubjectUserName = userIdenity.Username,  // <- legacy
+                        ExternalId = externalId,
+                        Acr = userIdenity.Acr,
+                        AuthTime = userIdenity.AuthTime,
+                        Amr = userIdenity.Amr,
+                        Scopes = scopes,
+                        ExpiresAt = _timeProvider.GetUtcNow().AddMinutes(_generalSettings.JwtValidityMinutes),
+                        UpstreamSessionSid = userIdenity.Sid,
+                        Now = _timeProvider.GetUtcNow(),
+                        CreatedByIp = upstreamTx.CreatedByIp,
+                        UserAgentHash = upstreamTx.UserAgentHash,
+                        ProviderClaims = userIdenity.ProviderClaims,
+                    },
+                    cancellationToken);
+            return (session, sessionHandle);
+        }
+
+        private static AuthorizeResult Fail(AuthorizeRequest req, AuthorizeValidationError e, OidcClient? oidcClient)
+        {
+            // If we can safely redirect back, do an OIDC error redirect; else local error.
+            return AuthorizeResult.LocalError(400, e.Error, e.Description);
+        }
+
+        private static string ToBase64Url(byte[] bytes) =>
+            WebEncoders.Base64UrlEncode(bytes);
+
+        private static byte[] FromBase64Url(string s) =>
+            WebEncoders.Base64UrlDecode(s);
+
+        private byte[] HashHandle(byte[] handleBytes)
+        {
+            using HMACSHA256 hmac = new(DecodePepper(_generalSettings.OidcRefreshTokenPepper));
+            return hmac.ComputeHash(handleBytes); // 32 bytes
+        }
+
+        private OidcProvider ChooseProvider(AuthorizeRequest req)
+        {
+            // 1) Try map ACR → provider key
+            string? key = GetIdProviderFromAcr(req.AcrValues ?? Array.Empty<string>());
+
+            // 3) Try explicit key first
+            if (!string.IsNullOrEmpty(key) && _oidcProviderSettings.TryGetValue(key, out var selected))
+            {
+                _logger.LogDebug("OIDC upstream provider selected via acr mapping: {ProviderKey}", key);
+                return selected;
+            }
+
+            // 4) Fallback to configured default ('idporten')
+            if (_oidcProviderSettings.TryGetValue(DefaultProviderKey, out var defaultIdp))
+            {
+                _logger.LogDebug("OIDC upstream provider defaulted to 'idporten'.");
+                return defaultIdp;
+            }
+
+            // 5) No match → OIDC-style failure (surface as 'server_error' from /authorize)
+            _logger.LogError(
+                "No default OIDC provider configured. Known providers: {Keys}",
+                string.Join(",", _oidcProviderSettings.Keys));
+            throw new ConfigurationErrorsException("server_error No default OIDC provider configured.");
+        }
+
+        private OidcProvider ChooseProvider(AuthorizeUnregisteredClientRequest req)
+        {
+            if (req.RequestedIss is not null)
+            {
+                foreach (var p in _oidcProviderSettings.Values)
+                {
+                    if (string.Equals(p.Issuer, req.RequestedIss, StringComparison.OrdinalIgnoreCase) ||
+                        string.Equals(p.IssuerKey, req.RequestedIss, StringComparison.OrdinalIgnoreCase))
+                    {
+                        return p;
+                    }
+                }
+            }
+
+            // 1) Try map ACR → provider key
+            string? key = GetIdProviderFromAcr(req.AcrValues ?? Array.Empty<string>());
+
+            // 3) Try explicit key first
+            if (!string.IsNullOrEmpty(key) && _oidcProviderSettings.TryGetValue(key, out var selected))
+            {
+                _logger.LogDebug("OIDC upstream provider selected via acr mapping: {ProviderKey}", key);
+                return selected;
+            }
+
+            // 4) Fallback to configured default ('idporten')
+            if (_oidcProviderSettings.TryGetValue(DefaultProviderKey, out var defaultIdp))
+            {
+                _logger.LogDebug("OIDC upstream provider defaulted to 'idporten'.");
+                return defaultIdp;
+            }
+
+            // 5) No match → OIDC-style failure (surface as 'server_error' from /authorize)
+            _logger.LogError(
+                "No default OIDC provider configured. Known providers: {Keys}",
+                string.Join(",", _oidcProviderSettings.Keys));
+            throw new ConfigurationErrorsException("server_error No default OIDC provider configured.");
+        }
+
+        private OidcProvider ChooseProviderByKey(string? key)
+        {
+            if (!string.IsNullOrWhiteSpace(key) && _oidcProviderSettings.TryGetValue(key, out var selected))
+            {
+                 return selected;
+            }
+
+            throw new ArgumentException("Invalid or unknown provider key.", nameof(key));
+        }
+
+        private OidcProvider ChooseProviderByIssuer(string issuer)
+        {
+            foreach (var p in _oidcProviderSettings.Values)
+            {
+                if (string.Equals(p.Issuer, issuer, StringComparison.OrdinalIgnoreCase))
+                {
+                    return p;
+                }
+            }
+
+            throw new ArgumentException("Invalid or unknown provider issuer.", nameof(issuer));
+        }
+
+        /// <summary>
+        /// Maps requested acr values to the provider that offers them, using the configured
+        /// catalogue. Replaces the previous hardcoded mapping, whose <c>"uidp"</c> branch was in
+        /// fact unreachable: <c>"uidp"</c> was never in the acr allow-list, so a request carrying
+        /// it was rejected before ever reaching provider selection.
+        /// </summary>
+        private string GetIdProviderFromAcr(string[]? acrValues)
+            => _acrValueCatalog.ResolveProviderKey(acrValues) ?? DefaultProviderKey;
+
+        /// <summary>
+        /// The <c>acr_values</c> to send when the client requested no level.
+        /// </summary>
+        /// <remarks>
+        /// Providers that have not opted into configured <see cref="OidcProvider.AuthLevels"/>
+        /// keep the previous hardcoded ID-porten default, so this change is behaviour-preserving
+        /// for them. A provider that declares its own levels gets no ID-porten vocabulary at all
+        /// and must state its default explicitly.
+        /// </remarks>
+        private static string? GetDefaultUpstreamAcrValues(OidcProvider p)
+        {
+            if (!string.IsNullOrWhiteSpace(p.DefaultUpstreamAcrValues))
+            {
+                return p.DefaultUpstreamAcrValues;
+            }
+
+            return p.AuthLevels is { Count: > 0 }
+                ? null
+                : AuthzConstants.CLAIM_ACR_IDPORTEN_EMAIL + " " + AuthzConstants.CLAIM_ACR_IDPORTEN_SUBSTANTIAL;
+        }
+
+        private async Task NotifyDownstreamClientsOfLogout(string sid, CancellationToken cancellationToken)
+        {
+            List<string> clientsPartOfSession = await _authorizationCodeRepo.GetClientsPartOfSession(sid, cancellationToken);
+
+            if (clientsPartOfSession?.Any() == true)
+            {
+                foreach (string clientId in clientsPartOfSession)
+                {
+                    OidcClient? client = await _oidcServerClientRepository.GetClientAsync(clientId, cancellationToken);
+                    if (client?.FrontchannelLogoutUri != null)
+                    {
+                        await _oidcDownstreamLogout.TryLogout(client, sid, _generalSettings.AltinnOidcIssuerUrl, cancellationToken);
+                    }
+                }
+            }
+        }
+
+        /// <summary>
+        /// Turns the authorization parameters into the URL to send the browser to.
+        /// </summary>
+        /// <remarks>
+        /// For a provider configured with a PAR endpoint the parameters are pushed back-channel
+        /// first, and the browser is redirected with only <c>client_id</c> and <c>request_uri</c>.
+        /// Returns <c>null</c> when that push fails, which must abort the sign-in: there is no
+        /// front-channel fallback, because a provider that requires PAR would refuse the request
+        /// anyway, and sending parameters through the browser after failing to push them would
+        /// defeat the reason for pushing them.
+        /// </remarks>
+        private async Task<Uri?> ResolveUpstreamAuthorizeUrl(OidcProvider p, NameValueCollection q, CancellationToken cancellationToken)
+        {
+            if (string.IsNullOrWhiteSpace(p.PushedAuthorizationRequestEndpoint))
+            {
+                return new UriBuilder(p.AuthorizationEndpoint) { Query = q.ToString()! }.Uri;
+            }
+
+            Dictionary<string, string> parameters = [];
+            foreach (string? key in q.AllKeys)
+            {
+                if (key is not null && q[key] is { } value)
+                {
+                    parameters[key] = value;
+                }
+            }
+
+            PushedAuthorizationResponse? pushed = await _oidcProvider.PushAuthorizationRequest(p, parameters, cancellationToken);
+            if (pushed?.RequestUri is null)
+            {
+                return null;
+            }
+
+            // Only these two go in the redirect. Everything else was pushed, which is the point.
+            var front = System.Web.HttpUtility.ParseQueryString(string.Empty);
+            front["client_id"] = p.ClientId;
+            front["request_uri"] = pushed.RequestUri;
+
+            return new UriBuilder(p.AuthorizationEndpoint) { Query = front.ToString()! }.Uri;
+        }
+
+        private NameValueCollection BuildUpstreamAuthorizeParameters(
+                OidcProvider p,
+                string upstreamState,
+                string upstreamNonce,
+                string upstreamCodeChallenge,
+                AuthorizeRequest incoming,
+                bool hasExistingSession)
+        {
+            var q = System.Web.HttpUtility.ParseQueryString(string.Empty);
+            q["response_type"] = string.IsNullOrWhiteSpace(p.ResponseType) ? "code" : p.ResponseType;
+            q["client_id"] = p.ClientId;
+            q["redirect_uri"] = BuildUpstreamRedirectUri().ToString();
+            q["scope"] = string.IsNullOrWhiteSpace(p.Scope) ? "openid" : p.Scope;
+
+            q["state"] = upstreamState;
+            q["nonce"] = upstreamNonce;
+            q["code_challenge"] = upstreamCodeChallenge;
+            q["code_challenge_method"] = "S256";
+
+            // Translate the Altinn-facing acr values into this provider's own vocabulary.
+            // Previously the incoming values were forwarded verbatim, which meant ID-porten's
+            // vocabulary was sent to every provider regardless of whether it understood it.
+            string? upstreamAcr = _acrValueCatalog.GetUpstreamAcrValues(p.IssuerKey, incoming.AcrValues);
+
+            // Only widen acr_values with selfregistered-email when the user is anonymous.
+            // On an ACR upgrade for an already-logged-in user the requested LoA must be sent as-is.
+            // The widening applies only to providers that actually offer that level; it is
+            // ID-porten's concept and is a no-op elsewhere.
+            if (!hasExistingSession && !string.IsNullOrEmpty(upstreamAcr))
+            {
+                string? selfRegistered = _acrValueCatalog.GetUpstreamAcrValues(p.IssuerKey, [AuthzConstants.CLAIM_ACR_IDPORTEN_EMAIL]);
+
+                // Compare token by token rather than by substring: acr_values is a space-separated
+                // list, and a substring test would report a false match for any value that is a
+                // prefix of another.
+                string[] alreadyRequested = upstreamAcr.Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+                if (!string.IsNullOrEmpty(selfRegistered) && !alreadyRequested.Contains(selfRegistered, StringComparer.Ordinal))
+                {
+                    upstreamAcr = selfRegistered + " " + upstreamAcr;
+                }
+            }
+
+            if (!string.IsNullOrEmpty(upstreamAcr))
+            {
+                q["acr_values"] = upstreamAcr;
+            }
+
+            if (incoming.Prompts is { Length: > 0 })
+            {
+                q["prompt"] = string.Join(' ', incoming.Prompts);
+            }
+
+            if (incoming.UiLocales is { Length: > 0 })
+            {
+                q["ui_locales"] = string.Join(' ', incoming.UiLocales);
+            }
+
+            if (incoming.MaxAge is not null)
+            {
+                q["max_age"] = incoming.MaxAge.Value.ToString();
+            }
+
+            return q;
+        }
+
+        private NameValueCollection BuildUpstreamAuthorizeParameters(
+               OidcProvider p,
+               string upstreamState,
+               string upstreamNonce,
+               string upstreamCodeChallenge,
+               AuthorizeUnregisteredClientRequest incoming)
+        {
+            var q = System.Web.HttpUtility.ParseQueryString(string.Empty);
+            q["response_type"] = string.IsNullOrWhiteSpace(p.ResponseType) ? "code" : p.ResponseType;
+            q["client_id"] = p.ClientId;
+            q["redirect_uri"] = BuildUpstreamRedirectUri().ToString();
+            q["scope"] = string.IsNullOrWhiteSpace(p.Scope) ? "openid" : p.Scope;
+
+            q["state"] = upstreamState;
+            q["nonce"] = upstreamNonce;
+            q["code_challenge"] = upstreamCodeChallenge;
+            q["code_challenge_method"] = "S256";
+
+            string? upstreamAcr = _acrValueCatalog.GetUpstreamAcrValues(p.IssuerKey, incoming.AcrValues);
+
+            // Fall back to the provider default only when the client asked for nothing at all.
+            // A requested level that maps to no upstream filter is a deliberate "send nothing"
+            // — HelseID, for instance, has a filter for high but none for substantial — and must
+            // not be silently turned into the default, which would narrow the request the client
+            // actually made.
+            if (string.IsNullOrEmpty(upstreamAcr) && incoming.AcrValues is null or { Length: 0 })
+            {
+                upstreamAcr = GetDefaultUpstreamAcrValues(p);
+            }
+
+            if (!string.IsNullOrEmpty(upstreamAcr))
+            {
+                q["acr_values"] = upstreamAcr;
+            }
+
+            return q;
+        }
+
+        private async Task<UserAuthenticationModel?> IdentifyOrCreateAltinnUser(UserAuthenticationModel userAuthenticationModel, OidcProvider? provider, CancellationToken cancellationToken)
+        {
+            ArgumentNullException.ThrowIfNull(userAuthenticationModel);
+
+            if (userAuthenticationModel.UserID != null && userAuthenticationModel.PartyID != null && userAuthenticationModel.PartyUuid != null)
+            {
+                return userAuthenticationModel;
+            }
+
+            UserProfile userProfile;
+
+            if (!string.IsNullOrEmpty(userAuthenticationModel!.SSN))
+            {
+                userProfile = await _profileService.GetUserProfile(new UserProfileLookup { Ssn = userAuthenticationModel.SSN });
+                userAuthenticationModel.PartyUuid = userProfile.UserUuid;
+                if (userProfile.PartyId != 0)
+                {
+                    userAuthenticationModel.PartyID = userProfile.PartyId;
+                }
+
+                if (userProfile.UserId != 0)
+                {
+                    userAuthenticationModel.UserID = userProfile.UserId;
+                }
+
+                if (userProfile.Party.PartyUuid != null)
+                {
+                    userAuthenticationModel.PartyUuid = userProfile.Party.PartyUuid;
+                }
+
+                if (userProfile.ProfileSettingPreference != null && userProfile.ProfileSettingPreference.PreselectedPartyUuid.HasValue)
+                {
+                    userAuthenticationModel.PreselectedPartyUuid = userProfile.ProfileSettingPreference.PreselectedPartyUuid.Value;
+                }
+
+                if (userProfile.ProfileSettingPreference != null && userProfile.ProfileSettingPreference.PreSelectedPartyId > 0)
+                {
+                    userAuthenticationModel.PreSelectedPartyId = userProfile.ProfileSettingPreference.PreSelectedPartyId;
+                }
+
+            }
+            else if (!string.IsNullOrEmpty(userAuthenticationModel.ExternalIdentity))
+            {
+                string issExternalIdentity = userAuthenticationModel.Iss + ":" + userAuthenticationModel.ExternalIdentity;
+                string userName = CreateUserName(userAuthenticationModel, provider);
+
+                var provisioned = await GetOrCreateSelfIdentifiedUserViaRegister(
+                    SelfIdentifiedUserType.Educational,
+                    issExternalIdentity,
+                    userName,
+                    email: null,
+                    cancellationToken);
+
+                if (provisioned is null)
+                {
+                    // Provisioning failed - signal the caller to fail the callback rather than
+                    // continuing with an incomplete identity.
+                    return null;
+                }
+
+                userAuthenticationModel.UserID = (int)provisioned.User.Value.UserId.Value;
+                userAuthenticationModel.PartyID = (int)provisioned.PartyId.Value;
+                userAuthenticationModel.PartyUuid = provisioned.Uuid;
+                userAuthenticationModel.Username = provisioned.User.Value.Username.Value;
+                userAuthenticationModel.Amr = ["SelfIdentified"];
+                userAuthenticationModel.Acr = "Selfidentified";
+                return userAuthenticationModel;
+            }
+            else if (userAuthenticationModel.Acr != null && userAuthenticationModel.Acr.Equals("selfregistered-email") && !string.IsNullOrEmpty(userAuthenticationModel.Email))
+            {
+                // TODO. Usikker om vi trenger å prefixe med iss nå
+                string issExternalIdentity = AltinnCoreClaimTypes.IdPortenEmailPrefix + ":" + UrnEncoded.Create(userAuthenticationModel.Email.ToLowerInvariant()).Encoded;
+                string userName = "epost:" + userAuthenticationModel.Email;
+
+                var provisioned = await GetOrCreateSelfIdentifiedUserViaRegister(
+                    SelfIdentifiedUserType.IdPortenEmail,
+                    issExternalIdentity,
+                    userName,
+                    userAuthenticationModel.Email,
+                    cancellationToken);
+
+                if (provisioned is null)
+                {
+                    // Provisioning failed - signal the caller to fail the callback rather than
+                    // continuing with an incomplete identity.
+                    return null;
+                }
+
+                userAuthenticationModel.UserID = (int)provisioned.User.Value.UserId.Value;
+                userAuthenticationModel.PartyID = (int)provisioned.PartyId.Value;
+                userAuthenticationModel.PartyUuid = provisioned.Uuid;
+                userAuthenticationModel.Username = provisioned.User.Value.Username.Value;
+                return userAuthenticationModel;
+            }
+            else if (userAuthenticationModel.UserID.HasValue && userAuthenticationModel.UserID.Value > 0)
+            {
+                userProfile = await _profileService.GetUserProfile(new UserProfileLookup { UserId = userAuthenticationModel.UserID.Value });
+                userAuthenticationModel.PartyUuid = userProfile.UserUuid;
+                if (userProfile.PartyId != 0)
+                {
+                    userAuthenticationModel.PartyID = userProfile.PartyId;
+                    userAuthenticationModel.PartyUuid = userProfile.Party.PartyUuid;
+                    userAuthenticationModel.SSN = userProfile.Party.SSN;
+                    return userAuthenticationModel;
+                }
+            }
+
+            // No branch established an Altinn identity. Returning the model here would let the
+            // caller continue: oidc_session.subject_id and subject_party_uuid are both nullable,
+            // so nothing downstream rejects it and the user ends up holding a valid cookie for no
+            // one. Fail the sign-in instead.
+            //
+            // Reachable when a token carries none of the identifiers the branches above look for —
+            // in practice a provider whose configured pid claim is absent (wrong ClaimMappings.Pid,
+            // or the pid scope not granted) and which has no ExternalIdentityClaim and is not on
+            // the self-registered-email path. The self-identified and email branches return
+            // earlier and are unaffected, including for first-time users.
+            // Aborts only when no identifier at all was established, which is what the fall-through
+            // above means. All users are expected to carry a party uuid today, so checking
+            // PartyUuid alone would in practice be equivalent — but the SSN branch assigns it from
+            // userProfile.UserUuid and only overwrites it when Party.PartyUuid is non-null, so a
+            // uuid-less record would be refused sign-in rather than resolved from UserID/PartyID.
+            // Checking all three costs nothing for a normal user and does not rely on that
+            // invariant holding for every record.
+            if (userAuthenticationModel.PartyUuid is null
+                && userAuthenticationModel.UserID is null or 0
+                && userAuthenticationModel.PartyID is null or 0)
+            {
+                _logger.LogError(
+                    "No Altinn identity could be established for provider {Provider}. The token carried no usable identifier: pid claim '{PidClaim}' was absent and the provider has no ExternalIdentityClaim configured. Sign-in cannot complete.",
+                    provider?.IssuerKey,
+                    provider?.ClaimMappings?.Pid ?? "pid");
+
+                return null;
+            }
+
+            return userAuthenticationModel;
+        }
+
+        private async Task<SelfIdentifiedUser?> GetOrCreateSelfIdentifiedUserViaRegister(
+            SelfIdentifiedUserType selfIdentifiedUserType,
+            string externalIdentity,
+            string userName,
+            string? email,
+            CancellationToken cancellationToken)
+        {
+            var request = new SelfIdentifiedUserProvisioningRequest
+            {
+                SelfIdentifiedUserType = selfIdentifiedUserType,
+                ExternalIdentity = externalIdentity,
+                UserName = userName,
+                Email = email,
+            };
+
+            var response = await _registerUserProvisioningClient.GetOrCreateUser(request, cancellationToken);
+
+            if (response is null)
+            {
+                // Log the external identity (may be email-derived) verbatim: this is an internal error
+                // log for a failing sign-in, and support needs to identify which user is affected.
+                _logger.LogError(
+                    "Register self-identified provisioning returned no result for externalIdentity {ExternalIdentity}; sign-in cannot complete.",
+                    externalIdentity);
+            }
+
+            return response;
+        }
+
+        private static string CreateUserName(UserAuthenticationModel userAuthenticationModel, OidcProvider? provider)
+        {
+            ArgumentNullException.ThrowIfNull(userAuthenticationModel?.ExternalIdentity, nameof(userAuthenticationModel));
+            string hashedIdentity = HashIDentity(userAuthenticationModel.ExternalIdentity).Substring(5, 10);
+            Regex rgx = UserNameRegex();
+            hashedIdentity = rgx.Replace(hashedIdentity, string.Empty);
+
+            return (provider?.UserNamePrefix ?? "altinn-")
+                    + hashedIdentity.ToLowerInvariant()
+                    + CryptoHelpers.RandomBase64Url(6);
+        }
+
+        /// <summary>
+        /// Create a hashed identity based on external identity. This was created for UDIR need for anonymity for users and the need for showing a user name.
+        /// </summary>
+        private static string HashIDentity(string externalIDentity)
+        {
+            byte[] byteArrayResultOfRawData = Encoding.UTF8.GetBytes(externalIDentity);
+            byte[] byteArrayResult = SHA256.HashData(byteArrayResultOfRawData);
+            return Convert.ToBase64String(byteArrayResult);
+        }
+
+        private static byte[] DecodePepper(string value)
+        {
+            try
+            {
+                return Convert.FromBase64String(value);
+            }
+            catch (FormatException)
+            {
+                // Try Base64Url normalization
+                string normalized = value.Replace('-', '+').Replace('_', '/');
+                int pad = (4 - (normalized.Length % 4)) % 4;
+                normalized = normalized + new string('=', pad);
+                try 
+                { 
+                    return Convert.FromBase64String(normalized); 
+                }
+                catch (Exception ex) 
+                {
+                    throw new ConfigurationErrorsException("Invalid OidcRefreshTokenPepper; must be Base64/Base64Url.", ex); 
+                }
+            }
+        }
+
+        [GeneratedRegex("[^a-zA-Z0-9 -]")]
+        private static partial Regex UserNameRegex();
+    }
+}

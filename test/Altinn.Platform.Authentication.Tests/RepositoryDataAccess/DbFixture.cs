@@ -1,14 +1,14 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
-using Altinn.Platform.Authentication.Persistance.Configuration;
+using Altinn.Authorization.ServiceDefaults.Npgsql.Yuniql;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using Npgsql;
 using Testcontainers.PostgreSql;
 using Xunit;
-using Yuniql.Core;
 
 namespace Altinn.Platform.Authentication.Tests.RepositoryDataAccess;
 
@@ -17,7 +17,7 @@ public class DbFixture
 {
     private const int MAX_CONCURRENCY = 20;
 
-    Singleton.Ref<Inner>? _inner;
+    private Singleton.Ref<Inner>? _inner;
 
     public async Task InitializeAsync()
     {
@@ -42,16 +42,15 @@ public class DbFixture
     {
         private int _dbCounter = 0;
         private readonly AsyncLock _dbLock = new();
-        private readonly PostgreSqlContainer _dbContainer = new PostgreSqlBuilder()
-            .WithImage("ghcr.io/altinn/library/postgres:16.2-alpine") 
+        private readonly PostgreSqlContainer _dbContainer = new PostgreSqlBuilder("ghcr.io/altinn/library/postgres:16.2-alpine")
             .WithUsername("auth_authentication")
             .WithCleanUp(true)
             .Build();
 
         private readonly AsyncConcurrencyLimiter _throtler = new(MAX_CONCURRENCY);
 
-        string? _connectionString;
-        NpgsqlDataSource? _db;
+        private string? _connectionString;
+        private NpgsqlDataSource? _db;
 
         public async Task InitializeAsync()
         {
@@ -76,27 +75,6 @@ public class DbFixture
 
                 var connectionStringBuilder = new NpgsqlConnectionStringBuilder(_connectionString) { Database = dbName, IncludeErrorDetail = true };
                 var connectionString = connectionStringBuilder.ToString();
-
-                var configuration = new Yuniql.AspNetCore.Configuration
-                {
-                    Platform = SUPPORTED_DATABASES.POSTGRESQL,
-                    Workspace = Path.Combine(FindWorkspace(), "src", "Persistance", "Migration"),
-                    ConnectionString = connectionString,
-                    IsAutoCreateDatabase = false,
-                    Environment = "integrationtest",
-                    Tokens = [
-                        KeyValuePair.Create("YUNIQL-USER", connectionStringBuilder.Username),
-                        KeyValuePair.Create("APP-USER", connectionStringBuilder.Username),
-                    ],
-                };
-
-                var traceService = TraceService.Instance;
-                var dataService = new Yuniql.PostgreSql.PostgreSqlDataService(traceService);
-                var bulkImportService = new Yuniql.PostgreSql.PostgreSqlBulkImportService(traceService);
-                var migrationServiceFactory = new MigrationServiceFactory(traceService);
-                var migrationService = migrationServiceFactory.Create(dataService, bulkImportService);
-                ConfigurationHelper.Initialize(configuration);
-                migrationService.Run();
 
                 var ownedDb = new OwnedDb(connectionString, dbName, fixture, ticket);
                 ticket = null;
@@ -126,30 +104,14 @@ public class DbFixture
             _throtler.Dispose();
             _dbLock.Dispose();
         }
-
-        static string FindWorkspace()
-        {
-            var dir = Environment.CurrentDirectory;
-            while (dir != null)
-            {
-                if (Directory.Exists(Path.Combine(dir, ".git")))
-                {
-                    return dir;
-                }
-
-                dir = Directory.GetParent(dir)?.FullName;
-            }
-
-            throw new InvalidOperationException("Workspace directory not found");
-        }
     }
 
     public sealed class OwnedDb : IAsyncDisposable
     {
-        readonly string _connectionString;
-        readonly string _dbName;
-        readonly DbFixture _db;
-        readonly IDisposable _ticket;
+        private readonly string _connectionString;
+        private readonly string _dbName;
+        private readonly DbFixture _db;
+        private readonly IDisposable _ticket;
 
         public OwnedDb(string connectionString, string dbName, DbFixture db, IDisposable ticket)
         {
@@ -163,13 +125,26 @@ public class DbFixture
 
         internal string DbName => _dbName;
 
-        public void ConfigureServices(IServiceCollection services)
+        public void ConfigureApplication(IHostApplicationBuilder builder)
         {
-            services.AddOptions<PostgreSQLSettings>()
-                .Configure((PostgreSQLSettings settings) =>
+            var serviceDescriptor = builder.GetAltinnServiceDescriptor();
+            ConfigureConfiguration(builder.Configuration, serviceDescriptor.Name);
+            ConfigureServices(builder.Services, serviceDescriptor.Name);
+        }
+
+        public void ConfigureConfiguration(IConfigurationBuilder builder, string serviceName)
+        {
+            builder.AddInMemoryCollection([
+                KeyValuePair.Create<string, string?>($"ConnectionStrings:{serviceName}_db", _connectionString),
+            ]);
+        }
+
+        public void ConfigureServices(IServiceCollection services, string serviceName)
+        {
+            services.AddOptions<YuniqlDatabaseMigratorOptions>()
+                .Configure(cfg =>
                 {
-                    settings.AuthenticationDbUserConnectionString = ConnectionString;
-                    settings.AuthenticationDbPassword = "unused";
+                    cfg.Environment = "integrationtest";
                 });
         }
 
@@ -180,7 +155,7 @@ public class DbFixture
         }
     }
 
-    class TraceService : Yuniql.Extensibility.ITraceService
+    private class TraceService : Yuniql.Extensibility.ITraceService
     {
         public static Yuniql.Extensibility.ITraceService Instance { get; } = new TraceService();
 

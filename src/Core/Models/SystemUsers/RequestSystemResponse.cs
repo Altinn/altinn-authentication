@@ -19,6 +19,12 @@ public class RequestSystemResponse()
     public Guid Id { get; set; }
 
     /// <summary>
+    /// An optional name used only in display on UI. If not set by the request it will default to the System-Name. 
+    /// </summary>
+    [JsonPropertyName("integrationTitle")]
+    public string? IntegrationTitle { get; set; }
+
+    /// <summary>
     /// Either just the Orgno for the customer, or a TenantId or other form of disambiguation Id the Vendor needs.
     /// Is one of the three parts of the External Request Id.
     /// A blank ExternalRef will be overwritten as a copy of the Cutomer's OrgNo
@@ -32,7 +38,7 @@ public class RequestSystemResponse()
     /// </summary>
     [Required]
     [JsonPropertyName("systemId")]
-    public string SystemId { get; set; }
+    public required string SystemId { get; set; }
 
     /// <summary>
     /// The organisation number for the SystemUser's Party ( the customer that delegates rights to the systemuser).
@@ -40,7 +46,7 @@ public class RequestSystemResponse()
     /// </summary>
     [Required]
     [JsonPropertyName("partyOrgNo")]
-    public string PartyOrgNo { get; set; }
+    public required string PartyOrgNo { get; set; }
 
     /// <summary>
     /// The set of Rights requested for this system user. Must be equal to or less than the set defined in the Registered System.
@@ -64,7 +70,7 @@ public class RequestSystemResponse()
     /// </summary>
     [Required]
     [JsonPropertyName("status")]
-    public string Status { get; set; }
+    public required string Status { get; set; }
 
     /// <summary>
     /// Optional redirect URL to navigate to after the customer has accepted/denied the Request
@@ -81,9 +87,23 @@ public class RequestSystemResponse()
     public string? ConfirmUrl { get; set; }
 
     /// <summary>
+    /// Tracks if the original user creating the Request have escalated the Approval of this Request
+    /// to somebody else in the organisation with AccessManager (Package:Tilgangsstyring)
+    /// </summary>
+    [JsonPropertyName("escalated")]
+    public bool Escalated { get; set; }
+
+    /// <summary>
     /// The date and time the Request was created,
     /// used to determine if the Request is still valid.
     /// </summary>
-    [JsonIgnore]
+    [JsonPropertyName("created")]
     public DateTime Created { get; set; }
+
+    /// <summary>
+    /// After 180 days, a Request is considered timed out, and will be archived.
+    /// The Vendor should verify the Request before the time out period; 
+    /// and use the SystemUser Id for further calls after approval.
+    /// </summary>
+    public bool TimedOut { get; set; }
 }

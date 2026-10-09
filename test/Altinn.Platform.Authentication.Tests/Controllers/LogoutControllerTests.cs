@@ -1,13 +1,9 @@
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Net.Http;
-using System.Net.Http.Headers;
-using System.Net.Security;
 using System.Security.Claims;
-using System.Text.Json;
 using System.Threading.Tasks;
 using Altinn.Common.AccessToken.Services;
 using Altinn.Platform.Authentication.Clients.Interfaces;
@@ -15,22 +11,18 @@ using Altinn.Platform.Authentication.Configuration;
 using Altinn.Platform.Authentication.Controllers;
 using Altinn.Platform.Authentication.Enum;
 using Altinn.Platform.Authentication.Model;
-using Altinn.Platform.Authentication.Services;
 using Altinn.Platform.Authentication.Services.Interfaces;
 using Altinn.Platform.Authentication.Tests.Fakes;
 using Altinn.Platform.Authentication.Tests.Mocks;
 using Altinn.Platform.Authentication.Tests.RepositoryDataAccess;
 using Altinn.Platform.Authentication.Tests.Utils;
-using Altinn.Platform.Profile.Models;
 using AltinnCore.Authentication.JwtCookie;
 using App.IntegrationTests.Utils;
-using Microsoft.AspNetCore.Authentication;
-using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
-using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
+using Microsoft.Extensions.Time.Testing;
 using Microsoft.FeatureManagement;
 using Moq;
 using Xunit;
@@ -43,14 +35,12 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
     public class LogoutControllerTests(DbFixture dbFixture, WebApplicationFixture webApplicationFixture)
         : WebApplicationTests(dbFixture, webApplicationFixture)
     {
-        private readonly WebApplicationFactory<LogoutController> _factory;
-        private IConfiguration _configuration;
+        private IConfiguration _configuration = null!; // set in ConfigureServices
   
         private readonly Mock<IUserProfileService> _userProfileService = new();
         private readonly Mock<IOrganisationsService> _organisationsService = new();
-        private readonly Mock<ISblCookieDecryptionService> _cookieDecryptionService = new();
         private readonly Mock<IEventsQueueClient> _eventQueue = new();
-        private readonly Mock<TimeProvider> _timeProviderMock = new();
+        private readonly FakeTimeProvider _timeProviderMock = new();
         private readonly Mock<IFeatureManager> _featureManager = new();
 
         protected override void ConfigureServices(IServiceCollection services)
@@ -58,20 +48,12 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             base.ConfigureServices(services);
 
             string configPath = GetConfigPath();
-            WebHostBuilder builder = new();
-
-            builder.ConfigureAppConfiguration((context, conf) =>
-            {
-                conf.AddJsonFile(configPath);
-            });
 
             var configuration = new ConfigurationBuilder()
              .AddJsonFile(configPath)
              .AddInMemoryCollection(
-               new Dictionary<string, string>
+               new Dictionary<string, string?>
                {
-                    { "GeneralSettings:EnableOidc", "false" },
-                    { "GeneralSettings:ForceOidc", "false" },
                     { "GeneralSettings:DefaultOidcProvider", "altinn" },
                     { "FeatureManagement:EnableAuditLog", "false" }
                })
@@ -80,42 +62,27 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             IConfigurationSection generalSettingSection = configuration.GetSection("GeneralSettings");
 
             services.Configure<GeneralSettings>(generalSettingSection);
-            services.AddSingleton(_cookieDecryptionService.Object);
             services.AddSingleton(_userProfileService.Object);
             services.AddSingleton<IOrganisationsService, OrganisationsServiceMock>();
             services.AddSingleton<ISigningKeysRetriever, SigningKeysRetrieverStub>();
             services.AddSingleton<IJwtSigningCertificateProvider, JwtSigningCertificateProviderStub>();
             services.AddSingleton<IPostConfigureOptions<JwtCookieOptions>, JwtCookiePostConfigureOptionsStub>();
             services.AddSingleton<IPublicSigningKeyProvider, SigningKeyResolverStub>();
-            services.AddSingleton<IEnterpriseUserAuthenticationService, EnterpriseUserAuthenticationServiceMock>();
             services.AddSingleton<IOidcProvider, OidcProviderServiceMock>();
             services.AddSingleton<IRequestSystemUser, RequestSystemUserServiceMock>();
             services.AddSingleton<IChangeRequestSystemUser, ChangeRequestSystemUserServiceMock>();
             services.AddSingleton(_featureManager.Object);
             services.AddSingleton(_eventQueue.Object);
-            services.AddSingleton(_timeProviderMock.Object);
+            services.AddSingleton((TimeProvider)_timeProviderMock);
             services.AddSingleton(_organisationsService.Object);            
             _configuration = configuration;
         }
 
         /// <summary>
-        /// Initialises a new instance of the <see cref="OpenIdControllerTests"/> class with the given WebApplicationFactory.
-        /// </summary>
-        /// <param name="factory">The WebApplicationFactory to use when creating a test server.</param>
-        //public LogoutControllerTests(WebApplicationFactory<LogoutController> factory)
-        //{
-        //    _factory = factory;
-        //    _userProfileService = new Mock<IUserProfileService>();
-        //    _organisationsService = new Mock<IOrganisationsService>();
-        //    _cookieDecryptionService = new Mock<ISblCookieDecryptionService>();
-        //    SetupDateTimeMock();
-        //}
-
-        /// <summary>
-        /// Validates that a user that is not authenticated is forward to SBL logout (not possible to identify any issorg)
+        /// Validates that an unauthenticated user is redirected to BaseUrl (no OIDC provider can be resolved).
         /// </summary>
         [Fact]
-        public async Task Logout_TimedOut_RedirectToSBL()
+        public async Task Logout_TimedOut_RedirectToBaseUrl()
         {
             // Arrange
             HttpClient client = CreateClient();
@@ -128,18 +95,15 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             // Assert
             Assert.Equal(System.Net.HttpStatusCode.Found, response.StatusCode);
 
-            IEnumerable<string> values;
-            if (response.Headers.TryGetValues("location", out values))
-            {
-                Assert.Equal("http://localhost/ui/authentication/logout", values.First());
-            }
+            Assert.True(response.Headers.TryGetValues("location", out IEnumerable<string>? values));
+            Assert.Equal("http://localhost/", values!.First());
         }
 
         /// <summary>
-        /// Validates that a user that is not authenticated is forward to SBL logout (not possible to identify any issorg)
+        /// Validates that a logged-in user is redirected to BaseUrl when no OIDC provider can be resolved from the token.
         /// </summary>
         [Fact]
-        public async Task Logout_LogedIn_RedirectToSBL()
+        public async Task Logout_LoggedIn_RedirectToBaseUrl()
         {
             string token = PrincipalUtil.GetToken(1337, null);
 
@@ -154,18 +118,15 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             // Assert
             Assert.Equal(System.Net.HttpStatusCode.Found, response.StatusCode);
 
-            IEnumerable<string> values;
-            if (response.Headers.TryGetValues("location", out values))
-            {
-                Assert.Equal("http://localhost/ui/authentication/logout", values.First());
-            }
+            Assert.True(response.Headers.TryGetValues("location", out IEnumerable<string>? values));
+            Assert.Equal("http://localhost/", values!.First());
         }
 
         /// <summary>
-        /// Validates that a user that is not authenticated is forward to SBL logout (not possible to identify any issorg)
+        /// Validates that a logged-in self-identified user is redirected to BaseUrl when no OIDC provider can be resolved.
         /// </summary>
         [Fact]
-        public async Task Logout_LogedIn_RedirectToSBL_SelfIdentifiedUser()
+        public async Task Logout_LoggedIn_RedirectToBaseUrl_SelfIdentifiedUser()
         {
             string token = PrincipalUtil.GetSelfIdentifiedUserToken("siusertest", "12345", "2345678");
 
@@ -180,19 +141,16 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             // Assert
             Assert.Equal(System.Net.HttpStatusCode.Found, response.StatusCode);
 
-            IEnumerable<string> values;
-            if (response.Headers.TryGetValues("location", out values))
-            {
-                Assert.Equal("http://localhost/ui/authentication/logout", values.First());
-            }
+            Assert.True(response.Headers.TryGetValues("location", out IEnumerable<string>? values));
+            Assert.Equal("http://localhost/", values!.First());
         }
 
         /// <summary>
-        /// Validates that a user that is not authenticated is forward to SBL logout (not possible to identify any issorg)
-        /// Event log : Audit log feature is turned on and the event is logged with expected claims
+        /// Validates that a logged-in external-auth user with no active authorization-server session
+        /// logs out to BaseUrl, and that the logout audit event is recorded when AuditLog is enabled.
         /// </summary>
         [Fact]
-        public async Task Logout_LogedIn_RedirectToSBL_ExternalAuthenticationMethod()
+        public async Task Logout_LoggedIn_NoActiveSession_RedirectToBaseUrl_ExternalAuthenticationMethod()
         {
             List<Claim> claims = new List<Claim>();
             string issuer = "www.altinn.no";
@@ -222,20 +180,21 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             // Assert
             Assert.Equal(System.Net.HttpStatusCode.Found, response.StatusCode);
 
-            IEnumerable<string> values;
+            IEnumerable<string>? values;
             if (response.Headers.TryGetValues("location", out values))
             {
-                Assert.Equal("https://idporten.azurewebsites.net/api/v1/logout", values.First());
+                Assert.Equal("http://localhost/", values.First());
             }
 
             AssertionUtil.AssertAuthenticationEvent(_eventQueue, expectedAuthenticationEvent, Moq.Times.Once());
         }
 
         /// <summary>
-        /// Validates that a user that is not authenticated is forward to SBL logout (not possible to identify any issorg)
+        /// Validates that a logged-in user with no active authorization-server session logs out to
+        /// BaseUrl, clearing the runtime auth cookie.
         /// </summary>
         [Fact]
-        public async Task Logout_LogedIn_RedirectToIss()
+        public async Task Logout_LoggedIn_NoActiveSession_RedirectToBaseUrl_ClearsCookie()
         {
             List<Claim> claims = new List<Claim>();
             string issuer = "www.altinn.no";
@@ -254,16 +213,15 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             // Assert
             Assert.Equal(System.Net.HttpStatusCode.Found, response.StatusCode);
 
-            IEnumerable<string> values;
+            IEnumerable<string>? values;
             if (response.Headers.TryGetValues("location", out values))
             {
-                Assert.Equal("https://idporten.azurewebsites.net/api/v1/logout", values.First());
+                Assert.Equal("http://localhost/", values.First());
             }
 
             if (response.Headers.TryGetValues("Set-Cookie", out values))
             {
-                Assert.Equal(".ASPXAUTH=; expires=Thu, 01 Jan 1970 00:00:00 GMT; domain=localhost; path=/; secure; httponly", values.First());
-                Assert.Equal("AltinnStudioRuntime=; expires=Thu, 01 Jan 1970 00:00:00 GMT; domain=localhost; path=/; secure; httponly", values.Last());
+                Assert.Contains(values, v => v.StartsWith("AltinnStudioRuntime=; expires=Thu, 01 Jan 1970 00:00:00 GMT"));
             }
         }
 
@@ -282,10 +240,10 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             // Assert
             Assert.Equal(System.Net.HttpStatusCode.Found, response.StatusCode);
 
-            response.Headers.TryGetValues("Set-Cookie", out IEnumerable<string> cookieValues);
+            response.Headers.TryGetValues("Set-Cookie", out IEnumerable<string>? cookieValues);
             Assert.Equal("AltinnLogoutInfo=; expires=Thu, 01 Jan 1970 00:00:00 GMT; domain=localhost; path=/; secure; httponly", cookieValues?.First());
 
-            response.Headers.TryGetValues("location", out IEnumerable<string> locationValues);
+            response.Headers.TryGetValues("location", out IEnumerable<string>? locationValues);
             Assert.Equal("https://smartcloudaltinn.azurewebsites.net/request", locationValues?.First());
         }
 
@@ -304,10 +262,10 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             // Assert
             Assert.Equal(System.Net.HttpStatusCode.Found, response.StatusCode);
 
-            response.Headers.TryGetValues("Set-Cookie", out IEnumerable<string> cookieValues);
+            response.Headers.TryGetValues("Set-Cookie", out IEnumerable<string>? cookieValues);
             Assert.Equal("AltinnLogoutInfo=; expires=Thu, 01 Jan 1970 00:00:00 GMT; domain=localhost; path=/; secure; httponly", cookieValues?.First());
 
-            response.Headers.TryGetValues("location", out IEnumerable<string> locationValues);
+            response.Headers.TryGetValues("location", out IEnumerable<string>? locationValues);
             Assert.Equal("https://smartcloudaltinn.azurewebsites.net/changerequest", locationValues?.First());
         }
 
@@ -326,10 +284,10 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             // Assert
             Assert.Equal(System.Net.HttpStatusCode.Found, response.StatusCode);
 
-            response.Headers.TryGetValues("Set-Cookie", out IEnumerable<string> cookieValues);
+            response.Headers.TryGetValues("Set-Cookie", out IEnumerable<string>? cookieValues);
             Assert.Equal("AltinnLogoutInfo=; expires=Thu, 01 Jan 1970 00:00:00 GMT; domain=localhost; path=/; secure; httponly", cookieValues?.First());
 
-            response.Headers.TryGetValues("location", out IEnumerable<string> locationValues);
+            response.Headers.TryGetValues("location", out IEnumerable<string>? locationValues);
             Assert.Equal("https://smartcloudaltinn.azurewebsites.net/agentrequest", locationValues?.First());
         }
 
@@ -348,12 +306,12 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             // Assert
             Assert.Equal(System.Net.HttpStatusCode.Found, response.StatusCode);
 
-            response.Headers.TryGetValues("location", out IEnumerable<string> locationValues);
+            response.Headers.TryGetValues("location", out IEnumerable<string>? locationValues);
             Assert.Equal("https://am.ui.localhost/accessmanagement/api/v1/logoutredirect", locationValues?.First());
         }
 
         [Fact]
-        public async Task Logout_HandleLoggedOut_RedirectToSBL()
+        public async Task Logout_HandleLoggedOut_RedirectToBaseUrl()
         {
             // Arrange
             HttpClient client = CreateClient();
@@ -366,11 +324,11 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             // Assert
             Assert.Equal(System.Net.HttpStatusCode.Found, response.StatusCode);
 
-            response.Headers.TryGetValues("Set-Cookie", out IEnumerable<string> cookieValues);
+            response.Headers.TryGetValues("Set-Cookie", out IEnumerable<string>? cookieValues);
             Assert.Equal("AltinnLogoutInfo=; expires=Thu, 01 Jan 1970 00:00:00 GMT; domain=localhost; path=/; secure; httponly", cookieValues?.First());
 
-            response.Headers.TryGetValues("location", out IEnumerable<string> locationValues);
-            Assert.Equal("http://localhost/ui/authentication/logout", locationValues?.First());
+            response.Headers.TryGetValues("location", out IEnumerable<string>? locationValues);
+            Assert.Equal("http://localhost/", locationValues?.First());
         }
 
         /// <summary>
@@ -406,12 +364,11 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             // Assert
             Assert.Equal(System.Net.HttpStatusCode.OK, response.StatusCode);
 
-            IEnumerable<string> values;
+            IEnumerable<string>? values;
 
             if (response.Headers.TryGetValues("Set-Cookie", out values))
             {
-                Assert.Equal(".ASPXAUTH=; expires=Thu, 01 Jan 1970 00:00:00 GMT; domain=localhost; path=/; secure; httponly", values.First());
-                Assert.Equal("AltinnStudioRuntime=; expires=Thu, 01 Jan 1970 00:00:00 GMT; domain=localhost; path=/; secure; httponly", values.Last());
+                Assert.Equal("AltinnStudioRuntime=; expires=Thu, 01 Jan 1970 00:00:00 GMT; domain=localhost; path=/; secure; httponly", values.Single());
             }
 
             AssertionUtil.AssertAuthenticationEvent(_eventQueue, expectedAuthenticationEvent, Moq.Times.Once());
@@ -449,12 +406,11 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             // Assert
             Assert.Equal(System.Net.HttpStatusCode.OK, response.StatusCode);
 
-            IEnumerable<string> values;
+            IEnumerable<string>? values;
 
             if (response.Headers.TryGetValues("Set-Cookie", out values))
             {
-                Assert.Equal(".ASPXAUTH=; expires=Thu, 01 Jan 1970 00:00:00 GMT; domain=localhost; path=/; secure; httponly", values.First());
-                Assert.Equal("AltinnStudioRuntime=; expires=Thu, 01 Jan 1970 00:00:00 GMT; domain=localhost; path=/; secure; httponly", values.Last());
+                Assert.Equal("AltinnStudioRuntime=; expires=Thu, 01 Jan 1970 00:00:00 GMT; domain=localhost; path=/; secure; httponly", values.Single());
             }
 
             AssertionUtil.AssertAuthenticationEvent(eventQueue, expectedAuthenticationEvent, Moq.Times.Never());
@@ -462,8 +418,8 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
        
         private static string GetConfigPath()
         {
-            string unitTestFolder = Path.GetDirectoryName(new Uri(typeof(AuthenticationControllerTests).Assembly.Location).LocalPath);
-            return Path.Combine(unitTestFolder, $"../../../appsettings.json");
+            string unitTestFolder = Path.GetDirectoryName(new Uri(typeof(AuthenticationControllerTests).Assembly.Location).LocalPath)!; // assembly location always has a directory
+            return Path.Combine(unitTestFolder, $"../../../appsettings.test.json");
         }
 
         private static AuthenticationEvent GetAuthenticationEvent(AuthenticationMethod authMethod, SecurityLevel authLevel, int? orgNumber, AuthenticationEventType authEventType, int? userId = null, bool isAuthenticated = true)
@@ -482,7 +438,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
 
         private void SetupDateTimeMock()
         {
-            _timeProviderMock.Setup(x => x.GetUtcNow()).Returns(new DateTimeOffset(2018, 05, 15, 02, 05, 00, TimeSpan.Zero));
+            _timeProviderMock.SetUtcNow(new DateTimeOffset(2018, 05, 15, 02, 05, 00, TimeSpan.Zero));
         }
     }
 }

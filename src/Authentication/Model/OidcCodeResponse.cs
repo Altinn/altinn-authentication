@@ -42,5 +42,11 @@ namespace Altinn.Platform.Authentication.Model
         /// </summary>
         [JsonPropertyName("refresh_token")]
         public string RefreshToken { get; set; }
+
+        /// <summary>
+        /// If a refresh_token was issued, this is the number of seconds until it expires.
+        /// </summary>
+        [JsonPropertyName("refresh_token_expires_in")]
+        public int RefreshTokenExpiresIn { get; set; }
     }
 }

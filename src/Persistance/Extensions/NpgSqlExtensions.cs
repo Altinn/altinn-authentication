@@ -68,39 +68,43 @@ internal static class NpgSqlExtensions
     /// Helper method
     /// </summary>
     /// <param name="reader">Npqsqldatareader</param>
+    /// <param name="cancellationToken">The magnificent cancellation token</param>
     /// <returns>Query field converted to bool</returns>
-    internal static ValueTask<bool> ConvertFromReaderToBoolean(NpgsqlDataReader reader)
+    internal static ValueTask<bool> ConvertFromReaderToBoolean(NpgsqlDataReader reader, CancellationToken cancellationToken = default)
     {
-        return new ValueTask<bool>(reader.GetBoolean(0));
+        return new ValueTask<bool>(reader.GetFieldValueAsync<bool>(0, cancellationToken));
     }
 
     /// <summary>
     /// Helper method
     /// </summary>
     /// <param name="reader">NpgsqlDataReader</param>
+    /// <param name="cancellationToken">The magnificent cancellation token</param>
     /// <returns>Query field converted to string</returns>
-    internal static ValueTask<string> ConvertFromReaderToString(NpgsqlDataReader reader)
+    internal static ValueTask<string> ConvertFromReaderToString(NpgsqlDataReader reader, CancellationToken cancellationToken = default)
     {
-        return new ValueTask<string>(reader.GetString(0));
+        return new ValueTask<string>(reader.GetFieldValueAsync<string>(0, cancellationToken));
     }
 
     /// <summary>
     /// Helper method
     /// </summary>
     /// <param name="reader">NpgsqlDataReader</param>
+    /// <param name="cancellationToken">The magnificent cancellation token</param>
     /// <returns>Query field converted to Guid</returns>
-    internal static ValueTask<Guid> ConvertFromReaderToGuid(NpgsqlDataReader reader)
+    internal static ValueTask<Guid> ConvertFromReaderToGuid(NpgsqlDataReader reader, CancellationToken cancellationToken = default)
     {
-        return new ValueTask<Guid>(reader.GetGuid(0));
+        return new(reader.GetFieldValueAsync<Guid>(0, cancellationToken));
     }
 
     /// <summary>
     /// Helper method
     /// </summary>
     /// <param name="reader">NpgsqlDataReader</param>
+    /// <param name="cancellationToken">The magnificent cancellation token</param>
     /// <returns>Query field converted to Int</returns>
-    internal static ValueTask<int> ConvertFromReaderToInt(NpgsqlDataReader reader)
+    internal static ValueTask<int> ConvertFromReaderToInt(NpgsqlDataReader reader, CancellationToken cancellationToken = default)
     {
-        return new ValueTask<int>(reader.GetInt32(0));
+        return new ValueTask<int>(reader.GetFieldValueAsync<int>(0, cancellationToken));
     }
 }

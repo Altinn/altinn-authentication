@@ -1,0 +1,34 @@
+{
+  "id": "991825827_the_matrix",
+  "vendor": {
+    "authority": "iso6523-actorid-upis",
+    "ID": "0192:991825827"
+  },
+  "name": {
+    "nb": "The Matrix",
+    "en": "The Matrix",
+    "nn": "The Matrix"
+  },
+  "description": {
+    "nb": "Test system",
+    "en": "Test system",
+    "nn": "Test system"
+  },
+  "rights": [
+  ],
+  "accessPackages": [
+    {
+      "urn": "urn:altinn:accesspackage:skatt-naering"
+    }
+  ],
+  "softDeleted": false,
+  "clientId": [
+    "32ef65ac-6e62-498d-880f-76c85c2052ae"
+  ],
+  "allowedredirecturls": [
+    "https://vg.no",
+    "https://nrk.no",
+    "https://altinn.no"
+  ],
+  "isVisible": true
+}

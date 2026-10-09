@@ -1,5 +1,4 @@
 ﻿using System.Data;
-using System.Data.Common;
 using Altinn.Authorization.ProblemDetails;
 using Altinn.Platform.Authentication.Core.Models;
 using Altinn.Platform.Authentication.Core.Models.AccessPackages;
@@ -19,8 +18,8 @@ public class ChangeRequestRepository(
     ILogger<ChangeRequestRepository> logger) : IChangeRequestRepository
 {
     private readonly ILogger _logger = logger;
-    private const int REQUEST_TIMEOUT_DAYS = 10;
-    private const int ARCHIVE_TIMEOUT_DAYS = 60;
+    private const int REQUEST_TIMEOUT_DAYS = 180;
+    private const int ARCHIVE_TIMEOUT_DAYS = 180;
 
     /// <inheritdoc/>
     public async Task<Result<bool>> CreateChangeRequest(ChangeRequestResponse createRequest)
@@ -49,7 +48,8 @@ public class ChangeRequestRepository(
                 @required_accesspackages,
                 @unwanted_accesspackages,
                 @status,
-                @redirect_urls);"
+                @redirect_urls)
+            RETURNING created;"
         ;
 
         try
@@ -77,7 +77,14 @@ public class ChangeRequestRepository(
                 command.Parameters.Add(new("redirect_urls", NpgsqlDbType.Varchar) { Value = DBNull.Value });
             }
 
-            return await command.ExecuteNonQueryAsync() > 0;
+            await using NpgsqlDataReader reader = await command.ExecuteReaderAsync();
+            if (await reader.ReadAsync())
+            {
+                createRequest.Created = reader.GetFieldValue<DateTime>("created");
+                return true;
+            }
+
+            return false;
         }
         catch (Exception ex)
         {
@@ -87,7 +94,7 @@ public class ChangeRequestRepository(
     }
 
     /// <inheritdoc/>
-    public async Task<bool> PersistApprovalOfChangeRequest(Guid requestId, SystemUser toBeChanged, int userId, CancellationToken cancellationToken)
+    public async Task<bool> PersistApprovalOfChangeRequest(Guid requestId, SystemUserInternalDTO toBeChanged, int userId, CancellationToken cancellationToken)
     {
         string changed_by = "userId:" + userId.ToString();
 
@@ -178,7 +185,7 @@ public class ChangeRequestRepository(
     }
 
     /// <inheritdoc/>
-    public async Task<List<ChangeRequestResponse>> GetAllChangeRequestsBySystem(string systemId, CancellationToken cancellationToken)
+    public async Task<List<ChangeRequestResponse>> GetAllChangeRequestsBySystem(string systemId, Guid continueFrom, int pageSize, CancellationToken cancellationToken)
     {
         const string QUERY = /*strpsql*/@"
             SELECT 
@@ -195,17 +202,23 @@ public class ChangeRequestRepository(
                 redirect_urls,
                 created
             FROM business_application.change_request r
-            WHERE r.system_id = @system_id
-                and r.is_deleted = false;";
+            WHERE
+                r.system_id = @system_id
+                AND r.is_deleted = false
+                AND r.id >= @continue_from
+            ORDER BY r.id ASC
+            LIMIT @limit;";
 
         try
         {
             await using NpgsqlCommand command = dataSource.CreateCommand(QUERY);
 
             command.Parameters.AddWithValue("system_id", systemId);
+            command.Parameters.AddWithValue("continue_from", continueFrom);
+            command.Parameters.AddWithValue("limit", pageSize + 1);
 
             return await command.ExecuteEnumerableAsync(cancellationToken)
-                .SelectAwait(ConvertFromReaderToChangeRequest)
+                .Select(ConvertFromReaderToChangeRequest)
                 .ToListAsync(cancellationToken);
         }
         catch (Exception ex)
@@ -247,7 +260,7 @@ public class ChangeRequestRepository(
             command.Parameters.AddWithValue("party_org_no", externalRequestId.OrgNo);
 
             var dbres = await command.ExecuteEnumerableAsync()
-                .SelectAwait(ConvertFromReaderToChangeRequest)
+                .Select(ConvertFromReaderToChangeRequest)
                 .FirstOrDefaultAsync();
             return dbres;
         }
@@ -259,7 +272,7 @@ public class ChangeRequestRepository(
     }
 
     /// <inheritdoc/>
-    public async Task<ChangeRequestResponse?> GetChangeRequestByInternalId(Guid internalId)
+    public async Task<ChangeRequestResponse?> GetChangeRequestById(Guid id)
     {
         const string QUERY = /*strpsql*/@"
             SELECT 
@@ -284,12 +297,12 @@ public class ChangeRequestRepository(
         {
             await using NpgsqlCommand command = dataSource.CreateCommand(QUERY);
 
-            command.Parameters.AddWithValue("request_id", internalId);
+            command.Parameters.AddWithValue("request_id", id);
 
             var dbres = await command.ExecuteEnumerableAsync()
-                .SelectAwait(ConvertFromReaderToChangeRequest)
+                .Select(ConvertFromReaderToChangeRequest)
                 .FirstOrDefaultAsync();
-                        
+
             return dbres;
         }
         catch (Exception ex)
@@ -328,9 +341,9 @@ public class ChangeRequestRepository(
             command.Parameters.AddWithValue("system_user_id", systemUserId);
 
             var dbres = await command.ExecuteEnumerableAsync()
-                .SelectAwait(ConvertFromReaderToChangeRequest)
+                .Select(ConvertFromReaderToChangeRequest)
                 .FirstOrDefaultAsync();
-                        
+
             return dbres;
         }
         catch (Exception ex)
@@ -370,7 +383,7 @@ public class ChangeRequestRepository(
         }
     }
 
-    private static ValueTask<ChangeRequestResponse> ConvertFromReaderToChangeRequest(NpgsqlDataReader reader)
+    private static ChangeRequestResponse ConvertFromReaderToChangeRequest(NpgsqlDataReader reader)
     {
         string? redirect_url = null;
 
@@ -397,9 +410,9 @@ public class ChangeRequestRepository(
 
         if (response.Created < DateTime.UtcNow.AddDays(-REQUEST_TIMEOUT_DAYS))
         {
-            response.Status = RequestStatus.Timedout.ToString();
+            response.TimedOut = true;
         }
 
-        return new ValueTask<ChangeRequestResponse>(response);
+        return response;
     }
 }

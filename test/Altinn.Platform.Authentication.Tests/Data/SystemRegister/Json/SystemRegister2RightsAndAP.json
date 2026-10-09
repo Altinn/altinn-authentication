@@ -34,7 +34,7 @@
   ],
   "accessPackages": [
     {
-      "urn": "urn:altinn:accesspackage:skattnaering"
+      "urn": "urn:altinn:accesspackage:skatt-naering"
     }
   ],
   "softDeleted": false,

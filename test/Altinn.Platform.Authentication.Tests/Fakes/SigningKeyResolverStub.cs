@@ -10,16 +10,16 @@ using Microsoft.IdentityModel.Tokens;
 namespace Altinn.Platform.Authentication.Tests.Fakes
 {
     /// <summary>
-    /// Represents a stub for the <see cref="SigningKeysResolver"/> class to be used in integration tests.
+    /// Represents a stub for the <see cref="IPublicSigningKeyProvider"/> implementation to be used in integration tests.
     /// </summary>
     public class SigningKeyResolverStub : IPublicSigningKeyProvider
     {
-        /// <inheritdoc/>/>
+        /// <inheritdoc/>
         public Task<IEnumerable<SecurityKey>> GetSigningKeys(string issuer)
         {
             List<SecurityKey> signingKeys = new List<SecurityKey>();
 
-            X509Certificate2 cert = new X509Certificate2($"{issuer}-org.pem");
+            X509Certificate2 cert = X509CertificateLoader.LoadCertificateFromFile($"{issuer}-org.pem");
             SecurityKey key = new X509SecurityKey(cert);
 
             signingKeys.Add(key);

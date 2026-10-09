@@ -6,7 +6,6 @@ namespace Altinn.Platform.Authentication.Model
     /// <summary>
     /// An organisation class to represent important information.
     /// </summary>
-    [JsonObject(ItemNullValueHandling = NullValueHandling.Ignore)]
     public class Organisation
     {
         /// <summary>

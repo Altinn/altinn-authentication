@@ -18,6 +18,8 @@
 
         public static bool Compare(Right first, Right second)
         {
+            // Resource is non-nullable, but System.Text.Json overwrites the initializer with null
+            // for an explicit "resource": null, so the null guards below are kept.
             if (first.Resource is null && second.Resource is null)
             {
                 return true;
@@ -28,7 +30,7 @@
                 return false;
             }
 
-            if (first.Resource?.Count != second.Resource?.Count)
+            if (first.Resource.Count != second.Resource.Count)
             {
                 return false;
             }

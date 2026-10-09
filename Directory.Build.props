@@ -1,0 +1,26 @@
+<Project>
+
+  <!--
+    Repo-wide MSBuild defaults, imported by every project under the repository root.
+
+    NU1510 ("PackageReference will not be pruned; consider removing it") is silenced
+    solution-wide per team guidance: the flagged references are kept intentionally, and
+    the warning otherwise breaks any project that opts into <TreatWarningsAsErrors>
+    (see #488). Suppress it centrally so each project doesn't have to.
+  -->
+  <PropertyGroup>
+    <NoWarn>$(NoWarn);NU1510</NoWarn>
+
+    <!--
+      NuGet security-audit advisories (NU1901-NU1904) are kept as warnings but NOT promoted
+      to errors by <TreatWarningsAsErrors>. Otherwise a newly-published CVE against any
+      transitive dependency red-walls every build - main and all PRs - with no code change
+      (e.g. SSH.NET via Testcontainers, and System.Security.Cryptography.Xml from the net10.0
+      framework, both flagged 2026-08). The advisories still surface as warnings so a
+      dedicated dependency-bump pass can act on them; they just don't break unrelated builds.
+      See #488.
+    -->
+    <WarningsNotAsErrors>$(WarningsNotAsErrors);NU1901;NU1902;NU1903;NU1904</WarningsNotAsErrors>
+  </PropertyGroup>
+
+</Project>
