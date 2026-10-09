@@ -1,4 +1,4 @@
-﻿#nullable enable
+#nullable enable
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -33,12 +33,10 @@ namespace Altinn.Platform.Authentication.Services
         /// <summary>
         /// Validate the token issued by an upstream OIDC provider.
         /// </summary>
-        public async Task<JwtSecurityToken> ValidateTokenAsync(string token, OidcProvider provider, string? nonce, CancellationToken cancellationToken = default)
+        public async Task<JwtSecurityToken> ValidateTokenAsync(string token, OidcProvider provider, UpstreamTokenKind kind, string? nonce, CancellationToken cancellationToken = default)
         {
             string providerKey = provider.IssuerKey ?? provider.Issuer;
-
-            // The caller only supplies a nonce for the ID token, so it doubles as the token discriminator.
-            string tokenType = nonce is null ? Metrics.TokenTypeAccessToken : Metrics.TokenTypeIdToken;
+            string tokenType = kind == UpstreamTokenKind.IdToken ? Metrics.TokenTypeIdToken : Metrics.TokenTypeAccessToken;
 
             if (string.IsNullOrEmpty(token))
             {
@@ -66,7 +64,7 @@ namespace Altinn.Platform.Authentication.Services
 
             try
             {
-                JwtSecurityToken jwtToken = ValidateToken(token, provider.Issuer, signingKeys);
+                JwtSecurityToken jwtToken = ValidateToken(token, provider, signingKeys, isIdToken: kind == UpstreamTokenKind.IdToken);
                 if (nonce != null)
                 {
                     // Only relevant for ID tokens
@@ -112,14 +110,29 @@ namespace Altinn.Platform.Authentication.Services
             return CryptographicOperations.FixedTimeEquals(a, b);
         }
 
-        private JwtSecurityToken ValidateToken(string originalToken, string expectedIssuer, ICollection<SecurityKey> signingKeys)
+        private JwtSecurityToken ValidateToken(string originalToken, OidcProvider provider, ICollection<SecurityKey> signingKeys, bool isIdToken)
         {
+            string expectedIssuer = provider.Issuer;
+
             TokenValidationParameters validationParameters = new()
             {
                 ValidateIssuerSigningKey = true,
                 IssuerSigningKeys = signingKeys,
                 ValidateIssuer = true,
-                ValidateAudience = false,
+
+                // Only for the ID token, and only when the provider opts in. This method also
+                // validates access tokens, whose audience is the API rather than us — requiring
+                // our client id there would reject every otherwise valid access token and fail the
+                // whole sign-in. The two settings are documented as independent choices, so a
+                // provider may well have strict validation without treating the access token as
+                // opaque.
+                ValidateAudience = isIdToken && provider.StrictIdTokenValidation,
+                ValidAudience = isIdToken && provider.StrictIdTokenValidation ? provider.ClientId : null,
+
+                // IdentityModel defaults this to true, which would accept "<client_id>/" as our
+                // audience. "Exact" has to mean exact, or the strict flag does not deliver what
+                // its name and OIDC Core promise.
+                IgnoreTrailingSlashWhenValidatingAudience = !(isIdToken && provider.StrictIdTokenValidation),
                 IssuerValidator = (tokenIssuer, securityToken, parameters) =>
                 {
                     // Exact match is the spec requirement (OIDC Core).
@@ -130,7 +143,11 @@ namespace Altinn.Platform.Authentication.Services
 
                     // Pragmatic allowance: treat trailing slash difference as equivalent.
                     // Useful when some upstreams include / omit trailing slash inconsistently.
-                    if (TrimEndSlash(tokenIssuer).Equals(TrimEndSlash(expectedIssuer), StringComparison.Ordinal))
+                    // Withheld only for an id_token under strict validation, so the setting is one
+                    // coherent rule for one kind of token: exact issuer and audience, together, for
+                    // the id_token. Access tokens keep the historical behaviour.
+                    if (!(isIdToken && provider.StrictIdTokenValidation)
+                        && TrimEndSlash(tokenIssuer).Equals(TrimEndSlash(expectedIssuer), StringComparison.Ordinal))
                     {
                         // Keep a breadcrumb that we normalized.
                         _logger.LogDebug("Issuer matched after trimming trailing slash: '{Actual}' ~ '{Expected}'", tokenIssuer, expectedIssuer);

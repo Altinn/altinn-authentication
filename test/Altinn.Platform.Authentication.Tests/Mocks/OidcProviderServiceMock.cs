@@ -1,4 +1,5 @@
 #nullable enable
+using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using Altinn.Platform.Authentication.Model;
@@ -11,6 +12,10 @@ namespace Altinn.Platform.Authentication.Tests.Mocks
     /// </summary>
     public class OidcProviderServiceMock : IOidcProvider
     {
+        /// <inheritdoc />
+        public Task<PushedAuthorizationResponse?> PushAuthorizationRequest(OidcProvider provider, IDictionary<string, string> parameters, CancellationToken cancellationToken = default)
+            => Task.FromResult<PushedAuthorizationResponse?>(new PushedAuthorizationResponse { RequestUri = "urn:ietf:params:oauth:request_uri:mock", ExpiresIn = 600 });
+
         /// <summary>
         /// Initializes a new instance of the <see cref="OidcProviderServiceMock"/> class.
         /// </summary>

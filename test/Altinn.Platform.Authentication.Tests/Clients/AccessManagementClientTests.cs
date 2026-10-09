@@ -236,23 +236,61 @@ namespace Altinn.Platform.Authentication.Tests.Clients
         [Theory]
         [InlineData(false, "v1")]
         [InlineData(true, "v2")]
-        public async Task GetClientsForFacilitator_UsesVersionedRoute_WithoutRenamingParams(bool useV2, string version)
+        public async Task GetClientsForFacilitator_MatchAny_UsesVersionedEnduserRoute(bool useV2, string version)
         {
             HttpRequestMessage? captured = null;
             var client = CreateClient(CreateHttpClient(HttpStatusCode.OK, "{\"data\":[]}", capture: r => captured = r), clientDelegationV2: useV2);
             Guid facilitator = Guid.NewGuid();
 
-            await client.GetClientsForFacilitator(facilitator, ["urn:altinn:accesspackage:skattnaering"], CancellationToken.None);
+            await client.GetClientsForFacilitator(facilitator, ["urn:altinn:accesspackage:skattnaering"], matchAllPackages: false, CancellationToken.None);
 
             string url = captured!.RequestUri!.ToString();
             Assert.Contains($"/accessmanagement/api/{version}/enduser/clientdelegations/clients?", url);
             Assert.Contains($"party={facilitator}", url);
             Assert.Contains("packages=urn:altinn:accesspackage:skattnaering", url);
 
+            // matchAllPackages: false uses Access Management's OR filtering - no match parameter.
+            Assert.DoesNotContain("match=", url);
+
             // 'clients' takes party/packages only - the from/to -> client/agent rename must NOT apply here.
             Assert.DoesNotContain("from=", url);
             Assert.DoesNotContain("to=", url);
             Assert.DoesNotContain("agent=", url);
+        }
+
+        [Fact]
+        public async Task GetClientsForFacilitator_MatchAllByDefault_FlagOn_UsesV2EndpointWithMatchAll()
+        {
+            HttpRequestMessage? captured = null;
+            var client = CreateClient(CreateHttpClient(HttpStatusCode.OK, "{\"data\":[]}", capture: r => captured = r), clientDelegationV2: true);
+            Guid facilitator = Guid.NewGuid();
+
+            // matchAllPackages defaults to true.
+            await client.GetClientsForFacilitator(facilitator, ["skatt", "lonn"], cancellationToken: CancellationToken.None);
+
+            string url = captured!.RequestUri!.ToString();
+            Assert.Contains("/accessmanagement/api/v2/enduser/clientdelegations/clients?", url);
+            Assert.Contains("packages=skatt", url);
+            Assert.Contains("packages=lonn", url);
+            Assert.Contains("match=all", url);
+        }
+
+        [Fact]
+        public async Task GetClientsForFacilitator_MatchAllByDefault_FlagOff_UsesV1EnduserWithoutMatchParam()
+        {
+            HttpRequestMessage? captured = null;
+            var client = CreateClient(CreateHttpClient(HttpStatusCode.OK, "{\"data\":[]}", capture: r => captured = r), clientDelegationV2: false);
+            Guid facilitator = Guid.NewGuid();
+
+            // match=all is v2-only, so on v1 this method uses the enduser endpoint with no match parameter
+            // (OR). Callers needing AND on v1 use GetClientsForFacilitatorFromInternalApi instead - see
+            // SystemUserService.GetClientsForFacilitator, which routes to the internal API when v2 is off.
+            await client.GetClientsForFacilitator(facilitator, ["skatt", "lonn"], cancellationToken: CancellationToken.None);
+
+            string url = captured!.RequestUri!.ToString();
+            Assert.Contains("/accessmanagement/api/v1/enduser/clientdelegations/clients?", url);
+            Assert.DoesNotContain("internal/systemuserclientdelegation", url);
+            Assert.DoesNotContain("match=all", url);
         }
 
         [Theory]
@@ -290,7 +328,7 @@ namespace Altinn.Platform.Authentication.Tests.Clients
             """;
             var client = CreateClient(CreateHttpClient(HttpStatusCode.OK, body), clientDelegationV2: true);
 
-            var result = await client.GetClientsForFacilitator(Guid.NewGuid(), [], CancellationToken.None);
+            var result = await client.GetClientsForFacilitator(Guid.NewGuid(), [], cancellationToken: CancellationToken.None);
 
             Assert.False(result.IsProblem);
             var single = Assert.Single(result.Value);

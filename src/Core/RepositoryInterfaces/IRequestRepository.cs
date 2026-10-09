@@ -48,17 +48,21 @@ public interface IRequestRepository
     /// Retrieves a list of Status-Response-model for all Requests that the Vendor has
     /// </summary>    
     /// <param name="systemId">The chosen system</param>
+    /// <param name="continueFrom">The id of the first Request to return; <see cref="Guid.Empty"/> for the first page</param>
+    /// <param name="pageSize">The page size</param>
     /// <param name="cancellationToken">The cancellationToken</param>
     /// <returns></returns>
-    Task<List<RequestSystemResponse>> GetAllRequestsBySystem(string systemId, Guid continueFrom, CancellationToken cancellationToken);
+    Task<List<RequestSystemResponse>> GetAllRequestsBySystem(string systemId, Guid continueFrom, int pageSize, CancellationToken cancellationToken);
 
     /// <summary>
     /// Retrieves a list of Status-Response-model for all agent Requests that the Vendor has
     /// </summary>    
     /// <param name="systemId">The chosen system</param>
+    /// <param name="continueFrom">The id of the first Request to return; <see cref="Guid.Empty"/> for the first page</param>
+    /// <param name="pageSize">The page size</param>
     /// <param name="cancellationToken">The cancellationToken</param>
     /// <returns>list of agent requests for a system the vendor has</returns>
-    Task<List<AgentRequestSystemResponse>> GetAllAgentRequestsBySystem(string systemId, Guid continueFrom, CancellationToken cancellationToken);
+    Task<List<AgentRequestSystemResponse>> GetAllAgentRequestsBySystem(string systemId, Guid continueFrom, int pageSize, CancellationToken cancellationToken);
 
     /// <summary>
     /// Rejects the system user request

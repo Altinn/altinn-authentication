@@ -200,6 +200,27 @@ public class SystemRegisterController : ControllerBase
             return BadRequest("Cannot update a system marked as deleted.");
         }
 
+        if (!AuthenticationHelper.HasNameInAllLanguages(proposedUpdateToSystem.Name))
+        {
+            errors.Add(ValidationErrors.SystemRegister_Name_Not_Provided_In_All_Languages, [
+                ErrorPathConstant.SYSTEM_NAME
+            ]);
+        }
+
+        if (!AuthenticationHelper.HasDescriptionInAllLanguages(proposedUpdateToSystem.Description))
+        {
+            errors.Add(ValidationErrors.SystemRegister_Description_Not_Provided_In_All_Languages, [
+                ErrorPathConstant.SYSTEM_DESCRIPTION
+            ]);
+        }
+
+        if (!AuthenticationHelper.IsValidRedirectUrl(proposedUpdateToSystem.AllowedRedirectUrls))
+        {
+            errors.Add(ValidationErrors.SystemRegister_InValid_RedirectUrlFormat, [
+                ErrorPathConstant.ALLOWEDREDIRECT_URLS
+            ]);
+        }
+
         List<string> allClientIds = CombineClientIds(currentSystem.ClientId, proposedUpdateToSystem.ClientId);
         List<MaskinPortenClientInfo> allClientIdUsages = await _systemRegisterService.GetMaskinportenClients(allClientIds, cancellationToken);
 
@@ -570,6 +591,20 @@ public class SystemRegisterController : ControllerBase
     private async Task<ValidationProblemBuilder> ValidateRegisteredSystem(RegisterSystemRequest systemToValidate, CancellationToken cancellationToken)
     {
         ValidationProblemBuilder errors = default;
+
+        if (!AuthenticationHelper.HasNameInAllLanguages(systemToValidate.Name))
+        {
+            errors.Add(ValidationErrors.SystemRegister_Name_Not_Provided_In_All_Languages, [
+                ErrorPathConstant.SYSTEM_NAME
+            ]);
+        }
+
+        if (!AuthenticationHelper.HasDescriptionInAllLanguages(systemToValidate.Description))
+        {
+            errors.Add(ValidationErrors.SystemRegister_Description_Not_Provided_In_All_Languages, [
+                ErrorPathConstant.SYSTEM_DESCRIPTION
+            ]);
+        }
 
         if (AuthenticationHelper.HasSpaceInId(systemToValidate.Id))
         {

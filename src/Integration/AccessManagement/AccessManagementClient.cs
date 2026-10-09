@@ -51,6 +51,12 @@ public class AccessManagementClient : IAccessManagementClient
     private readonly IFeatureManager _featureManager;
 
     /// <summary>
+    /// Base path (relative to the configured v1 endpoint) for the client-delegation endpoints on the
+    /// Access Management v1 enduser API.
+    /// </summary>
+    private const string ClientDelegationsBasePathV1 = "enduser/clientdelegations";
+
+    /// <summary>
     /// Absolute base URL for the client-delegation endpoints on the Access Management v2 API, derived
     /// from the configured (v1) endpoint. Only used when the <see cref="AccessManagementFeatureFlags.ClientDelegationApiV2"/>
     /// feature flag is enabled.
@@ -110,11 +116,14 @@ public class AccessManagementClient : IAccessManagementClient
     /// </returns>
     private async Task<(string BasePath, string ClientParam, string AgentParam)> ResolveClientDelegationRouteAsync()
     {
-        bool useV2 = await _featureManager.IsEnabledAsync(AccessManagementFeatureFlags.ClientDelegationApiV2);
+        bool useV2 = await IsClientDelegationApiV2EnabledAsync();
         return useV2
             ? (_clientDelegationsBaseUrlV2, "client", "agent")
-            : ("enduser/clientdelegations", "from", "to");
+            : (ClientDelegationsBasePathV1, "from", "to");
     }
+
+    private Task<bool> IsClientDelegationApiV2EnabledAsync()
+        => _featureManager.IsEnabledAsync(AccessManagementFeatureFlags.ClientDelegationApiV2);
 
     /// <inheritdoc/>
     public async Task<AuthorizedPartyExternal?> GetPartyFromReporteeListIfExists(int partyId, string token)
@@ -715,7 +724,7 @@ public class AccessManagementClient : IAccessManagementClient
         return delegations;
     }
 
-    public async Task<Result<List<ClientDelegationDto>>> GetClientsForFacilitator(Guid facilitatorId, List<string> packages, CancellationToken cancellationToken = default)
+    public async Task<Result<List<ClientDelegationDto>>> GetClientsForFacilitator(Guid facilitatorId, List<string> packages, bool matchAllPackages = true, CancellationToken cancellationToken = default)
     {
         string token = JwtTokenUtil.GetTokenFromContext(_httpContextAccessor.HttpContext!, _platformSettings.JwtCookieName!)!;
         if (facilitatorId == Guid.Empty)
@@ -723,14 +732,22 @@ public class AccessManagementClient : IAccessManagementClient
             return Problem.Reportee_Orgno_NotFound;
         }
 
-        var (basePath, _, _) = await ResolveClientDelegationRouteAsync();
+        bool useV2 = await IsClientDelegationApiV2EnabledAsync();
+        bool hasPackages = packages is { Count: > 0 };
+
+        string basePath = useV2 ? _clientDelegationsBaseUrlV2 : ClientDelegationsBasePathV1;
         string endpointUrl = $"{basePath}/clients?party={facilitatorId}";
 
-        if (packages != null && packages.Count > 0)
+        if (hasPackages)
         {
             foreach (var package in packages)
             {
                 endpointUrl = $"{endpointUrl}&packages={package}";
+            }
+
+            if (matchAllPackages && useV2)
+            {
+                endpointUrl = $"{endpointUrl}&match=all";
             }
         }
 

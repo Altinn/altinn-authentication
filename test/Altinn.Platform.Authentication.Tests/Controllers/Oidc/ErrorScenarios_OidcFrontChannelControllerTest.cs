@@ -381,6 +381,29 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
         }
 
         /// <summary>
+        /// A registered client whose sign-in cannot start because the pushed authorization request
+        /// was refused gets an OIDC error at its already-validated redirect_uri, with its own state,
+        /// rather than a bare status code. The unregistered goto flow is the one that stops locally
+        /// (TC20 in the end-to-end suite); this is the other branch of that decision.
+        /// </summary>
+        [Fact]
+        public async Task Authorize_PushedAuthorizationFails_ErrorRedirectToClient()
+        {
+            using var client = CreateClient();
+            OidcTestScenario testScenario = OidcScenarioHelper.GetScenario("Arbeidsflate_HappyFlow");
+
+            // Routes the registered flow to the PAR-configured provider through the acr catalogue.
+            testScenario.Acr = ["helseid-par-loa-high"];
+            _ = await Repository.InsertClientAsync(NewClientCreate(testScenario));
+
+            UpstreamProviderMock.PushedRequestUri = null;
+
+            HttpResponseMessage resp = await client.GetAsync(testScenario.GetAuthorizationRequestUrl());
+
+            AssertTemporarilyUnavailableRedirect(resp, testScenario);
+        }
+
+        /// <summary>
         /// Same requirement for the second half of the exchange: tokens that arrive but do not validate
         /// (signing-key rollover, issuer mismatch, expired) must not surface as an unhandled 500 either.
         /// </summary>

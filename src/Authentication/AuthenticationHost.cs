@@ -102,6 +102,12 @@ internal static class AuthenticationHost
         // Configure OIDC providers used by authentication
         services.ConfigureOidcProviders("OidcProviders");
 
+        // Configure ForwardLimit to null to allow for unlimited number of x-forwarded-for header values.
+        services.Configure<ForwardedHeadersOptions>(options =>
+        {
+            options.ForwardLimit = null;
+        });
+
         services.ConfigureDataProtection(builder.Environment.IsDevelopment(), config.GetSection("AzureStorageConfiguration").Get<AzureStorageConfiguration>());
         services.AddAuthentication(JwtCookieDefaults.AuthenticationScheme)
              .AddJwtCookie(JwtCookieDefaults.AuthenticationScheme, options =>
@@ -187,6 +193,7 @@ internal static class AuthenticationHost
         services.AddSingleton<IPublicSigningKeyProvider, PublicSigningKeyProvider>();
         services.AddSingleton<IAccessTokenValidator, AccessTokenValidator>();
         services.AddSingleton<IEFormidlingAccessValidator, EFormidlingAccessValidator>();
+        services.AddSingleton<IDpopNonceStore, DpopNonceStore>();
         services.AddHttpClient<IOidcProvider, OidcProviderService>();
         services.AddSingleton<IAuthentication, AuthenticationCore>();
         services.AddSingleton<IEventsQueueClient, EventsQueueClient>();
@@ -204,6 +211,7 @@ internal static class AuthenticationHost
         services.AddTransient<IAuthorizationHandler, ResourceAccessHandler>();
         services.AddTransient<DelegationHelper, DelegationHelper>();
         services.AddScoped<IOidcServerService, OidcServerService>();
+        services.AddSingleton<IAcrValueCatalog, OidcAcrValueCatalog>();
         services.AddSingleton<IAuthorizeRequestValidator, AuthorizeRequestValidator>();
         services.AddSingleton<IAuthorizeClientPolicyValidator, AuthorizeClientPolicyValidator>();
         services.AddSingleton<IUpstreamTokenValidator, UpstreamTokenValidator>();
