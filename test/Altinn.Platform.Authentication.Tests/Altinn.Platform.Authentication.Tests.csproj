@@ -66,6 +66,15 @@
     <None Update="Data\OidcScenarios\arbeidsflate_epostbruker_vanskeligepost.json">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
+    <None Update="Data\OidcScenarios\deceased_person.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="Data\OidcScenarios\helseid_deceased_person.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="Data\OidcScenarios\profile_lookup_returns_nothing.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
     <None Update="Data\OidcScenarios\helseid_bruker.json">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
@@ -150,7 +159,13 @@
     <None Update="Data\SystemRegister\Json\SystemRegisterWithoutEnglishName.json">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
+    <None Update="Data\SystemRegister\Json\SystemRegisterWithoutEnglishDescription.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
     <None Update="Data\SystemRegister\Json\SystemRegisterUpdatedRemoveName.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="Data\SystemRegister\Json\SystemRegisterUpdatedRemoveDescription.json">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
   </ItemGroup>

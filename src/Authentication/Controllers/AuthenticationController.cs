@@ -1,6 +1,7 @@
 #nullable enable
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.IdentityModel.Tokens.Jwt;
 using System.Linq;
 using System.Security.Claims;
@@ -624,12 +625,24 @@ namespace Altinn.Platform.Authentication.Controllers
             {
                 // SBL Bridge user lookup is decommissioned. The user fields
                 // (UserId/UserName/PartyId/PartyUuid) are resolved from Register:
-                // POST /register/api/v2/internal/parties/query (fields=uuid,id,user).
+                // POST /register/api/v2/internal/parties/query (fields=uuid,id,user,person.date-of-death).
                 RegisterContracts.Party? party = await _partiesClient.GetPartyIdentifiersAndUsernameByPersonIdentifier(pid, cancellationToken);
 
-                if (party is null)
+                if (!HasUsableAltinnUser(party))
                 {
-                    _logger.LogInformation("ID-porten exchange: person not found in Register.");
+                    _logger.LogInformation("ID-porten exchange: person not found in Register, or has no associated Altinn user.");
+                    return null;
+                }
+
+                if (party is RegisterContracts.Person { DateOfDeath.IsUnset: true })
+                {
+                    _logger.LogError("ID-porten exchange: dateOfDeath was not requested from Register.");
+                    return null;
+                }
+
+                if (IsDeceased(party))
+                {
+                    _logger.LogInformation("ID-porten exchange: person is deceased.");
                     return null;
                 }
 
@@ -754,6 +767,20 @@ namespace Altinn.Platform.Authentication.Controllers
             await _eventLog.CreateAuthenticationEventAsync(_featureManager, serializedToken, AuthenticationEventType.TokenExchange, HttpContext.Connection.RemoteIpAddress, externalSessionId);
             return Ok(serializedToken);
         }
+
+        /// <summary>
+        /// Whether Register returned a party that carries an Altinn user to mint a token for.
+        /// </summary>
+        /// <param name="party">The party returned by Register, or <see langword="null"/> when the person was not found.</param>
+        private static bool HasUsableAltinnUser([NotNullWhen(true)] RegisterContracts.Party? party)
+            => party is not null && party.User.HasValue && party.User.Value.UserId.HasValue;
+
+        /// <summary>
+        /// Whether the party is a person Register has registered a date of death for.
+        /// </summary>
+        /// <param name="party">The party returned by Register.</param>
+        private static bool IsDeceased(RegisterContracts.Party party)
+            => party is RegisterContracts.Person person && person.DateOfDeath.HasValue;
 
         /// <summary>
         /// Assumes that the consumer claim follows the ISO 6523. {"Identifier": {"Authority": "iso6523-actorid-upis","ID": "9908:910075918"}}

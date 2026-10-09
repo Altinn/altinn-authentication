@@ -207,6 +207,13 @@ public class SystemRegisterController : ControllerBase
             ]);
         }
 
+        if (!AuthenticationHelper.HasDescriptionInAllLanguages(proposedUpdateToSystem.Description))
+        {
+            errors.Add(ValidationErrors.SystemRegister_Description_Not_Provided_In_All_Languages, [
+                ErrorPathConstant.SYSTEM_DESCRIPTION
+            ]);
+        }
+
         if (!AuthenticationHelper.IsValidRedirectUrl(proposedUpdateToSystem.AllowedRedirectUrls))
         {
             errors.Add(ValidationErrors.SystemRegister_InValid_RedirectUrlFormat, [
@@ -589,6 +596,13 @@ public class SystemRegisterController : ControllerBase
         {
             errors.Add(ValidationErrors.SystemRegister_Name_Not_Provided_In_All_Languages, [
                 ErrorPathConstant.SYSTEM_NAME
+            ]);
+        }
+
+        if (!AuthenticationHelper.HasDescriptionInAllLanguages(systemToValidate.Description))
+        {
+            errors.Add(ValidationErrors.SystemRegister_Description_Not_Provided_In_All_Languages, [
+                ErrorPathConstant.SYSTEM_DESCRIPTION
             ]);
         }
 

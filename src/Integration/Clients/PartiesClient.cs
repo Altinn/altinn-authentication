@@ -207,9 +207,9 @@ public class PartiesClient : IPartiesClient
             // The query endpoint lives under the v2 internal base, while this client's BaseAddress
             // points at the v1 register base, so build an absolute URI. 'fields' must explicitly
             // include 'user' - querying by person-id only auto-includes the person identifier, not
-            // the associated user object (UserId/UserName).
+            // the associated user object (UserId/UserName). 'person.date-of-death' is added for checking if person is deceased.
             string baseInternal = _platformSettings.ApiRegisterInternalEndpoint.TrimEnd('/');
-            string endpointUrl = $"{baseInternal}/parties/query?fields=uuid,id,user";
+            string endpointUrl = $"{baseInternal}/parties/query?fields=uuid,id,user,person.date-of-death";
 
             PartyQueryRequest queryRequest = new([personUrn]);
             JsonContent requestBody = JsonContent.Create(queryRequest, options: _registerQueryOptions);

@@ -1,0 +1,23 @@
+{
+  "ScenarioId": "HelseId_Deceased_Person",
+  "Title": "HelseID - deceased person",
+  "Description": "A person whose profile carries a dateOfDeath signs in via HelseID. HelseID does not check date of death itself, so Altinn must refuse the sign-in.",
+  "Ssn": "17899198255",
+  "UserId": 20875912,
+  "PartyId": 50459464,
+  "UserName": "stilling",
+  "DownstreamClientCallbackUrl": "https://af.altinn.no/api/cb",
+  "Acr": [ "helseid-loa-high" ],
+  "Amr": [ "BankID" ],
+  "Scopes": [
+    "openid",
+    "altinn:portal/enduser"
+  ],
+  "AllowedScopes": [
+    "openid",
+    "altinn:portal/enduser"
+  ],
+  "RedirectUris": [
+    "https://af.altinn.no/api/cb"
+  ]
+}
