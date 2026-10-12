@@ -24,6 +24,11 @@ jobs:
       - name: dotnet test
         run: dotnet test test/Altinn.Platform.Authentication.Tests/Altinn.Platform.Authentication.Tests.csproj --results-directory TestResults/ --collect:"XPlat Code Coverage" -v m --filter "Category!=IntegrationTest"
 
+      - name: Build & Test Mockporten
+        run: |
+          dotnet build samples/mockporten/Mockporten.sln -v m
+          dotnet test samples/mockporten/Mockporten.Tests/Mockporten.Tests.csproj -v m
+
       - name: Generate coverage results
         run: |
           dotnet tool install --global dotnet-reportgenerator-globaltool

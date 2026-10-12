@@ -26,6 +26,10 @@ jobs:
         run: |
            dotnet build Altinn.Platform.Authentication.sln -v m
            dotnet test test/Altinn.Platform.Authentication.Tests/Altinn.Platform.Authentication.Tests.csproj -v m
+      - name: Build & Test Mockporten
+        run: |
+           dotnet build samples/mockporten/Mockporten.sln -v m
+           dotnet test samples/mockporten/Mockporten.Tests/Mockporten.Tests.csproj -v m
   analyze:
     name: Analyze
     if: ((github.event_name == 'pull_request' && github.event.pull_request.head.repo.fork == false) || github.event_name == 'push') && github.repository_owner == 'Altinn' && github.actor != 'dependabot[bot]' 
