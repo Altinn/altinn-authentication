@@ -709,8 +709,10 @@ namespace Altinn.Platform.Authentication.Services
             }
 
             // The rights match the registered system, but the resources themselves can have been deleted, changed
-            // type or turned non-delegable in the resource registry after the system was registered. Catch that here
-            // instead of at the customer's approval.
+            // type or turned non-delegable in the resource registry after the system was registered. This check runs
+            // both when the vendor creates a request and when the customer approves it, so a request that was valid
+            // when it was created is rejected at approval if the resource has become unusable in the meantime. The
+            // approval would otherwise fail in the delegation check anyway; this gives it a precise problem instead.
             var invalidResourceIds = await systemRegisterService.GetInvalidResourceIdsDetailed(rights, cancellationToken);
 
             List<KeyValuePair<string, string>> invalidResourceDetails = [];
@@ -728,7 +730,12 @@ namespace Altinn.Platform.Authentication.Services
 
             // Report the precise problem when the delegable flag is the only thing standing in the way; the other
             // categories mean the resource is missing or unusable rather than merely non-delegable.
-            return invalidResourceIds.NotDelegableResourceIds.Count > 0 && invalidResourceDetails.Count == 1
+            bool onlyNotDelegable = invalidResourceIds.NotDelegableResourceIds.Count > 0
+                && invalidResourceIds.InvalidFormatResourceIds.Count == 0
+                && invalidResourceIds.NotFoundResourceIds.Count == 0
+                && invalidResourceIds.UnsupportedResourceTypeIds.Count == 0;
+
+            return onlyNotDelegable
                 ? Problem.Rights_ResourceNotDelegable.Create(extensionData)
                 : Problem.Rights_NotFound_Or_NotDelegable.Create(extensionData);
         }
