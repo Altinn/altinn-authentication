@@ -54,10 +54,11 @@ public interface IChangeRequestSystemUser
     /// Rejects the request 
     /// </summary>
     /// <param name="requestId">the id of the request to be rejected</param>
+    /// <param name="partyId">The partyId, must own the request</param>
     /// <param name="userId">The logged in user</param>
     /// <param name="cancellationToken">The cancelleation token</param>
     /// <returns>true if the request is rejected</returns>
-    Task<Result<bool>> RejectChangeOnSystemUser(Guid requestId, int userId, CancellationToken cancellationToken);
+    Task<Result<bool>> RejectChangeOnSystemUser(Guid requestId, int partyId, int userId, CancellationToken cancellationToken);
 
     /// <summary>
     /// Used by the Vendors to delete the chosen Request by guid

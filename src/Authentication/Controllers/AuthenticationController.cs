@@ -1,6 +1,7 @@
 #nullable enable
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.IdentityModel.Tokens.Jwt;
 using System.Linq;
 using System.Security.Claims;
@@ -12,11 +13,13 @@ using Altinn.Common.AccessToken.Services;
 using Altinn.Platform.Authentication.Configuration;
 using Altinn.Platform.Authentication.Core.Helpers;
 using Altinn.Platform.Authentication.Core.Models.Oidc;
+using Altinn.Platform.Authentication.Core.Models.Profile;
 using Altinn.Platform.Authentication.Core.Services.Interfaces;
 using Altinn.Platform.Authentication.Enum;
 using Altinn.Platform.Authentication.Helpers;
 using Altinn.Platform.Authentication.Services.Interfaces;
 using Altinn.Register.Contracts.V1;
+using Altinn.Urn;
 using AltinnCore.Authentication.Constants;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
@@ -47,6 +50,7 @@ namespace Altinn.Platform.Authentication.Controllers
         private const string EndUserSystemIdentity = "EndUserSystemLogin";
         private const string AltinnStudioIdentity = "AltinnStudioDesignerLogin";
         private const string PidClaimName = "pid";
+        private const string EmailClaimName = "email";
         private const string AuthLevelClaimName = "acr";
         private const string AuthMethodClaimName = "amr";
         private const string ExternalSessionIdClaimName = "sid";
@@ -63,12 +67,14 @@ namespace Altinn.Platform.Authentication.Controllers
         private readonly JwtSecurityTokenHandler _validator;
         private readonly IPublicSigningKeyProvider _designerSigningKeysResolver;
         private readonly IPartiesClient _partiesClient;
+        private readonly IRegisterUserProvisioningClient _registerUserProvisioningClient;
         private readonly IOidcServerService _oidcServerService;
         private readonly TimeProvider _timeProvider;
 
         private readonly IEventLog _eventLog;
         private readonly IFeatureManager _featureManager;
         private readonly IGuidService _guidService;
+        private readonly IAcrValueCatalog _acrValueCatalog;
 
         private readonly List<string>? _partnerScopes;
 
@@ -87,8 +93,11 @@ namespace Altinn.Platform.Authentication.Controllers
             IGuidService guidService,
             IOidcServerService oidcServerService,
             TimeProvider timeProvider,
-            IPartiesClient partiesClient)
+            IPartiesClient partiesClient,
+            IRegisterUserProvisioningClient registerUserProvisioningClient,
+            IAcrValueCatalog acrValueCatalog)
         {
+            _acrValueCatalog = acrValueCatalog;
             _logger = logger;
             _generalSettings = generalSettings.Value;
             _signingKeysRetriever = signingKeysRetriever;
@@ -102,6 +111,7 @@ namespace Altinn.Platform.Authentication.Controllers
             _oidcServerService = oidcServerService;
             _timeProvider = timeProvider;
             _partiesClient = partiesClient;
+            _registerUserProvisioningClient = registerUserProvisioningClient;
             if (_generalSettings.PartnerScopes != null)
             {
                 _partnerScopes = _generalSettings.PartnerScopes.Split(";").ToList();
@@ -118,7 +128,8 @@ namespace Altinn.Platform.Authentication.Controllers
         /// <param name="acrValues">Optional requested authentication level as space-separated acr_values. The current values are
         /// <c>idporten-loa-substantial</c>, <c>idporten-loa-high</c> and <c>selfregistered-email</c>; the legacy values
         /// <c>level0</c>, <c>level1</c> and <c>level2</c> are still accepted but deprecated. Any other value yields
-        /// <c>400 Bad Request</c> (validated by <see cref="AuthenticationHelper.TryParseAcrValues"/>). When the current
+        /// <c>400 Bad Request</c>. The accepted set is derived from the configured ID-providers via
+        /// <see cref="IAcrValueCatalog.AllowedAcrValues"/>, so it grows as providers are added. When the current
         /// session does not meet the requested level, the user is re-authenticated upstream (step-up).</param>
         /// <param name="cancellationToken">The cancellation token</param>
         /// <returns>A 302 redirect: to <paramref name="goTo"/> when an existing session already satisfies the request, otherwise to the upstream ID-provider login.</returns>
@@ -133,7 +144,7 @@ namespace Altinn.Platform.Authentication.Controllers
 
             // Optional requested authentication level (acr_values). Lets unregistered clients (e.g. Altinn Apps)
             // ask for a higher level than the user's current session — i.e. trigger a step-up (level 3 -> 4).
-            if (!AuthenticationHelper.TryParseAcrValues(acrValues, out string[] requestedAcrValues))
+            if (!AuthenticationHelper.TryParseAcrValues(acrValues, _acrValueCatalog, out string[] requestedAcrValues))
             {
                 return BadRequest("Invalid acr_values.");
             }
@@ -165,7 +176,7 @@ namespace Altinn.Platform.Authentication.Controllers
 
                     // Only reuse the existing session if it already satisfies the requested level.
                     // Otherwise fall through and re-authenticate upstream at the higher level (step-up).
-                    if (!AuthenticationHelper.NeedAcrUpgrade(refreshedSession?.Acr, requestedAcrValues))
+                    if (!AuthenticationHelper.NeedAcrUpgrade(refreshedSession?.Acr, requestedAcrValues, _acrValueCatalog))
                     {
                         return Redirect(validatedGoToUri.AbsoluteUri);
                     }
@@ -193,7 +204,7 @@ namespace Altinn.Platform.Authentication.Controllers
 
                 // Reuse the session only when it already meets the requested level; otherwise step up.
                 if (authenticateFromSessionResult.Kind.Equals(AuthenticateFromSessionResultKind.Success)
-                    && !AuthenticationHelper.NeedAcrUpgrade(authenticateFromSessionResult.Acr, requestedAcrValues))
+                    && !AuthenticationHelper.NeedAcrUpgrade(authenticateFromSessionResult.Acr, requestedAcrValues, _acrValueCatalog))
                 {
                     foreach (var c in authenticateFromSessionResult.Cookies)
                     {
@@ -305,6 +316,7 @@ namespace Altinn.Platform.Authentication.Controllers
         /// </summary>
         /// <param name="tokenProvider">The trusted provider that issued the incoming token. One of <c>id-porten</c>, <c>maskinporten</c> or <c>altinnstudio</c> (case-insensitive).</param>
         /// <param name="test">Only relevant for the Maskinporten path: when <c>true</c> and the consumer org is <c>digdir</c>, the token is treated as a test token (see <see cref="OrgIsDigDirAndTestIsTrue"/>). Ignored for the other providers.</param>
+        /// <param name="cancellationToken">The cancellation token.</param>
         /// <returns>The result of the action. Contains the new token if the old token was valid and could be exchanged.</returns>
         [AllowAnonymous]
         [ProducesResponseType(typeof(string), StatusCodes.Status200OK)]
@@ -312,7 +324,7 @@ namespace Altinn.Platform.Authentication.Controllers
         [ProducesResponseType(typeof(string), StatusCodes.Status400BadRequest)]
         [ProducesResponseType(typeof(void), StatusCodes.Status429TooManyRequests)]
         [HttpGet("exchange/{tokenProvider}")]
-        public async Task<ActionResult> ExchangeExternalSystemToken(string tokenProvider, [FromQuery] bool test)
+        public async Task<ActionResult> ExchangeExternalSystemToken(string tokenProvider, [FromQuery] bool test, CancellationToken cancellationToken = default)
         {
             string originalToken = string.Empty;
 
@@ -343,7 +355,7 @@ namespace Altinn.Platform.Authentication.Controllers
             switch (tokenProvider.ToLower())
             {
                 case "id-porten":
-                    return await AuthenticateIdPortenToken(originalToken);
+                    return await AuthenticateIdPortenToken(originalToken, cancellationToken);
                 case "maskinporten":
                     return await AuthenticateMaskinportenToken(originalToken, test);
                 case "altinnstudio":
@@ -527,28 +539,32 @@ namespace Altinn.Platform.Authentication.Controllers
         }
 
         /// <summary>
-        /// Action for exchanging a JWT generated by <c>ID-porten</c> with a new JWT for further use as authentication against rest of Altinn.
+        /// Action for exchanging a JWT generated by <c>ID-porten</c> with a new JWT for further use as authentication
+        /// against rest of Altinn. Supports person users (identified by the <c>pid</c> claim) and, when
+        /// <see cref="FeatureFlags.SupportIDTokenExchangeForSelfRegisteredEmailUsers"/> is enabled, self-registered
+        /// email users (identified by the <c>email</c> claim when <c>pid</c> is absent).
         /// </summary>
         /// <returns>The result of the action. Contains the new token if the old token was valid and could be exchanged.</returns>
-        private async Task<ActionResult> AuthenticateIdPortenToken(string originalToken)
+        private async Task<ActionResult> AuthenticateIdPortenToken(string originalToken, CancellationToken cancellationToken)
         {
             try
             {
                 JwtSecurityToken token = await ValidateAndExtractOidcToken(originalToken, _generalSettings.IdPortenWellKnownConfigEndpoint, _generalSettings.IdPortenAlternativeWellKnownConfigEndpoint);
 
                 string? pid = token.Claims.Where(c => c.Type.Equals(PidClaimName)).Select(c => c.Value).FirstOrDefault();
+                string? email = token.Claims.Where(c => c.Type.Equals(EmailClaimName)).Select(c => c.Value).FirstOrDefault();
                 string? authLevel = token.Claims.Where(c => c.Type.Equals(AuthLevelClaimName)).Select(c => c.Value).FirstOrDefault();
                 string? authMethod = token.Claims.Where(c => c.Type.Equals(AuthMethodClaimName)).Select(c => c.Value).FirstOrDefault();
                 string? externalSessionId = token.Claims.Where(c => c.Type.Equals(ExternalSessionIdClaimName)).Select(c => c.Value).FirstOrDefault();
                 string? scope = token.Claims.Where(c => c.Type.Equals(ScopeClaim)).Select(c => c.Value).FirstOrDefault();
-                
+
                 if (!HasAltinnScope(scope) && !HasPartnerScope(scope))
                 {
                      _logger.LogInformation("Missing scope");
                      return Forbid();
                 }
 
-                if (string.IsNullOrWhiteSpace(pid) || string.IsNullOrWhiteSpace(authLevel))
+                if (string.IsNullOrWhiteSpace(authLevel))
                 {
                     _logger.LogInformation("Token contained invalid or missing claims.");
                     return Unauthorized();
@@ -559,76 +575,14 @@ namespace Altinn.Platform.Authentication.Controllers
                     authMethod = AuthenticationMethod.NotDefined.ToString();
                 }
 
-                // SBL Bridge user lookup is decommissioned. The user fields
-                // (UserId/UserName/PartyId/PartyUuid) are resolved from Register:
-                // POST /register/api/v2/internal/parties/query (fields=uuid,id,user).
-                RegisterContracts.Party? party = await _partiesClient.GetPartyIdentifiersAndUsernameByPersonIdentifier(pid);
+                ExchangeSubject? subject = await ResolveExchangeSubject(pid, email, cancellationToken, authLevel);
 
-                if (party is null || !party.User.HasValue || !party.User.Value.UserId.HasValue)
+                if (subject is null)
                 {
-                    _logger.LogInformation("ID-porten exchange: person not found in Register, or has no associated Altinn user.");
                     return Unauthorized();
                 }
 
-                int userId = (int)party.User.Value.UserId.Value;
-                string userName = party.User.Value.Username.HasValue ? party.User.Value.Username.Value : string.Empty;
-                int partyId = (int)party.PartyId.Value;
-                Guid? partyUuid = party.Uuid;
-
-                if (!partyUuid.HasValue)
-                {
-                    _logger.LogInformation("ID-porten exchange: party UUID missing for user.");
-                    return Unauthorized();
-                }
-
-                string issuer = _generalSettings.AltinnOidcIssuerUrl;
-
-                string authLevelValue = "0";
-
-                if (authLevel.Equals(IdportenLevel0))
-                {
-                    authLevelValue = "0";
-                }
-                else if (authLevel.Equals(IdportenLevel3))
-                {
-                    authLevelValue = "3";
-                }
-                else if (authLevel.Equals(IdportenLevel4))
-                {
-                    authLevelValue = "4";
-                }
-                else
-                {
-                    authLevelValue = authLevel.Substring(authLevel.Length - 1, 1);
-                }
-
-                List<Claim> claims = new List<Claim>();
-                claims.Add(new Claim(ClaimTypes.NameIdentifier, userId.ToString(), ClaimValueTypes.String, issuer));
-                claims.Add(new Claim(AltinnCoreClaimTypes.UserId, userId.ToString(), ClaimValueTypes.String, issuer));
-                claims.Add(new Claim(AltinnCoreClaimTypes.UserName, userName, ClaimValueTypes.String, issuer));
-                claims.Add(new Claim(AltinnCoreClaimTypes.PartyID, partyId.ToString(), ClaimValueTypes.Integer32, issuer));
-                claims.Add(new Claim(AltinnCoreClaimTypes.PartyUUID, partyUuid.Value.ToString(), ClaimValueTypes.String, issuer));
-                claims.Add(new Claim(AltinnCoreClaimTypes.AuthenticateMethod, authMethod, ClaimValueTypes.String, issuer));
-                claims.Add(new Claim(AltinnCoreClaimTypes.AuthenticationLevel, authLevelValue, ClaimValueTypes.Integer32, issuer));
-                claims.AddRange(token.Claims);
-
-                string[] claimTypesToRemove = { "aud", IssClaimName, "at_hash", "sid", "sub" };
-                foreach (string claimType in claimTypesToRemove)
-                {
-                    Claim claim = claims.Find(c => c.Type == claimType);
-                    claims.Remove(claim);
-                }
-
-                claims.Add(new Claim(IssClaimName, issuer, ClaimValueTypes.String, issuer));
-                claims.Add(new Claim("sid", _guidService.NewGuid(), ClaimValueTypes.String, issuer));
-
-                ClaimsIdentity identity = new ClaimsIdentity(EndUserSystemIdentity);
-                identity.AddClaims(claims);
-                ClaimsPrincipal principal = new ClaimsPrincipal(identity);
-
-                string serializedToken = await GenerateToken(principal, token.ValidTo);
-                await _eventLog.CreateAuthenticationEventAsync(_featureManager, serializedToken, AuthenticationEventType.TokenExchange, HttpContext.Connection.RemoteIpAddress, externalSessionId);
-                return Ok(serializedToken);
+                return await IssueExchangedToken(token, subject, authMethod, authLevel, externalSessionId);
             }
             catch (Exception ex)
             {
@@ -636,6 +590,197 @@ namespace Altinn.Platform.Authentication.Controllers
                 return Unauthorized();
             }
         }
+
+        /// <summary>
+        /// The Altinn user the incoming ID-porten token is exchanged for, resolved from Register.
+        /// </summary>
+        /// <param name="UserId">The Altinn user id.</param>
+        /// <param name="UserName">The Altinn user name, or an empty string when Register has none.</param>
+        /// <param name="PartyId">The user's party id.</param>
+        /// <param name="PartyUuid">The user's party uuid.</param>
+        /// <param name="ExternalIdentity">
+        /// The <c>urn:altinn:person:idporten-email:*</c> identity for a self-registered email user,
+        /// or <see langword="null"/> for a person user.
+        /// </param>
+        /// <param name="Email">
+        /// The normalized (lower-cased) email address for a self-registered email user,
+        /// or <see langword="null"/> for a person user.
+        /// </param>
+        private sealed record ExchangeSubject(
+            int UserId,
+            string UserName,
+            int PartyId,
+            Guid PartyUuid,
+            string? ExternalIdentity,
+            string? Email);
+
+        /// <summary>
+        /// Resolves the Altinn user behind the incoming token: by person identifier when the token carries a
+        /// <c>pid</c>, otherwise by email identifier.
+        /// </summary>
+        /// <returns>The resolved subject, or <see langword="null"/> when the exchange must be rejected.</returns>
+        private async Task<ExchangeSubject?> ResolveExchangeSubject(string? pid, string? email, CancellationToken cancellationToken, string authLevel)
+        {
+            if (!string.IsNullOrWhiteSpace(pid))
+            {
+                // SBL Bridge user lookup is decommissioned. The user fields
+                // (UserId/UserName/PartyId/PartyUuid) are resolved from Register:
+                // POST /register/api/v2/internal/parties/query (fields=uuid,id,user,person.date-of-death).
+                RegisterContracts.Party? party = await _partiesClient.GetPartyIdentifiersAndUsernameByPersonIdentifier(pid, cancellationToken);
+
+                if (!HasUsableAltinnUser(party))
+                {
+                    _logger.LogInformation("ID-porten exchange: person not found in Register, or has no associated Altinn user.");
+                    return null;
+                }
+
+                if (party is RegisterContracts.Person { DateOfDeath.IsUnset: true })
+                {
+                    _logger.LogError("ID-porten exchange: dateOfDeath was not requested from Register.");
+                    return null;
+                }
+
+                if (IsDeceased(party))
+                {
+                    _logger.LogInformation("ID-porten exchange: person is deceased.");
+                    return null;
+                }
+
+                return ToExchangeSubject(party, externalIdentity: null, email: null);
+            }
+
+            if (string.IsNullOrWhiteSpace(email))
+            {
+                _logger.LogInformation("ID-porten exchange: token carried neither a pid nor an email claim.");
+                return null;
+            }
+
+            if (!string.Equals(authLevel, "selfregistered-email", StringComparison.OrdinalIgnoreCase))
+            {
+                _logger.LogInformation("ID-porten exchange: token carried an email claim but no pid, but the auth level is not selfregistered-email.");
+                return null;
+            }
+
+            if (!await _featureManager.IsEnabledAsync(FeatureFlags.SupportIDTokenExchangeForSelfRegisteredEmailUsers))
+            {
+                _logger.LogInformation("ID-porten exchange: exchange for self-registered email users is disabled.");
+                return null;
+            }
+
+            // Mirrors the provisioning the browser sign-in flow performs (see OidcServerService), so an
+            // exchange and a normal login converge on the same Altinn user for the same address. The
+            // address is lower-cased before it is encoded: the external identity is matched verbatim.
+            string normalizedEmail = email.ToLowerInvariant();
+            string externalIdentity = $"{AltinnCoreClaimTypes.IdPortenEmailPrefix}:{UrnEncoded.Create(normalizedEmail).Encoded}";
+
+            RegisterContracts.SelfIdentifiedUser? provisioned = await _registerUserProvisioningClient.GetOrCreateUser(
+                new SelfIdentifiedUserProvisioningRequest
+                {
+                    SelfIdentifiedUserType = RegisterContracts.SelfIdentifiedUserType.IdPortenEmail,
+                    ExternalIdentity = externalIdentity,
+                    UserName = "epost:" + normalizedEmail,
+                    Email = normalizedEmail,
+                },
+                cancellationToken);
+
+            if (provisioned is null)
+            {
+                _logger.LogError("ID-porten exchange: Register provisioning failed.");
+                return null;
+            }
+
+            return ToExchangeSubject(provisioned, externalIdentity, normalizedEmail);
+        }
+
+        /// <summary>
+        /// Projects a Register party onto an <see cref="ExchangeSubject"/>, rejecting parties that carry no
+        /// associated Altinn user or are missing identifiers.
+        /// </summary>
+        private ExchangeSubject? ToExchangeSubject(RegisterContracts.Party party, string? externalIdentity, string? email)
+        {
+            if (!party.User.HasValue || !party.User.Value.UserId.HasValue)
+            {
+                _logger.LogInformation("ID-porten exchange: party has no associated Altinn user.");
+                return null;
+            }
+
+            if (!party.PartyId.HasValue)
+            {
+                _logger.LogInformation("ID-porten exchange: party identifiers missing for user.");
+                return null;
+            }
+
+            return new ExchangeSubject(
+                (int)party.User.Value.UserId.Value,
+                party.User.Value.Username.HasValue ? party.User.Value.Username.Value : string.Empty,
+                (int)party.PartyId.Value,
+                party.Uuid,
+                externalIdentity,
+                email);
+        }
+
+        /// <summary>
+        /// Builds and signs the Altinn token for a resolved subject. Identical for person and email users,
+        /// except that an email user also carries its external-identifier claim and a normalized email claim.
+        /// </summary>
+        private async Task<ActionResult> IssueExchangedToken(
+            JwtSecurityToken token,
+            ExchangeSubject subject,
+            string authMethod,
+            string authLevel,
+            string? externalSessionId)
+        {
+            string issuer = _generalSettings.AltinnOidcIssuerUrl;
+            int authLevelValue = (int)AuthenticationHelper.GetAuthenticationLevelForIdPorten(authLevel);
+
+            List<Claim> claims =
+            [
+                new Claim(ClaimTypes.NameIdentifier, subject.UserId.ToString(), ClaimValueTypes.String, issuer),
+                new Claim(AltinnCoreClaimTypes.UserId, subject.UserId.ToString(), ClaimValueTypes.String, issuer),
+                new Claim(AltinnCoreClaimTypes.UserName, subject.UserName, ClaimValueTypes.String, issuer),
+                new Claim(AltinnCoreClaimTypes.PartyID, subject.PartyId.ToString(), ClaimValueTypes.Integer32, issuer),
+                new Claim(AltinnCoreClaimTypes.PartyUUID, subject.PartyUuid.ToString(), ClaimValueTypes.String, issuer),
+                new Claim(AltinnCoreClaimTypes.AuthenticateMethod, authMethod, ClaimValueTypes.String, issuer),
+                new Claim(AltinnCoreClaimTypes.AuthenticationLevel, authLevelValue.ToString(), ClaimValueTypes.Integer32, issuer),
+            ];
+
+            claims.AddRange(token.Claims);
+            claims.RemoveAll(c => c.Type is "aud" or IssClaimName or "at_hash" or "sid" or "sub");
+
+            if (subject.ExternalIdentity is not null)
+            {
+                // Replace the upstream email with the normalized address, so an exchange and a browser
+                // login produce the same email claim for the same user (see ClaimsPrincipalBuilder).
+                claims.RemoveAll(c => c.Type == AltinnCoreClaimTypes.Email);
+                claims.Add(new Claim(AltinnCoreClaimTypes.Email, subject.Email!, ClaimValueTypes.String, issuer));
+                claims.Add(new Claim(AltinnCoreClaimTypes.ExternalIdentifier, subject.ExternalIdentity, ClaimValueTypes.String, issuer));
+            }
+
+            claims.Add(new Claim(IssClaimName, issuer, ClaimValueTypes.String, issuer));
+            claims.Add(new Claim("sid", _guidService.NewGuid(), ClaimValueTypes.String, issuer));
+
+            ClaimsIdentity identity = new ClaimsIdentity(EndUserSystemIdentity);
+            identity.AddClaims(claims);
+            ClaimsPrincipal principal = new ClaimsPrincipal(identity);
+
+            string serializedToken = await GenerateToken(principal, token.ValidTo);
+            await _eventLog.CreateAuthenticationEventAsync(_featureManager, serializedToken, AuthenticationEventType.TokenExchange, HttpContext.Connection.RemoteIpAddress, externalSessionId);
+            return Ok(serializedToken);
+        }
+
+        /// <summary>
+        /// Whether Register returned a party that carries an Altinn user to mint a token for.
+        /// </summary>
+        /// <param name="party">The party returned by Register, or <see langword="null"/> when the person was not found.</param>
+        private static bool HasUsableAltinnUser([NotNullWhen(true)] RegisterContracts.Party? party)
+            => party is not null && party.User.HasValue && party.User.Value.UserId.HasValue;
+
+        /// <summary>
+        /// Whether the party is a person Register has registered a date of death for.
+        /// </summary>
+        /// <param name="party">The party returned by Register.</param>
+        private static bool IsDeceased(RegisterContracts.Party party)
+            => party is RegisterContracts.Person person && person.DateOfDeath.HasValue;
 
         /// <summary>
         /// Assumes that the consumer claim follows the ISO 6523. {"Identifier": {"Authority": "iso6523-actorid-upis","ID": "9908:910075918"}}

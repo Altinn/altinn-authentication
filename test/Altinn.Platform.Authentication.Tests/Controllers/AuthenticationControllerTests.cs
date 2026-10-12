@@ -6,6 +6,7 @@ using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Security.Claims;
+using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Web;
@@ -46,6 +47,8 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
         : WebApplicationTests(dbFixture, webApplicationFixture)
     {
         private const string OrganisationIdentity = "OrganisationLogin";
+
+        private static readonly JsonSerializerOptions _options = new(JsonSerializerDefaults.Web);
 
         private readonly Mock<IUserProfileService> _userProfileService = new();
         private readonly Mock<IGuidService> guidService = new();
@@ -446,10 +449,11 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
                   "createdAt": "2020-01-01T00:00:00Z",
                   "modifiedAt": "2020-01-01T00:00:00Z",
                   "isDeleted": false,
+                  "dateOfDeath": null,
                   "user": { "userId": 20000, "username": "steph", "userIds": [ 20000 ] }
                 }
                 """,
-                new System.Text.Json.JsonSerializerOptions(System.Text.Json.JsonSerializerDefaults.Web));
+                _options);
 
             Assert.NotNull(party);
 
@@ -522,10 +526,11 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
                   "createdAt": "2020-01-01T00:00:00Z",
                   "modifiedAt": "2020-01-01T00:00:00Z",
                   "isDeleted": false,
+                  "dateOfDeath": null,
                   "user": { "userId": 20000, "username": "steph", "userIds": [ 20000 ] }
                 }
                 """,
-                new System.Text.Json.JsonSerializerOptions(System.Text.Json.JsonSerializerDefaults.Web));
+                _options);
 
             Assert.NotNull(party);
 
@@ -626,10 +631,11 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
                   "createdAt": "2020-01-01T00:00:00Z",
                   "modifiedAt": "2020-01-01T00:00:00Z",
                   "isDeleted": false,
+                  "dateOfDeath": null,
                   "user": { "userId": 20000, "username": "steph", "userIds": [ 20000 ] }
                 }
                 """,
-                new System.Text.Json.JsonSerializerOptions(System.Text.Json.JsonSerializerDefaults.Web));
+                _options);
 
             Assert.NotNull(party);
 
@@ -717,6 +723,125 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
 
             // Act
             HttpResponseMessage response = await client.GetAsync(url);
+
+            // Assert
+            Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+        }
+
+        /// <summary>
+        /// A deceased person must not be able to exchange an ID-porten token for an Altinn token.
+        /// </summary>
+        [Fact]
+        public async Task AuthenticateEndUser_DeceasedPerson_ReturnsUnauthorized()
+        {
+            // Arrange
+            List<Claim> claims = new()
+            {
+                new Claim("pid", "17899198255"),
+                new Claim("amr", "Minid-PIN"),
+                new Claim("acr", "idporten-loa-high"),
+                new Claim("scope", "altinn:instances.read"),
+            };
+
+            ClaimsIdentity identity = new();
+            identity.AddClaims(claims);
+            ClaimsPrincipal externalPrincipal = new(identity);
+
+            RegisterContracts.Party? deceased = System.Text.Json.JsonSerializer.Deserialize<RegisterContracts.Party>(
+                """
+                {
+                  "partyType": "person",
+                  "personIdentifier": "17899198255",
+                  "firstName": "SMIGRENDE",
+                  "lastName": "STILLING",
+                  "shortName": "STILLING SMIGRENDE",
+                  "dateOfBirth": "1991-09-17",
+                  "dateOfDeath": "2020-12-22",
+                  "partyUuid": "b6a019e8-96ba-489c-83cc-a3fe66d33b7a",
+                  "versionId": 641270138,
+                  "partyId": 50459464,
+                  "displayName": "SMIGRENDE STILLING",
+                  "createdAt": "2025-03-10T17:36:37.345775+00:00",
+                  "modifiedAt": "2026-04-29T10:34:38.40008+00:00",
+                  "isDeleted": false,
+                  "deletedAt": null,
+                  "user": { "userId": 20875912, "username": null, "userIds": [ 20875912 ] }
+                }
+                """,
+                _options);
+
+            Assert.NotNull(deceased);
+
+            RegisterContracts.Person person = Assert.IsType<RegisterContracts.Person>(deceased);
+            Assert.True(person.DateOfDeath.HasValue);
+
+            _partiesClient
+                .Setup(p => p.GetPartyIdentifiersAndUsernameByPersonIdentifier(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(deceased);
+
+            HttpClient client = CreateClient();
+
+            string externalToken = JwtTokenMock.GenerateToken(externalPrincipal, TimeSpan.FromMinutes(2), now: TimeProvider.GetUtcNow());
+            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", externalToken);
+
+            // Act
+            HttpResponseMessage response = await client.GetAsync("/authentication/api/v1/exchange/id-porten");
+
+            // Assert
+            Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+        }
+
+        /// <summary>
+        /// When Register returns a person without dateOfDeath, the field was never requested. The exchange must
+        /// fail closed rather than treat the person as alive.
+        /// </summary>
+        [Fact]
+        public async Task AuthenticateEndUser_DateOfDeathNotRequested_ReturnsUnauthorized()
+        {
+            // Arrange
+            List<Claim> claims = new()
+            {
+                new Claim("pid", "19108000239"),
+                new Claim("amr", "Minid-PIN"),
+                new Claim("acr", "idporten-loa-high"),
+                new Claim("scope", "altinn:instances.read"),
+            };
+
+            ClaimsIdentity identity = new();
+            identity.AddClaims(claims);
+            ClaimsPrincipal externalPrincipal = new(identity);
+
+            RegisterContracts.Party? party = System.Text.Json.JsonSerializer.Deserialize<RegisterContracts.Party>(
+                """
+                {
+                  "partyType": "person",
+                  "partyUuid": "5c0656db-cf51-43a9-bd68-d8a55e7b6f3b",
+                  "versionId": 1,
+                  "partyId": 50001,
+                  "personIdentifier": "19108000239",
+                  "displayName": "Test Testesen",
+                  "createdAt": "2020-01-01T00:00:00Z",
+                  "modifiedAt": "2020-01-01T00:00:00Z",
+                  "isDeleted": false,
+                  "user": { "userId": 20000, "username": "steph", "userIds": [ 20000 ] }
+                }
+                """,
+                _options);
+
+            RegisterContracts.Person person = Assert.IsType<RegisterContracts.Person>(party);
+            Assert.True(person.DateOfDeath.IsUnset);
+
+            _partiesClient
+                .Setup(p => p.GetPartyIdentifiersAndUsernameByPersonIdentifier(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(party);
+
+            HttpClient client = CreateClient();
+
+            string externalToken = JwtTokenMock.GenerateToken(externalPrincipal, TimeSpan.FromMinutes(2), now: TimeProvider.GetUtcNow());
+            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", externalToken);
+
+            // Act
+            HttpResponseMessage response = await client.GetAsync("/authentication/api/v1/exchange/id-porten");
 
             // Assert
             Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
@@ -830,10 +955,11 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
                   "createdAt": "2020-01-01T00:00:00Z",
                   "modifiedAt": "2020-01-01T00:00:00Z",
                   "isDeleted": false,
+                  "dateOfDeath": null,
                   "user": { "userId": 20000, "username": "steph", "userIds": [ 20000 ] }
                 }
                 """,
-                new System.Text.Json.JsonSerializerOptions(System.Text.Json.JsonSerializerDefaults.Web));
+                _options);
 
             Assert.NotNull(party);
 

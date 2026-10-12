@@ -73,7 +73,7 @@ namespace Altinn.Platform.Authentication.Tests.Mocks
             return await Task.FromResult("https://smartcloudaltinn.azurewebsites.net/changerequest");
         }
 
-        public Task<Result<bool>> RejectChangeOnSystemUser(Guid requestId, int userId, CancellationToken cancellationToken)
+        public Task<Result<bool>> RejectChangeOnSystemUser(Guid requestId, int partyId, int userId, CancellationToken cancellationToken)
         {
             throw new NotImplementedException();
         }

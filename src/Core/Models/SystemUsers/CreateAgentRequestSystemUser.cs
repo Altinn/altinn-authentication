@@ -30,7 +30,7 @@ public class CreateAgentRequestSystemUser()
     /// </summary>
     [Required]
     [JsonPropertyName("systemId")]
-    public string SystemId { get; set; }
+    public required string SystemId { get; set; }
 
     /// <summary>
     /// The organisation number for the SystemUser's Party 
@@ -38,7 +38,7 @@ public class CreateAgentRequestSystemUser()
     /// </summary>
     [Required]
     [JsonPropertyName("partyOrgNo")]
-    public string PartyOrgNo { get; set; }
+    public required string PartyOrgNo { get; set; }
 
     /// <summary>
     /// The set of Rights requested for this system user. 
@@ -47,7 +47,7 @@ public class CreateAgentRequestSystemUser()
     /// </summary>
     [Required]
     [JsonPropertyName("accessPackages")]
-    public List<AccessPackage> AccessPackages { get; set; }
+    public required List<AccessPackage> AccessPackages { get; set; }
 
     /// <summary>
     /// Optional redirect URL to navigate to after the customer has accepted/denied the Request

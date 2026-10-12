@@ -25,6 +25,16 @@ public class ExternalClientDto
     public required string OrganizationIdentifier { get; set; }
 
     /// <summary>
+    /// Organisation unit type of the party, e.g. "AS", "ENK"
+    /// </summary>
+    public string? UnitType { get; set; }
+
+    /// <summary>
+    /// Whether the party has been deleted in the register
+    /// </summary>
+    public bool IsDeleted { get; set; }
+
+    /// <summary>
     /// Gets or sets a collection of all access information for the client 
     /// </summary>
     public List<RoleAccessPackagesPrimitive> Access { get; set; } = [];

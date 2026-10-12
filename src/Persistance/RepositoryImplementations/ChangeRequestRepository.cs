@@ -1,5 +1,4 @@
 ﻿using System.Data;
-using System.Data.Common;
 using Altinn.Authorization.ProblemDetails;
 using Altinn.Platform.Authentication.Core.Models;
 using Altinn.Platform.Authentication.Core.Models.AccessPackages;
@@ -186,7 +185,7 @@ public class ChangeRequestRepository(
     }
 
     /// <inheritdoc/>
-    public async Task<List<ChangeRequestResponse>> GetAllChangeRequestsBySystem(string systemId, CancellationToken cancellationToken)
+    public async Task<List<ChangeRequestResponse>> GetAllChangeRequestsBySystem(string systemId, Guid continueFrom, int pageSize, CancellationToken cancellationToken)
     {
         const string QUERY = /*strpsql*/@"
             SELECT 
@@ -203,14 +202,20 @@ public class ChangeRequestRepository(
                 redirect_urls,
                 created
             FROM business_application.change_request r
-            WHERE r.system_id = @system_id
-                and r.is_deleted = false;";
+            WHERE
+                r.system_id = @system_id
+                AND r.is_deleted = false
+                AND r.id >= @continue_from
+            ORDER BY r.id ASC
+            LIMIT @limit;";
 
         try
         {
             await using NpgsqlCommand command = dataSource.CreateCommand(QUERY);
 
             command.Parameters.AddWithValue("system_id", systemId);
+            command.Parameters.AddWithValue("continue_from", continueFrom);
+            command.Parameters.AddWithValue("limit", pageSize + 1);
 
             return await command.ExecuteEnumerableAsync(cancellationToken)
                 .Select(ConvertFromReaderToChangeRequest)
@@ -297,7 +302,7 @@ public class ChangeRequestRepository(
             var dbres = await command.ExecuteEnumerableAsync()
                 .Select(ConvertFromReaderToChangeRequest)
                 .FirstOrDefaultAsync();
-                        
+
             return dbres;
         }
         catch (Exception ex)
@@ -338,7 +343,7 @@ public class ChangeRequestRepository(
             var dbres = await command.ExecuteEnumerableAsync()
                 .Select(ConvertFromReaderToChangeRequest)
                 .FirstOrDefaultAsync();
-                        
+
             return dbres;
         }
         catch (Exception ex)

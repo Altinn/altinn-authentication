@@ -392,7 +392,7 @@ public class ChangeRequestSystemUserController(
     public async Task<ActionResult<ChangeRequestResponse>> RejectSystemUserChangeRequest(int party, Guid requestId, CancellationToken cancellationToken = default)
     {
         int userId = AuthenticationHelper.GetUserId(HttpContext);
-        Result<bool> response = await changeRequestService.RejectChangeOnSystemUser(requestId, userId, cancellationToken);
+        Result<bool> response = await changeRequestService.RejectChangeOnSystemUser(requestId, party, userId, cancellationToken);
         if (response.IsProblem)
         {
             return response.Problem.ToActionResult();
