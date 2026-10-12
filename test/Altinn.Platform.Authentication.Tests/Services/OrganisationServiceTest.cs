@@ -188,7 +188,7 @@ namespace Altinn.Platform.Authentication.Tests.Services
                 l => l.Log(
                     LogLevel.Warning,
                     It.IsAny<EventId>(),
-                    It.Is<It.IsAnyType>((state, _) => state.ToString()!.Contains(messageFragment)),
+                    It.Is<It.IsAnyType>((state, _) => state!.ToString()!.Contains(messageFragment)),
                     It.IsAny<Exception>(),
                     It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
                 times);

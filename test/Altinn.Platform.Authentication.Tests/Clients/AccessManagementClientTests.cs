@@ -436,7 +436,7 @@ namespace Altinn.Platform.Authentication.Tests.Clients
                 l => l.Log(
                     LogLevel.Error,
                     It.IsAny<EventId>(),
-                    It.Is<It.IsAnyType>((state, _) => expectedFragments.All(fragment => state.ToString()!.Contains(fragment))),
+                    It.Is<It.IsAnyType>((state, _) => expectedFragments.All(fragment => state!.ToString()!.Contains(fragment))),
                     It.IsAny<Exception?>(),
                     It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
                 Times.Once);
