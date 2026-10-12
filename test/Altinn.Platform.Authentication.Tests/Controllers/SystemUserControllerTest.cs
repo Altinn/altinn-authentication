@@ -2379,13 +2379,22 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             Assert.Equal(Problem.AccessPackage_FailedToGetDelegatedPackages.Title, problemDetails?.Title);
         }
 
+        /// <summary>
+        /// Creates and approves <paramref name="paginationSize"/> system users, one at a time.
+        /// </summary>
+        /// <remarks>
+        /// Deliberately sequential. The test database uses <c>Pooling=false</c> and all concurrently running
+        /// test classes share one PostgreSQL container (default <c>max_connections=100</c>). Firing every
+        /// create/approve at once (102 for <see cref="SystemUser_ListAll_Ok"/>) opened one physical connection
+        /// per in-flight query; together with other tests this intermittently exceeded <c>max_connections</c>,
+        /// so Npgsql failed with "No suitable host was found" and the API returned 500.
+        /// </remarks>
         private async Task CreateSeveralSystemUsers(HttpClient client, int paginationSize, string systemId)
         {
-            var tasks = Enumerable.Range(0, paginationSize)
-                              .Select(i => CreateSystemUser(client, i, systemId))
-                              .ToList();
-
-            await Task.WhenAll(tasks);
+            for (int i = 0; i < paginationSize; i++)
+            {
+                await CreateSystemUser(client, i, systemId);
+            }
         }
 
         private async Task CreateSystemUser(HttpClient client, int externalRef, string systemId)
