@@ -47,7 +47,7 @@ public class RequestSystemUserService(
     private int _paginationSize = _paginationOption.Value.Size;
 
     /// <inheritdoc/>
-    public async Task<Result<RequestSystemResponse>> CreateRequest(CreateRequestSystemUser createRequest, OrganisationNumber vendorOrgNo)
+    public async Task<Result<RequestSystemResponse>> CreateRequest(CreateRequestSystemUser createRequest, OrganisationNumber vendorOrgNo, CancellationToken cancellationToken = default)
     {
         // The combination of SystemId + Customer's OrgNo and Vendor's External Reference must be unique, for both all Requests and SystemUsers.
         ExternalRequestId externalRequestId = new()
@@ -120,7 +120,7 @@ public class RequestSystemUserService(
 
         if (createRequest.Rights is not null && createRequest.Rights.Count > 0)
         {
-            Result<bool> valRights = await systemUserService.ValidateRights(createRequest.Rights, systemInfo);
+            Result<bool> valRights = await systemUserService.ValidateRights(createRequest.Rights, systemInfo, cancellationToken);
             if (valRights.IsProblem)
             {
                 return valRights.Problem;

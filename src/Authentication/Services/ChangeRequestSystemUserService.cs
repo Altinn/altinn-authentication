@@ -50,7 +50,7 @@ public class ChangeRequestSystemUserService(
     private int _paginationSize = _paginationOption.Value.Size;
 
     /// <inheritdoc/>
-    public async Task<Result<ChangeRequestResponse>> CreateChangeRequest(ChangeRequestSystemUser createRequest, OrganisationNumber vendorOrgNo, SystemUserInternalDTO systemUser, Guid correllationId)
+    public async Task<Result<ChangeRequestResponse>> CreateChangeRequest(ChangeRequestSystemUser createRequest, OrganisationNumber vendorOrgNo, SystemUserInternalDTO systemUser, Guid correllationId, CancellationToken cancellationToken = default)
     {
         // For now we don't support ChangeRequests for an Agent SystemUser
         if (systemUser.UserType == Core.Enums.SystemUserType.Agent)
@@ -73,7 +73,7 @@ public class ChangeRequestSystemUserService(
             RedirectUrl = createRequest.RedirectUrl
         };
 
-        Result<RegisteredSystemResponse> regSystem = await ValidateChangeRequest(created, vendorOrgNo, createNew: true);
+        Result<RegisteredSystemResponse> regSystem = await ValidateChangeRequest(created, vendorOrgNo, createNew: true, cancellationToken);
         if (regSystem.IsProblem)
         {
             return regSystem.Problem;
@@ -532,7 +532,7 @@ public class ChangeRequestSystemUserService(
         return systemUserRequest.RedirectUrl;
     }
 
-    private async Task<Result<RegisteredSystemResponse>> ValidateChangeRequest(ChangeRequestResponse validateSet, OrganisationNumber vendorOrgNo, bool createNew)
+    private async Task<Result<RegisteredSystemResponse>> ValidateChangeRequest(ChangeRequestResponse validateSet, OrganisationNumber vendorOrgNo, bool createNew, CancellationToken cancellationToken)
     {
         Result<bool> valRef = await ValidateStatus(validateSet.Id, createNew);
         if (valRef.IsProblem)
@@ -574,7 +574,7 @@ public class ChangeRequestSystemUserService(
 
         if (validateSet.RequiredRights is not null && validateSet.RequiredRights.Count > 0)
         {
-            Result<bool> valRights = await systemUserService.ValidateRights(validateSet.RequiredRights, systemInfo);
+            Result<bool> valRights = await systemUserService.ValidateRights(validateSet.RequiredRights, systemInfo, cancellationToken);
             if (valRights.IsProblem)
             {
                 return valRights.Problem;
@@ -594,9 +594,9 @@ public class ChangeRequestSystemUserService(
     }
 
     /// <inheritdoc/>
-    public async Task<Result<ChangeRequestResponse>> VerifySetOfRights(ChangeRequestResponse verifyRequest, SystemUserInternalDTO systemUser, OrganisationNumber vendorOrgNo)
+    public async Task<Result<ChangeRequestResponse>> VerifySetOfRights(ChangeRequestResponse verifyRequest, SystemUserInternalDTO systemUser, OrganisationNumber vendorOrgNo, CancellationToken cancellationToken = default)
     {
-        Result<RegisteredSystemResponse> valSet = await ValidateChangeRequest(verifyRequest, vendorOrgNo, createNew: false);
+        Result<RegisteredSystemResponse> valSet = await ValidateChangeRequest(verifyRequest, vendorOrgNo, createNew: false, cancellationToken);
         if (valSet.IsProblem)
         {
             return valSet.Problem;

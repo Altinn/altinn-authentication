@@ -128,7 +128,7 @@ public class RequestSystemUserController : ControllerBase
         }
 
         // This is a new Request
-        response = await _requestSystemUser.CreateRequest(createRequest, vendorOrgNo);
+        response = await _requestSystemUser.CreateRequest(createRequest, vendorOrgNo, cancellationToken);
         
         if (response.IsSuccess)
         {

@@ -374,6 +374,12 @@ public class RequestControllerTests(
         Assert.NotNull(problemDetails);
         Assert.Equal(Problem.Rights_ResourceNotDelegable.Title, problemDetails.Title);
         Assert.Equal("ske-krav-og-betalinger", problemDetails.Extensions["NotDelegableResources"]?.ToString());
+
+        // And no system user was created for the request
+        string getEndpoint = $"/authentication/api/v1/systemuser/vendor/byquery?system-id={req.SystemId}&orgno={req.PartyOrgNo}&external-ref={req.ExternalRef}";
+        HttpRequestMessage getRequestMessage = new(HttpMethod.Get, getEndpoint);
+        HttpResponseMessage getResponseMessage = await client.SendAsync(getRequestMessage, HttpCompletionOption.ResponseHeadersRead);
+        Assert.Equal(HttpStatusCode.NotFound, getResponseMessage.StatusCode);
     }
 
     [Fact]
