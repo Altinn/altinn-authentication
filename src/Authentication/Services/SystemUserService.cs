@@ -708,11 +708,21 @@ namespace Altinn.Platform.Authentication.Services
                 }
             }
 
-            // The rights match the registered system, but the resources themselves can have been deleted, changed
-            // type or turned non-delegable in the resource registry after the system was registered. This check runs
-            // both when the vendor creates a request and when the customer approves it, so a request that was valid
-            // when it was created is rejected at approval if the resource has become unusable in the meantime. The
-            // approval would otherwise fail in the delegation check anyway; this gives it a precise problem instead.
+            // The rights match the registered system. The resources themselves can still have changed in the
+            // resource registry after the system was registered, so check them there as well.
+            return await ValidateResourcesInRegistry(rights, cancellationToken);
+        }
+
+        /// <summary>
+        /// Validates that the resources behind the rights are still usable in the resource registry: present, of a
+        /// supported resource type and delegable. A resource can have been deleted, changed type or turned
+        /// non-delegable after the system was registered. This check runs both when the vendor creates a request and
+        /// when the customer approves it, so a request that was valid when it was created is rejected at approval if
+        /// the resource has become unusable in the meantime. The approval would otherwise fail in the delegation
+        /// check anyway; this gives it a precise problem instead.
+        /// </summary>
+        private async Task<Result<bool>> ValidateResourcesInRegistry(List<Right> rights, CancellationToken cancellationToken)
+        {
             var invalidResourceIds = await systemRegisterService.GetInvalidResourceIdsDetailed(rights, cancellationToken);
 
             List<KeyValuePair<string, string>> invalidResourceDetails = [];

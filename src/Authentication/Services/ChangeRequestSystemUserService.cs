@@ -540,7 +540,7 @@ public class ChangeRequestSystemUserService(
             return valRef.Problem;
         }
 
-        RegisteredSystemResponse? systemInfo = await systemRegisterService.GetRegisteredSystemInfo(validateSet.SystemId);
+        RegisteredSystemResponse? systemInfo = await systemRegisterService.GetRegisteredSystemInfo(validateSet.SystemId, cancellationToken);
         if (systemInfo is null)
         {
             return Problem.SystemIdNotFound;
@@ -572,7 +572,21 @@ public class ChangeRequestSystemUserService(
             }
         }
 
-        if (validateSet.RequiredRights is not null && validateSet.RequiredRights.Count > 0)
+        Result<bool> valRightsAndPackages = await ValidateRequiredRightsAndAccessPackages(validateSet, systemInfo, cancellationToken);
+        if (valRightsAndPackages.IsProblem)
+        {
+            return valRightsAndPackages.Problem;
+        }
+
+        return systemInfo;
+    }
+
+    /// <summary>
+    /// Validates the required rights and access packages of a change request against the registered system.
+    /// </summary>
+    private async Task<Result<bool>> ValidateRequiredRightsAndAccessPackages(ChangeRequestResponse validateSet, RegisteredSystemResponse systemInfo, CancellationToken cancellationToken)
+    {
+        if (validateSet.RequiredRights is { Count: > 0 })
         {
             Result<bool> valRights = await systemUserService.ValidateRights(validateSet.RequiredRights, systemInfo, cancellationToken);
             if (valRights.IsProblem)
@@ -581,7 +595,7 @@ public class ChangeRequestSystemUserService(
             }
         }
 
-        if (validateSet.RequiredAccessPackages is not null && validateSet.RequiredAccessPackages.Count > 0)
+        if (validateSet.RequiredAccessPackages is { Count: > 0 })
         {
             Result<bool> valPackages = await systemUserService.ValidateAccessPackages(validateSet.RequiredAccessPackages, systemInfo, isAgentRequest: false);
             if (valPackages.IsProblem)
@@ -590,13 +604,13 @@ public class ChangeRequestSystemUserService(
             }
         }
 
-        return systemInfo;
+        return true;
     }
 
     /// <inheritdoc/>
-    public async Task<Result<ChangeRequestResponse>> VerifySetOfRights(ChangeRequestResponse verifyRequest, SystemUserInternalDTO systemUser, OrganisationNumber vendorOrgNo, CancellationToken cancellationToken = default)
+    public async Task<Result<ChangeRequestResponse>> VerifySetOfRights(ChangeRequestResponse validateSet, SystemUserInternalDTO systemUser, OrganisationNumber vendorOrgNo, CancellationToken cancellationToken = default)
     {
-        Result<RegisteredSystemResponse> valSet = await ValidateChangeRequest(verifyRequest, vendorOrgNo, createNew: false, cancellationToken);
+        Result<RegisteredSystemResponse> valSet = await ValidateChangeRequest(validateSet, vendorOrgNo, createNew: false, cancellationToken);
         if (valSet.IsProblem)
         {
             return valSet.Problem;
@@ -604,7 +618,7 @@ public class ChangeRequestSystemUserService(
 
         ChangeRequestStatus changeRequestStatus = ChangeRequestStatus.NoChangeNeeded;
 
-        Party? party = await partiesClient.GetPartyByOrgNo(systemUser.ReporteeOrgNo);
+        Party? party = await partiesClient.GetPartyByOrgNo(systemUser.ReporteeOrgNo, cancellationToken);
 
         if (party is null || party.PartyUuid is null)
         {
@@ -613,7 +627,7 @@ public class ChangeRequestSystemUserService(
 
         Guid partyUuid = (Guid)party.PartyUuid;
 
-        Result<List<AccessPackage>> verifiedRequiredAccessPackages = await VerifyAccessPackages(verifyRequest.RequiredAccessPackages, partyUuid, systemUser, true);
+        Result<List<AccessPackage>> verifiedRequiredAccessPackages = await VerifyAccessPackages(validateSet.RequiredAccessPackages, partyUuid, systemUser, true, cancellationToken);
         if (verifiedRequiredAccessPackages.IsProblem)
         {
             return verifiedRequiredAccessPackages.Problem;
@@ -624,7 +638,7 @@ public class ChangeRequestSystemUserService(
             changeRequestStatus = ChangeRequestStatus.New;
         }
 
-        Result<List<AccessPackage>> verifiedUnwantedAccessPackages = await VerifyAccessPackages(verifyRequest.UnwantedAccessPackages, partyUuid, systemUser, false);
+        Result<List<AccessPackage>> verifiedUnwantedAccessPackages = await VerifyAccessPackages(validateSet.UnwantedAccessPackages, partyUuid, systemUser, false, cancellationToken);
 
         if (verifiedUnwantedAccessPackages.IsProblem)
         {
@@ -634,16 +648,16 @@ public class ChangeRequestSystemUserService(
         return new ChangeRequestResponse()
         {
             Id = Guid.NewGuid(),
-            ExternalRef = verifyRequest.ExternalRef,
-            SystemId = verifyRequest.SystemId,
+            ExternalRef = validateSet.ExternalRef,
+            SystemId = validateSet.SystemId,
             SystemUserId = Guid.Parse(systemUser.Id),
-            PartyOrgNo = verifyRequest.PartyOrgNo,
-            RequiredRights = verifyRequest.RequiredRights,
-            UnwantedRights = verifyRequest.UnwantedRights,
+            PartyOrgNo = validateSet.PartyOrgNo,
+            RequiredRights = validateSet.RequiredRights,
+            UnwantedRights = validateSet.UnwantedRights,
             RequiredAccessPackages = verifiedRequiredAccessPackages.Value,
             UnwantedAccessPackages = verifiedUnwantedAccessPackages.Value,
             Status = ChangeRequestStatus.New.ToString(),
-            RedirectUrl = verifyRequest.RedirectUrl
+            RedirectUrl = validateSet.RedirectUrl
         };
     }
 

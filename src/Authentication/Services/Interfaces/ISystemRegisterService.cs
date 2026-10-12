@@ -163,7 +163,7 @@ namespace Altinn.Platform.Authentication.Services.Interfaces
         /// </summary>
         /// <remarks>
         /// Each resource attribute is checked for correct ID format, then looked up in the resource registry.
-        /// Resources whose <see cref="ServiceResource.ResourceType"/> is not in <see cref="WhitelistedResourceTypes"/>
+        /// Resources whose <see cref="Core.Models.ResourceRegistry.ServiceResource.ResourceType"/> is not in the whitelist of supported resource types
         /// are reported as unsupported resource types; resources the resource registry has flagged with delegable false
         /// are reported as not delegable.</remarks>
         /// <param name="rights">A list of rights to be validated.</param>
