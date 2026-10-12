@@ -21,6 +21,13 @@
       See #488.
     -->
     <WarningsNotAsErrors>$(WarningsNotAsErrors);NU1901;NU1902;NU1903;NU1904</WarningsNotAsErrors>
+
+    <!--
+      SA0001 (XML comment analysis disabled) has no source location, so .editorconfig cannot
+      set its severity. Keep it an error, as Altinn3.ruleset did. Only fires where StyleCop is
+      referenced (Debug builds).
+    -->
+    <WarningsAsErrors>$(WarningsAsErrors);SA0001</WarningsAsErrors>
   </PropertyGroup>
 
 </Project>

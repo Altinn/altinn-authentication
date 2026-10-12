@@ -38,10 +38,6 @@
 	  <ProjectReference Include="..\Core\Altinn.Platform.Authentication.Core.csproj" />
 	</ItemGroup>
 
-	<PropertyGroup Condition="'$(Configuration)'=='Debug'">
-		<CodeAnalysisRuleSet>..\..\Altinn3.ruleset</CodeAnalysisRuleSet>
-	</PropertyGroup>
-
 	<PropertyGroup>
 		<GenerateDocumentationFile>true</GenerateDocumentationFile>
 		<NoWarn>$(NoWarn);1591</NoWarn>

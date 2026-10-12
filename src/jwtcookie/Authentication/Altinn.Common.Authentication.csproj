@@ -49,10 +49,6 @@
     </PackageReference>
   </ItemGroup>
 
-  <PropertyGroup Condition="'$(Configuration)'=='Debug'">
-    <CodeAnalysisRuleSet>..\..\..\Altinn3.ruleset</CodeAnalysisRuleSet>
-  </PropertyGroup>
-
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
     <DocumentationFile>bin\Debug\netcoreapp3.1\AltinnCore.Authentication.xml</DocumentationFile>
   </PropertyGroup>
