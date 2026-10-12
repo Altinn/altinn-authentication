@@ -758,7 +758,7 @@ namespace Altinn.Platform.Authentication.Tests.Services
                 l => l.Log(
                     level,
                     It.IsAny<EventId>(),
-                    It.Is<It.IsAnyType>((state, _) => expectedFragments.All(fragment => state.ToString()!.Contains(fragment))),
+                    It.Is<It.IsAnyType>((state, _) => expectedFragments.All(fragment => state!.ToString()!.Contains(fragment))),
                     It.IsAny<Exception?>(),
                     It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
                 Times.Once);
@@ -770,7 +770,7 @@ namespace Altinn.Platform.Authentication.Tests.Services
                 l => l.Log(
                     level,
                     It.IsAny<EventId>(),
-                    It.Is<It.IsAnyType>((state, _) => state.ToString()!.Contains(fragment)),
+                    It.Is<It.IsAnyType>((state, _) => state!.ToString()!.Contains(fragment)),
                     It.IsAny<Exception?>(),
                     It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
                 Times.Never);
