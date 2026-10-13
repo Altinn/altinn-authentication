@@ -42,7 +42,7 @@ namespace Altinn.Platform.Authentication.Tests.Mocks
             throw new NotImplementedException();
         }
 
-        public Task<Result<RequestSystemResponse>> CreateRequest(CreateRequestSystemUser createRequest, OrganisationNumber vendorOrgNo)
+        public Task<Result<RequestSystemResponse>> CreateRequest(CreateRequestSystemUser createRequest, OrganisationNumber vendorOrgNo, CancellationToken cancellationToken = default)
         {
             throw new NotImplementedException();
         }

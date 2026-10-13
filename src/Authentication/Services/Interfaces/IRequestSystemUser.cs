@@ -23,8 +23,9 @@ public interface IRequestSystemUser
     /// </summary>
     /// <param name="createRequest">The model describing a new Request for a SystemUser</param>
     /// <param name="vendorOrgNo">The OrgNo for the Vendor requesting.</param>
+    /// <param name="cancellationToken">The cancellation token</param>
     /// <returns>Result of Response model or Problem description</returns>
-    Task<Result<RequestSystemResponse>> CreateRequest(CreateRequestSystemUser createRequest, OrganisationNumber vendorOrgNo);
+    Task<Result<RequestSystemResponse>> CreateRequest(CreateRequestSystemUser createRequest, OrganisationNumber vendorOrgNo, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Gets the status based on the External Request Id 

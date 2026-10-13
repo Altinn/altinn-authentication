@@ -139,4 +139,9 @@ public static class ValidationErrors
     public static ValidationErrorDescriptor SystemRegister_Description_Not_Provided_In_All_Languages { get; }
         = _factory.Create(20, "The description of system must be provided in all languages: nb, nn, en");
 
+    /// <summary>
+    /// Gets a validation error descriptor if the resource is marked as not delegable in the resource registry
+    /// </summary>
+    public static ValidationErrorDescriptor SystemRegister_ResourceId_ResourceNotDelegable { get; }
+        = _factory.Create(21, "One or more resources specified in rights is marked as not delegable in the resource registry.");
 }

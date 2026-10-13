@@ -154,7 +154,7 @@ public class ChangeRequestSystemUserController(
         }
 
         // This is a new Request, create and persist, return the Customer's ConfirmationPageUrl to the Vendor
-        response = await changeRequestService.CreateChangeRequest(createRequest, vendorOrgNo, systemUser, correllationId);
+        response = await changeRequestService.CreateChangeRequest(createRequest, vendorOrgNo, systemUser, correllationId, cancellationToken);
         
         if (response.IsSuccess)
         {

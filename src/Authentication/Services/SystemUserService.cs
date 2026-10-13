@@ -457,7 +457,7 @@ namespace Altinn.Platform.Authentication.Services
 
             if (rights is not null && rights.Count > 0)
             {
-                Result<bool> validatedRequestedRights = ValidateRights(rights, regSystem);
+                Result<bool> validatedRequestedRights = await ValidateRights(rights, regSystem, cancellationToken);
                 if (validatedRequestedRights.IsProblem)
                 {
                     validationProblems.Add(validatedRequestedRights.Problem);
@@ -673,7 +673,7 @@ namespace Altinn.Platform.Authentication.Services
         }
 
         /// <inheritdoc/>
-        public Result<bool> ValidateRights(List<Right> rights, RegisteredSystemResponse systemInfo)
+        public async Task<Result<bool>> ValidateRights(List<Right> rights, RegisteredSystemResponse systemInfo, CancellationToken cancellationToken = default)
         {
             if ((rights.Count > 0 && systemInfo.Rights is null) || (rights.Count > systemInfo.Rights!.Count))
             {
@@ -708,7 +708,54 @@ namespace Altinn.Platform.Authentication.Services
                 }
             }
 
-            return true;
+            // The rights match the registered system. The resources themselves can still have changed in the
+            // resource registry after the system was registered, so check them there as well.
+            return await ValidateResourcesInRegistry(rights, cancellationToken);
+        }
+
+        /// <summary>
+        /// Validates that the resources behind the rights are still usable in the resource registry: present, of a
+        /// supported resource type and delegable. A resource can have been deleted, changed type or turned
+        /// non-delegable after the system was registered. This check runs both when the vendor creates a request and
+        /// when the customer approves it, so a request that was valid when it was created is rejected at approval if
+        /// the resource has become unusable in the meantime. The approval would otherwise fail in the delegation
+        /// check anyway; this gives it a precise problem instead.
+        /// </summary>
+        private async Task<Result<bool>> ValidateResourcesInRegistry(List<Right> rights, CancellationToken cancellationToken)
+        {
+            var invalidResourceIds = await systemRegisterService.GetInvalidResourceIdsDetailed(rights, cancellationToken);
+
+            List<KeyValuePair<string, string>> invalidResourceDetails = [];
+            AddResourceIdsIfAny(invalidResourceDetails, "InvalidFormatResources", invalidResourceIds.InvalidFormatResourceIds);
+            AddResourceIdsIfAny(invalidResourceDetails, "NotFoundResources", invalidResourceIds.NotFoundResourceIds);
+            AddResourceIdsIfAny(invalidResourceDetails, "UnsupportedResourceTypes", invalidResourceIds.UnsupportedResourceTypeIds);
+            AddResourceIdsIfAny(invalidResourceDetails, "NotDelegableResources", invalidResourceIds.NotDelegableResourceIds);
+
+            if (invalidResourceDetails.Count == 0)
+            {
+                return true;
+            }
+
+            ProblemExtensionData extensionData = ProblemExtensionData.Create(invalidResourceDetails.ToArray());
+
+            // Report the precise problem when the delegable flag is the only thing standing in the way; the other
+            // categories mean the resource is missing or unusable rather than merely non-delegable.
+            bool onlyNotDelegable = invalidResourceIds.NotDelegableResourceIds.Count > 0
+                && invalidResourceIds.InvalidFormatResourceIds.Count == 0
+                && invalidResourceIds.NotFoundResourceIds.Count == 0
+                && invalidResourceIds.UnsupportedResourceTypeIds.Count == 0;
+
+            return onlyNotDelegable
+                ? Problem.Rights_ResourceNotDelegable.Create(extensionData)
+                : Problem.Rights_NotFound_Or_NotDelegable.Create(extensionData);
+        }
+
+        private static void AddResourceIdsIfAny(List<KeyValuePair<string, string>> details, string key, List<string> resourceIds)
+        {
+            if (resourceIds.Count > 0)
+            {
+                details.Add(new KeyValuePair<string, string>(key, string.Join(", ", resourceIds)));
+            }
         }
 
         /// <inheritdoc/>

@@ -61,6 +61,7 @@ public class RequestControllerTests(
     private readonly FakeTimeProvider timeProvider = new();
     private readonly Mock<IGuidService> guidService = new();
     private readonly Mock<IEventsQueueClient> _eventQueue = new();
+    private readonly ResourceRegistryClientMock _resourceRegistryClient = new();
     private static readonly DateTimeOffset TestTime = new(2025, 05, 15, 02, 05, 00, TimeSpan.Zero);
     private int _paginationSize;
 
@@ -103,7 +104,7 @@ public class RequestControllerTests(
         services.AddSingleton<ISystemRegisterService, SystemRegisterService>();
         services.AddSingleton<IRequestSystemUser, RequestSystemUserService>();
         services.AddSingleton<IAccessManagementClient, AccessManagementClientMock>();
-        services.AddSingleton<IResourceRegistryClient, ResourceRegistryClientMock>();
+        services.AddSingleton<IResourceRegistryClient>(_resourceRegistryClient);
         services.AddSingleton<IRequestRepository, RequestRepository>();
 
         // SetupDateTimeMock();
@@ -259,6 +260,126 @@ public class RequestControllerTests(
         HttpResponseMessage message = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead);
 
         Assert.Equal(HttpStatusCode.BadRequest, message.StatusCode);                
+    }
+
+    [Fact]
+    public async Task Request_Create_ResourceTurnedNotDelegable_BadRequest()
+    {
+        string dataFileName = "Data/SystemRegister/Json/SystemRegister.json";
+        HttpResponseMessage response = await CreateSystemRegister(dataFileName);
+        Assert.True(response.IsSuccessStatusCode);
+
+        // The resource was delegable when the vendor registered the system, and is turned non-delegable afterwards.
+        _resourceRegistryClient.NotDelegableResourceIds.Add("ske-krav-og-betalinger");
+
+        HttpClient client = CreateClient();
+        string token = AddSystemUserRequestWriteTestTokenToClient(client);
+        string endpoint = $"/authentication/api/v1/systemuser/request/vendor";
+
+        Right right = new()
+        {
+            Resource =
+            [
+                new AttributePair()
+                {
+                    Id = "urn:altinn:resource",
+                    Value = "ske-krav-og-betalinger"
+                }
+            ]
+        };
+
+        // Arrange
+        CreateRequestSystemUser req = new()
+        {
+            ExternalRef = "external",
+            SystemId = "991825827_the_matrix",
+            PartyOrgNo = "910493353",
+            Rights = [right],
+            AccessPackages = []
+        };
+
+        HttpRequestMessage request = new(HttpMethod.Post, endpoint)
+        {
+            Content = JsonContent.Create(req)
+        };
+        HttpResponseMessage message = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead);
+
+        Assert.Equal(HttpStatusCode.BadRequest, message.StatusCode);
+        ProblemDetails? problemDetails = await message.Content.ReadFromJsonAsync<ProblemDetails>();
+        Assert.NotNull(problemDetails);
+        Assert.Equal(Problem.Rights_ResourceNotDelegable.Title, problemDetails.Title);
+        Assert.Equal("ske-krav-og-betalinger", problemDetails.Extensions["NotDelegableResources"]?.ToString());
+    }
+
+    [Fact]
+    public async Task Approve_Request_ResourceTurnedNotDelegableAfterCreate_BadRequest()
+    {
+        // Create System used for test
+        string dataFileName = "Data/SystemRegister/Json/SystemRegister.json";
+        HttpResponseMessage response = await CreateSystemRegister(dataFileName);
+        Assert.True(response.IsSuccessStatusCode);
+
+        HttpClient client = CreateClient();
+        string token = AddSystemUserRequestWriteTestTokenToClient(client);
+        string endpoint = $"/authentication/api/v1/systemuser/request/vendor";
+
+        Right right = new()
+        {
+            Resource =
+            [
+                new AttributePair()
+                {
+                    Id = "urn:altinn:resource",
+                    Value = "ske-krav-og-betalinger"
+                }
+            ]
+        };
+
+        // Arrange: the vendor creates the request while the resource is still delegable
+        CreateRequestSystemUser req = new()
+        {
+            ExternalRef = "external",
+            SystemId = "991825827_the_matrix",
+            PartyOrgNo = "910493353",
+            Rights = [right],
+            AccessPackages = []
+        };
+
+        HttpRequestMessage request = new(HttpMethod.Post, endpoint)
+        {
+            Content = JsonContent.Create(req)
+        };
+        HttpResponseMessage message = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead);
+        Assert.Equal(HttpStatusCode.Created, message.StatusCode);
+
+        RequestSystemResponse? res = await message.Content.ReadFromJsonAsync<RequestSystemResponse>();
+        Assert.NotNull(res);
+
+        // The resource is turned non-delegable in the resource registry after the request was created
+        _resourceRegistryClient.NotDelegableResourceIds.Add("ske-krav-og-betalinger");
+
+        // Act: the customer approves the request
+        HttpClient client2 = CreateClient();
+        client2.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3, true, now: TestTime));
+
+        int partyId = 500000;
+
+        string approveEndpoint = $"/authentication/api/v1/systemuser/request/{partyId}/{res.Id}/approve";
+        HttpRequestMessage approveRequestMessage = new(HttpMethod.Post, approveEndpoint);
+        HttpResponseMessage approveResponseMessage = await client2.SendAsync(approveRequestMessage, HttpCompletionOption.ResponseHeadersRead);
+
+        // Assert: the approval is rejected with the precise problem, not the generic delegation failure
+        Assert.Equal(HttpStatusCode.BadRequest, approveResponseMessage.StatusCode);
+        ProblemDetails? problemDetails = await approveResponseMessage.Content.ReadFromJsonAsync<ProblemDetails>();
+        Assert.NotNull(problemDetails);
+        Assert.Equal(Problem.Rights_ResourceNotDelegable.Title, problemDetails.Title);
+        Assert.Equal("ske-krav-og-betalinger", problemDetails.Extensions["NotDelegableResources"]?.ToString());
+
+        // And no system user was created for the request
+        string getEndpoint = $"/authentication/api/v1/systemuser/vendor/byquery?system-id={req.SystemId}&orgno={req.PartyOrgNo}&external-ref={req.ExternalRef}";
+        HttpRequestMessage getRequestMessage = new(HttpMethod.Get, getEndpoint);
+        HttpResponseMessage getResponseMessage = await client.SendAsync(getRequestMessage, HttpCompletionOption.ResponseHeadersRead);
+        Assert.Equal(HttpStatusCode.NotFound, getResponseMessage.StatusCode);
     }
 
     [Fact]
