@@ -94,7 +94,8 @@ namespace Altinn.Platform.Authentication.Services
 
                     if (string.IsNullOrEmpty(orgNumber))
                     {
-                        _logger.LogWarning("Organisation {candidateOrganisation} is missing orgNumber and will not be part of orgNumberToOrganisation map!", candidateOrganisation);
+                        _logger.LogWarning("Organisation {org} is missing orgNumber and will not be part of orgNumberToOrganisation map!", candidateOrganisation.Org);
+                        continue;
                     }
 
                     organisationDictionary.Add(orgNumber, candidateOrganisation);

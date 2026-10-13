@@ -106,9 +106,15 @@ public class RequestSystemUserController : ControllerBase
             return ProblemInstance.Create(Altinn.Authentication.Core.Problems.Problem.Vendor_Orgno_NotFound).ToActionResult();
         }
 
+        string default_ext_ref = createRequest.PartyOrgNo;
+        if (!string.IsNullOrEmpty(createRequest.ExternalRef))
+        {
+            default_ext_ref=createRequest.ExternalRef;
+        }
+
         ExternalRequestId externalRequestId = new()
         {
-            ExternalRef = createRequest.ExternalRef ?? createRequest.PartyOrgNo,
+            ExternalRef = default_ext_ref,
             OrgNo = createRequest.PartyOrgNo,
             SystemId = createRequest.SystemId,
         };
@@ -128,7 +134,7 @@ public class RequestSystemUserController : ControllerBase
         }
 
         // This is a new Request
-        response = await _requestSystemUser.CreateRequest(createRequest, vendorOrgNo);
+        response = await _requestSystemUser.CreateRequest(createRequest, vendorOrgNo, cancellationToken);
         
         if (response.IsSuccess)
         {

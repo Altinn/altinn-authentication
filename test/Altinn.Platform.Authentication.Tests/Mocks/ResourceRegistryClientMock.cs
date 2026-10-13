@@ -11,6 +11,14 @@ namespace Altinn.Platform.Authentication.Tests.Mocks
 {
     public class ResourceRegistryClientMock : IResourceRegistryClient
     {
+        private static readonly JsonSerializerOptions _jsonOptions = new() { PropertyNameCaseInsensitive = true };
+
+        /// <summary>
+        /// Resource ids the mock reports as not delegable, whatever their data file says. Lets a test register a
+        /// system while the resource is still delegable and turn it non-delegable afterwards.
+        /// </summary>
+        public HashSet<string> NotDelegableResourceIds { get; } = [];
+
         public async Task<ServiceResource?> GetResource(string resourceId)
         {
             string dataFileName = string.Empty;
@@ -44,10 +52,21 @@ namespace Altinn.Platform.Authentication.Tests.Mocks
                 dataFileName = "Data/ResourceRegistry/ttd-am-k6.json";
             }
 
+            if (resourceId == "app_ttd_a1-nondelegable")
+            {
+                dataFileName = "Data/ResourceRegistry/app_a1nondelegable.json";
+            }
+
             if (dataFileName != string.Empty)
             {
                 string content = File.ReadAllText(dataFileName);
-                return JsonSerializer.Deserialize<ServiceResource>(content, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+                ServiceResource? resource = JsonSerializer.Deserialize<ServiceResource>(content, _jsonOptions);
+                if (resource is not null && NotDelegableResourceIds.Contains(resourceId))
+                {
+                    resource.Delegable = false;
+                }
+
+                return resource;
             }
 
             return null;
@@ -58,13 +77,13 @@ namespace Altinn.Platform.Authentication.Tests.Mocks
             if (resourceId == "ske-krav-og-betalinger")
             {
                 string content = File.ReadAllText("Data/ResourceRegistry/policyrightDTO-kravogbetaling.json");
-                return JsonSerializer.Deserialize<List<PolicyRightsDTO>>(content, new JsonSerializerOptions { PropertyNameCaseInsensitive = true }) ?? [];
+                return JsonSerializer.Deserialize<List<PolicyRightsDTO>>(content, _jsonOptions) ?? [];
             }
 
             if (resourceId == "ske-krav-og-betalinger-2")
             {
                 string content = File.ReadAllText("Data/ResourceRegistry/policyrightDTO-kravogbetaling2.json");
-                return JsonSerializer.Deserialize<List<PolicyRightsDTO>>(content, new JsonSerializerOptions { PropertyNameCaseInsensitive = true }) ?? [];
+                return JsonSerializer.Deserialize<List<PolicyRightsDTO>>(content, _jsonOptions) ?? [];
             }
 
             return null!; // interface declares a non-nullable list, but the mock mirrors the null returned for unknown resources

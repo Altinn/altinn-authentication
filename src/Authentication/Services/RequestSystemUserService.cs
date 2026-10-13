@@ -45,9 +45,9 @@ public class RequestSystemUserService(
     /// Used to limit the number of items returned in a paginated list
     /// </summary>
     private int _paginationSize = _paginationOption.Value.Size;
-    
+
     /// <inheritdoc/>
-    public async Task<Result<RequestSystemResponse>> CreateRequest(CreateRequestSystemUser createRequest, OrganisationNumber vendorOrgNo)
+    public async Task<Result<RequestSystemResponse>> CreateRequest(CreateRequestSystemUser createRequest, OrganisationNumber vendorOrgNo, CancellationToken cancellationToken = default)
     {
         // The combination of SystemId + Customer's OrgNo and Vendor's External Reference must be unique, for both all Requests and SystemUsers.
         ExternalRequestId externalRequestId = new()
@@ -57,78 +57,21 @@ public class RequestSystemUserService(
             SystemId = createRequest.SystemId,
         };
 
-        RegisteredSystemResponse? systemInfo = await systemRegisterService.GetRegisteredSystemInfo(createRequest.SystemId);
+        RegisteredSystemResponse? systemInfo = await systemRegisterService.GetRegisteredSystemInfo(createRequest.SystemId, cancellationToken);
         if (systemInfo is null)
         {
             return Problem.SystemIdNotFound;
         }
 
-        Result<bool> valRef = await ValidateExternalRequestId(externalRequestId);
-        if (valRef.IsProblem)
+        if (systemInfo.IsDeleted)
         {
-            return valRef.Problem;
+            return Problem.SystemIsDeleted;
         }
 
-        Result<bool> valVendor = ValidateVendorOrgNo(vendorOrgNo, systemInfo);
-        if (valVendor.IsProblem)
+        Result<bool> validated = await ValidateCreateRequest(createRequest, externalRequestId, vendorOrgNo, systemInfo, cancellationToken);
+        if (validated.IsProblem)
         {
-            return valVendor.Problem;
-        }
-
-        Result<bool> valCust = await ValidateCustomerOrgNo(createRequest.PartyOrgNo);
-        if (valCust.IsProblem)
-        {
-            return valCust.Problem;
-        }
-
-        if (createRequest.RedirectUrl is not null && createRequest.RedirectUrl != string.Empty)
-        {
-            var valRedirect = AuthenticationHelper.ValidateRedirectUrl(createRequest.RedirectUrl, systemInfo.AllowedRedirectUrls);
-            if (valRedirect.IsProblem)
-            {
-                return valRedirect.Problem;
-            }
-        }
-
-        if (createRequest.Rights is null && createRequest.AccessPackages is null)
-        {
-            return Problem.Rights_NotFound_Or_NotDelegable;
-        }
-
-        bool hasAtLeastOne = false;
-
-        // Must have a minimum of either one Right or one Accesspackage for a Standard SystemUser
-        if (createRequest.Rights is not null && createRequest.Rights.Count > 0)
-        {
-            hasAtLeastOne = true;
-        }
-
-        if (createRequest.AccessPackages is not null && createRequest.AccessPackages.Count > 0)
-        {
-            hasAtLeastOne = true;
-        }
-
-        if (!hasAtLeastOne)
-        {
-            return Problem.SystemUser_MissingRightsOrAccessPackages;
-        }
-
-        if (createRequest.Rights is not null && createRequest.Rights.Count > 0)
-        {
-            Result<bool> valRights = systemUserService.ValidateRights(createRequest.Rights, systemInfo);
-            if (valRights.IsProblem)
-            {
-                return valRights.Problem;
-            }
-        }
-
-        if (createRequest.AccessPackages is not null && createRequest.AccessPackages.Count > 0)
-        {
-            Result<bool> valPackages = await systemUserService.ValidateAccessPackages(createRequest.AccessPackages, systemInfo, isAgentRequest: false);
-            if (valPackages.IsProblem)
-            {
-                return valPackages.Problem;
-            }                        
+            return validated.Problem;
         }
 
         // Set an empty ExternalRef to be equal to the PartyOrgNo
@@ -162,6 +105,79 @@ public class RequestSystemUserService(
         return created;
     }
 
+    /// <summary>
+    /// Runs the validations for a new request in order: unique external reference, vendor, customer, redirect url,
+    /// and finally the rights and access packages.
+    /// </summary>
+    private async Task<Result<bool>> ValidateCreateRequest(CreateRequestSystemUser createRequest, ExternalRequestId externalRequestId, OrganisationNumber vendorOrgNo, RegisteredSystemResponse systemInfo, CancellationToken cancellationToken)
+    {
+        Result<bool> valRef = await ValidateExternalRequestId(externalRequestId);
+        if (valRef.IsProblem)
+        {
+            return valRef.Problem;
+        }
+
+        Result<bool> valVendor = ValidateVendorOrgNo(vendorOrgNo, systemInfo);
+        if (valVendor.IsProblem)
+        {
+            return valVendor.Problem;
+        }
+
+        Result<bool> valCust = await ValidateCustomerOrgNo(createRequest.PartyOrgNo);
+        if (valCust.IsProblem)
+        {
+            return valCust.Problem;
+        }
+
+        if (!string.IsNullOrEmpty(createRequest.RedirectUrl))
+        {
+            var valRedirect = AuthenticationHelper.ValidateRedirectUrl(createRequest.RedirectUrl, systemInfo.AllowedRedirectUrls);
+            if (valRedirect.IsProblem)
+            {
+                return valRedirect.Problem;
+            }
+        }
+
+        return await ValidateRightsAndAccessPackages(createRequest, systemInfo, cancellationToken);
+    }
+
+    /// <summary>
+    /// A Standard SystemUser request must carry at least one Right or one AccessPackage, and each of them must be
+    /// valid for the registered system.
+    /// </summary>
+    private async Task<Result<bool>> ValidateRightsAndAccessPackages(CreateRequestSystemUser createRequest, RegisteredSystemResponse systemInfo, CancellationToken cancellationToken)
+    {
+        if (createRequest.Rights is null && createRequest.AccessPackages is null)
+        {
+            return Problem.Rights_NotFound_Or_NotDelegable;
+        }
+
+        if (createRequest.Rights is not { Count: > 0 } && createRequest.AccessPackages is not { Count: > 0 })
+        {
+            return Problem.SystemUser_MissingRightsOrAccessPackages;
+        }
+
+        if (createRequest.Rights is { Count: > 0 })
+        {
+            Result<bool> valRights = await systemUserService.ValidateRights(createRequest.Rights, systemInfo, cancellationToken);
+            if (valRights.IsProblem)
+            {
+                return valRights.Problem;
+            }
+        }
+
+        if (createRequest.AccessPackages is { Count: > 0 })
+        {
+            Result<bool> valPackages = await systemUserService.ValidateAccessPackages(createRequest.AccessPackages, systemInfo, isAgentRequest: false);
+            if (valPackages.IsProblem)
+            {
+                return valPackages.Problem;
+            }
+        }
+
+        return true;
+    }
+
     /// <inheritdoc/>
     public async Task<Result<AgentRequestSystemResponse>> CreateAgentRequest(CreateAgentRequestSystemUser createAgentRequest, OrganisationNumber vendorOrgNo)
     {
@@ -177,6 +193,11 @@ public class RequestSystemUserService(
         if (systemInfo is null)
         {
             return Problem.SystemIdNotFound;
+        }
+
+        if (systemInfo.IsDeleted)
+        {
+            return Problem.SystemIsDeleted;
         }
 
         Result<bool> valRef = await ValidateExternalRequestId(externalRequestId);
@@ -317,8 +338,8 @@ public class RequestSystemUserService(
     /// <param name="partyOrgNo">the PartyOrgNo for the Customer</param>
     /// <returns>Result or Problem</returns>
     private async Task<Result<bool>> ValidateCustomerOrgNo(string partyOrgNo)
-    {        
-        if (partyOrgNo == null) 
+    {
+        if (partyOrgNo == null)
         {
             return Problem.Reportee_Orgno_NotFound;
         }
@@ -377,7 +398,7 @@ public class RequestSystemUserService(
         if (check.IsProblem)
         {
             return check.Problem;
-        }                
+        }
 
         return new RequestSystemResponse()
         {
@@ -524,7 +545,7 @@ public class RequestSystemUserService(
     public async Task<Result<bool>> ApproveAndCreateSystemUser(Guid requestId, int partyId, int userId, CancellationToken cancellationToken)
     {
         Result<bool> validatePartyRequest = await ValidatePartyRequest(partyId, requestId, SystemUserType.Standard, cancellationToken);
-        if (validatePartyRequest.IsProblem) 
+        if (validatePartyRequest.IsProblem)
         {
             return validatePartyRequest.Problem;
         }
@@ -658,7 +679,7 @@ public class RequestSystemUserService(
     {
         SystemUserInternalDTO? toBeInserted = null;
         regSystem.Name.TryGetValue("nb", out string? systemName);
-        if (systemName is null) 
+        if (systemName is null)
         {
             return Problem.SystemNameNotFound;
         }
@@ -743,7 +764,7 @@ public class RequestSystemUserService(
         foreach (var data in rightResponse)
         {
             if (data.Status != "Delegable")
-            { 
+            {
                 errors.AddRange(data.Details);
                 canDelegate = false;
             }
@@ -771,16 +792,12 @@ public class RequestSystemUserService(
             return Problem.SystemIdNotFound;
         }
 
-        Guid nextId = Guid.Empty;
-        if (continueRequest is not null && continueRequest.ContinuationToken != Guid.Empty)
-        {
-            nextId = continueRequest.ContinuationToken;
-        }
-        
-        List<RequestSystemResponse>? theList = await requestRepository.GetAllRequestsBySystem(systemId, nextId, cancellationToken);
+        Guid nextId = continueRequest?.ContinuationToken ?? Guid.Empty;
+
+        List<RequestSystemResponse>? theList = await requestRepository.GetAllRequestsBySystem(systemId, nextId, _paginationSize, cancellationToken);
         theList ??= [];
 
-        return Page.Create(theList, _paginationSize, static theList => theList.Id); 
+        return Page.Create(theList, _paginationSize, static theList => theList.Id);
     }
 
     /// <inheritdoc/>
@@ -802,13 +819,9 @@ public class RequestSystemUserService(
             return Problem.SystemIdNotFound;
         }
 
-        Guid nextId = Guid.Empty;
-        if (continueRequest is not null && continueRequest.ContinuationToken != Guid.Empty)
-        {
-            nextId = continueRequest.ContinuationToken;
-        }
+        Guid nextId = continueRequest?.ContinuationToken ?? Guid.Empty;
 
-        List<AgentRequestSystemResponse>? theList = await requestRepository.GetAllAgentRequestsBySystem(systemId, nextId, cancellationToken);
+        List<AgentRequestSystemResponse>? theList = await requestRepository.GetAllAgentRequestsBySystem(systemId, nextId, _paginationSize, cancellationToken);
         theList ??= [];
 
         return Page.Create(theList, _paginationSize, static theList => theList.Id);
@@ -968,22 +981,22 @@ public class RequestSystemUserService(
         }
 
         return new RequestSystemResponseInternal()
-            {
-                Id = request.Id,
-                ExternalRef = request.ExternalRef,
-                SystemId = request.SystemId,
-                PartyOrgNo = request.PartyOrgNo,
-                PartyId = validatedParty.Value.Party.PartyId,
-                PartyUuid = (Guid)validatedParty.Value.Party.PartyUuid!,
-                Rights = request.Rights,
-                AccessPackages = request.AccessPackages,
-                Status = request.Status,
-                ConfirmUrl = request.ConfirmUrl,
-                Escalated = request.Escalated,
-                Created = request.Created,
-                RedirectUrl = request.RedirectUrl,
-                UserMayEscalateButNotApprove = validatedParty.Value.HasRelationButNotApprove
-            };       
+        {
+            Id = request.Id,
+            ExternalRef = request.ExternalRef,
+            SystemId = request.SystemId,
+            PartyOrgNo = request.PartyOrgNo,
+            PartyId = validatedParty.Value.Party.PartyId,
+            PartyUuid = (Guid)validatedParty.Value.Party.PartyUuid!,
+            Rights = request.Rights,
+            AccessPackages = request.AccessPackages,
+            Status = request.Status,
+            ConfirmUrl = request.ConfirmUrl,
+            Escalated = request.Escalated,
+            Created = request.Created,
+            RedirectUrl = request.RedirectUrl,
+            UserMayEscalateButNotApprove = validatedParty.Value.HasRelationButNotApprove
+        };
     }
 
     private async Task<Result<bool>> ValidatePartyRequest(int partyId, Guid requestId, SystemUserType userType, CancellationToken cancellationToken)
@@ -1047,7 +1060,7 @@ public class RequestSystemUserService(
         }
 
         return false;
-    }    
+    }
 
     /// <inheritdoc/>
     public async Task<Result<bool>> EscalateApprovalAgentSystemUser(Guid requestId, int party, int userId, CancellationToken cancellationToken)
@@ -1060,7 +1073,7 @@ public class RequestSystemUserService(
     public async Task<Result<List<RequestSystemResponse>>> GetPendingStandardRequests(string orgno, int userId, CancellationToken cancellationToken)
     {
         List<RequestSystemResponse> theList = [];
-        Result<List<RequestSystemResponse>> result = await requestRepository.GetAllPendingStandardRequests(orgno,cancellationToken);
+        Result<List<RequestSystemResponse>> result = await requestRepository.GetAllPendingStandardRequests(orgno, cancellationToken);
         if (result.IsSuccess)
         {
             return result.Value;

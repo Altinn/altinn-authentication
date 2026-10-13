@@ -14,13 +14,13 @@ public class RoleAccessPackages
     /// Roles
     /// </summary>
     [JsonPropertyName("role")]
-    public CompactRoleDto Role { get; set; }
+    public CompactRoleDto Role { get; set; } = null!; // an access entry from Access Management always carries its role
 
     /// <summary>
     /// Packages
     /// </summary>
     [JsonPropertyName("packages")]
-    public CompactPackageDto[] Packages { get; set; }
+    public CompactPackageDto[] Packages { get; set; } = []; // an access entry from Access Management always carries its packages
 }
 
 
@@ -32,8 +32,8 @@ public class RoleAccessPackages
 public class RoleAccessPackagesPrimitive
 {
     [JsonPropertyName("role")]
-    public string Role { get; set; }
+    public required string Role { get; set; }
 
     [JsonPropertyName("packages")]
-    public List<string> Packages { get; set; }
+    public required List<string> Packages { get; set; }
 }

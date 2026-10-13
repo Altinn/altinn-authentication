@@ -24,7 +24,7 @@ namespace Altinn.Platform.Authentication.Core.Models.AccessPackages
             /// <summary>
             /// Package Urn
             /// </summary>
-            public string Urn { get; set; }
+            public string? Urn { get; set; }
 
             /// <summary>
             /// Package AreaId
@@ -35,9 +35,10 @@ namespace Altinn.Platform.Authentication.Core.Models.AccessPackages
         public class Check
         {
             /// <summary>
-            /// Package the delegation check is regarding
+            /// Package the delegation check is regarding. Nullable because DelegationHelper
+            /// already reads it through `r.Package?.Urn` when logging a failed check.
             /// </summary>
-            public Compact Package { get; set; }
+            public Compact? Package { get; set; }
 
             /// <summary>
             /// Result of the delegation check.
@@ -58,7 +59,7 @@ namespace Altinn.Platform.Authentication.Core.Models.AccessPackages
                 /// <summary>
                 /// Description of the reason.
                 /// </summary>
-                public string Description { get; set; }
+                public string? Description { get; set; }
 
                 /// <summary>
                 /// Role ID of the role providing access

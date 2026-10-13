@@ -61,6 +61,7 @@ public class RequestControllerTests(
     private readonly FakeTimeProvider timeProvider = new();
     private readonly Mock<IGuidService> guidService = new();
     private readonly Mock<IEventsQueueClient> _eventQueue = new();
+    private readonly ResourceRegistryClientMock _resourceRegistryClient = new();
     private static readonly DateTimeOffset TestTime = new(2025, 05, 15, 02, 05, 00, TimeSpan.Zero);
     private int _paginationSize;
 
@@ -103,7 +104,7 @@ public class RequestControllerTests(
         services.AddSingleton<ISystemRegisterService, SystemRegisterService>();
         services.AddSingleton<IRequestSystemUser, RequestSystemUserService>();
         services.AddSingleton<IAccessManagementClient, AccessManagementClientMock>();
-        services.AddSingleton<IResourceRegistryClient, ResourceRegistryClientMock>();
+        services.AddSingleton<IResourceRegistryClient>(_resourceRegistryClient);
         services.AddSingleton<IRequestRepository, RequestRepository>();
 
         // SetupDateTimeMock();
@@ -262,6 +263,126 @@ public class RequestControllerTests(
     }
 
     [Fact]
+    public async Task Request_Create_ResourceTurnedNotDelegable_BadRequest()
+    {
+        string dataFileName = "Data/SystemRegister/Json/SystemRegister.json";
+        HttpResponseMessage response = await CreateSystemRegister(dataFileName);
+        Assert.True(response.IsSuccessStatusCode);
+
+        // The resource was delegable when the vendor registered the system, and is turned non-delegable afterwards.
+        _resourceRegistryClient.NotDelegableResourceIds.Add("ske-krav-og-betalinger");
+
+        HttpClient client = CreateClient();
+        string token = AddSystemUserRequestWriteTestTokenToClient(client);
+        string endpoint = $"/authentication/api/v1/systemuser/request/vendor";
+
+        Right right = new()
+        {
+            Resource =
+            [
+                new AttributePair()
+                {
+                    Id = "urn:altinn:resource",
+                    Value = "ske-krav-og-betalinger"
+                }
+            ]
+        };
+
+        // Arrange
+        CreateRequestSystemUser req = new()
+        {
+            ExternalRef = "external",
+            SystemId = "991825827_the_matrix",
+            PartyOrgNo = "910493353",
+            Rights = [right],
+            AccessPackages = []
+        };
+
+        HttpRequestMessage request = new(HttpMethod.Post, endpoint)
+        {
+            Content = JsonContent.Create(req)
+        };
+        HttpResponseMessage message = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead);
+
+        Assert.Equal(HttpStatusCode.BadRequest, message.StatusCode);
+        ProblemDetails? problemDetails = await message.Content.ReadFromJsonAsync<ProblemDetails>();
+        Assert.NotNull(problemDetails);
+        Assert.Equal(Problem.Rights_ResourceNotDelegable.Title, problemDetails.Title);
+        Assert.Equal("ske-krav-og-betalinger", problemDetails.Extensions["NotDelegableResources"]?.ToString());
+    }
+
+    [Fact]
+    public async Task Approve_Request_ResourceTurnedNotDelegableAfterCreate_BadRequest()
+    {
+        // Create System used for test
+        string dataFileName = "Data/SystemRegister/Json/SystemRegister.json";
+        HttpResponseMessage response = await CreateSystemRegister(dataFileName);
+        Assert.True(response.IsSuccessStatusCode);
+
+        HttpClient client = CreateClient();
+        string token = AddSystemUserRequestWriteTestTokenToClient(client);
+        string endpoint = $"/authentication/api/v1/systemuser/request/vendor";
+
+        Right right = new()
+        {
+            Resource =
+            [
+                new AttributePair()
+                {
+                    Id = "urn:altinn:resource",
+                    Value = "ske-krav-og-betalinger"
+                }
+            ]
+        };
+
+        // Arrange: the vendor creates the request while the resource is still delegable
+        CreateRequestSystemUser req = new()
+        {
+            ExternalRef = "external",
+            SystemId = "991825827_the_matrix",
+            PartyOrgNo = "910493353",
+            Rights = [right],
+            AccessPackages = []
+        };
+
+        HttpRequestMessage request = new(HttpMethod.Post, endpoint)
+        {
+            Content = JsonContent.Create(req)
+        };
+        HttpResponseMessage message = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead);
+        Assert.Equal(HttpStatusCode.Created, message.StatusCode);
+
+        RequestSystemResponse? res = await message.Content.ReadFromJsonAsync<RequestSystemResponse>();
+        Assert.NotNull(res);
+
+        // The resource is turned non-delegable in the resource registry after the request was created
+        _resourceRegistryClient.NotDelegableResourceIds.Add("ske-krav-og-betalinger");
+
+        // Act: the customer approves the request
+        HttpClient client2 = CreateClient();
+        client2.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3, true, now: TestTime));
+
+        int partyId = 500000;
+
+        string approveEndpoint = $"/authentication/api/v1/systemuser/request/{partyId}/{res.Id}/approve";
+        HttpRequestMessage approveRequestMessage = new(HttpMethod.Post, approveEndpoint);
+        HttpResponseMessage approveResponseMessage = await client2.SendAsync(approveRequestMessage, HttpCompletionOption.ResponseHeadersRead);
+
+        // Assert: the approval is rejected with the precise problem, not the generic delegation failure
+        Assert.Equal(HttpStatusCode.BadRequest, approveResponseMessage.StatusCode);
+        ProblemDetails? problemDetails = await approveResponseMessage.Content.ReadFromJsonAsync<ProblemDetails>();
+        Assert.NotNull(problemDetails);
+        Assert.Equal(Problem.Rights_ResourceNotDelegable.Title, problemDetails.Title);
+        Assert.Equal("ske-krav-og-betalinger", problemDetails.Extensions["NotDelegableResources"]?.ToString());
+
+        // And no system user was created for the request
+        string getEndpoint = $"/authentication/api/v1/systemuser/vendor/byquery?system-id={req.SystemId}&orgno={req.PartyOrgNo}&external-ref={req.ExternalRef}";
+        HttpRequestMessage getRequestMessage = new(HttpMethod.Get, getEndpoint);
+        HttpResponseMessage getResponseMessage = await client.SendAsync(getRequestMessage, HttpCompletionOption.ResponseHeadersRead);
+        Assert.Equal(HttpStatusCode.NotFound, getResponseMessage.StatusCode);
+    }
+
+    [Fact]
     public async Task Request_Create_BadRequest_NotDelegable()
     {
         string dataFileName = "Data/SystemRegister/Json/SystemRegisterWithAccessPackage.json";
@@ -386,6 +507,92 @@ public class RequestControllerTests(
         Assert.Contains("&DONTCHOOSEREPORTEE=true", res.ConfirmUrl);
         Assert.Equal(req.ExternalRef, res.ExternalRef);
         Assert.NotEqual(default(DateTime), res.Created);
+    }
+
+    [Fact]
+    public async Task Request_Create_Fails_When_System_Is_Deleted()
+    {
+        string dataFileName = "Data/SystemRegister/Json/SystemRegister.json";
+        HttpResponseMessage createSystemResponse = await CreateSystemRegister(dataFileName);
+        Assert.Equal(HttpStatusCode.OK, createSystemResponse.StatusCode);
+
+        HttpResponseMessage deleteSystemResponse = await DeleteSystemRegister("991825827_the_matrix");
+        Assert.Equal(HttpStatusCode.OK, deleteSystemResponse.StatusCode);
+
+        HttpClient client = CreateClient();
+        string token = AddSystemUserRequestWriteTestTokenToClient(client);
+        string endpoint = $"/authentication/api/v1/systemuser/request/vendor";
+
+        Right right = new()
+        {
+            Resource =
+            [
+                new AttributePair()
+                {
+                    Id = "urn:altinn:resource",
+                    Value = "ske-krav-og-betalinger"
+                }
+            ]
+        };
+
+        CreateRequestSystemUser req = new()
+        {
+            ExternalRef = "external",
+            SystemId = "991825827_the_matrix",
+            PartyOrgNo = "910493353",
+            Rights = [right],
+            AccessPackages = []
+        };
+
+        HttpRequestMessage request = new(HttpMethod.Post, endpoint)
+        {
+            Content = JsonContent.Create(req)
+        };
+        HttpResponseMessage message = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead);
+
+        Assert.Equal(HttpStatusCode.BadRequest, message.StatusCode);
+        ProblemDetails? problemDetails = await message.Content.ReadFromJsonAsync<ProblemDetails>();
+        Assert.NotNull(problemDetails);
+        Assert.Equal(Problem.SystemIsDeleted.Title, problemDetails.Title);
+    }
+
+    [Fact]
+    public async Task AgentRequest_Create_Fails_When_System_Is_Deleted()
+    {
+        string dataFileName = "Data/SystemRegister/Json/SystemRegisterWithAccessPackage.json";
+        HttpResponseMessage createSystemResponse = await CreateSystemRegister(dataFileName);
+        Assert.Equal(HttpStatusCode.OK, createSystemResponse.StatusCode);
+
+        HttpResponseMessage deleteSystemResponse = await DeleteSystemRegister("991825827_the_matrix");
+        Assert.Equal(HttpStatusCode.OK, deleteSystemResponse.StatusCode);
+
+        HttpClient client = CreateClient();
+        string token = AddSystemUserRequestWriteTestTokenToClient(client);
+        string endpoint = $"/authentication/api/v1/systemuser/request/vendor/agent";
+
+        AccessPackage accessPackage = new()
+        {
+            Urn = "urn:altinn:accesspackage:skatt-naering"
+        };
+
+        CreateAgentRequestSystemUser req = new()
+        {
+            ExternalRef = "external",
+            SystemId = "991825827_the_matrix",
+            PartyOrgNo = "910493353",
+            AccessPackages = [accessPackage]
+        };
+
+        HttpRequestMessage request = new(HttpMethod.Post, endpoint)
+        {
+            Content = JsonContent.Create(req)
+        };
+        HttpResponseMessage message = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead);
+
+        Assert.Equal(HttpStatusCode.BadRequest, message.StatusCode);
+        ProblemDetails? problemDetails = await message.Content.ReadFromJsonAsync<ProblemDetails>();
+        Assert.NotNull(problemDetails);
+        Assert.Equal(Problem.SystemIsDeleted.Title, problemDetails.Title);
     }
 
     [Fact]
@@ -3166,22 +3373,30 @@ public class RequestControllerTests(
         // Get the Request
         HttpClient client2 = CreateClient();
         string token2 = AddSystemUserRequesReadTestTokenToClient(client2);
-        string endpoint2 = $"/authentication/api/v1/systemuser/request/vendor/bysystem/{systemId}";
+        string testEndpoint = $"/authentication/api/v1/systemuser/request/vendor/bysystem/{systemId}";
 
-        HttpResponseMessage message2 = await client2.GetAsync(endpoint2);
-        Assert.Equal(HttpStatusCode.OK, message2.StatusCode);
-        Paginated<RequestSystemResponse>? res2 = await message2.Content.ReadFromJsonAsync<Paginated<RequestSystemResponse>>();
-        Assert.True(res2 is not null);
-        var list = res2.Items.ToList();
+        HttpResponseMessage message = await client2.GetAsync(testEndpoint);
+        Assert.Equal(HttpStatusCode.OK, message.StatusCode);
+        Paginated<RequestSystemResponse>? res = await message.Content.ReadFromJsonAsync<Paginated<RequestSystemResponse>>();
+        Assert.True(res is not null);
+        var list = res.Items.ToList();
         Assert.NotEmpty(list);
         Assert.Equal(_paginationSize, list.Count);
         Assert.Contains(list, x => x.PartyOrgNo == "910493353");
-        Assert.NotNull(res2.Links.Next);
+        Assert.NotNull(res.Links.Next);
 
-        HttpResponseMessage message3 = await client2.GetAsync(res2.Links.Next);
-        Assert.Equal(HttpStatusCode.OK, message3.StatusCode);
-        Paginated<RequestSystemResponse>? res3 = await message3.Content.ReadFromJsonAsync<Paginated<RequestSystemResponse>>();
-        Assert.True(res3 is not null);
+        HttpResponseMessage message2 = await client2.GetAsync(res.Links.Next);
+        Assert.Equal(HttpStatusCode.OK, message2.StatusCode);
+        Paginated<RequestSystemResponse>? res2 = await message2.Content.ReadFromJsonAsync<Paginated<RequestSystemResponse>>();
+        Assert.True(res2 is not null);
+
+        var list2 = res2.Items.ToList();
+        Assert.Single(list2);
+        Assert.Null(res2.Links.Next);
+
+        // No Request is duplicated across or lost between the pages
+        List<Guid> allIds = [.. list.Select(x => x.Id), .. list2.Select(x => x.Id)];
+        Assert.Equal(_paginationSize + 1, allIds.Distinct().Count());
     }
 
     [Fact]
@@ -3202,22 +3417,30 @@ public class RequestControllerTests(
         // Get the Request
         HttpClient client2 = CreateClient();
         string token2 = AddSystemUserRequesReadTestTokenToClient(client2);
-        string endpoint2 = $"/authentication/api/v1/systemuser/request/vendor/agent/bysystem/{systemId}";
+        string testEndpoint = $"/authentication/api/v1/systemuser/request/vendor/agent/bysystem/{systemId}";
 
-        HttpResponseMessage message2 = await client2.GetAsync(endpoint2);
-        Assert.Equal(HttpStatusCode.OK, message2.StatusCode);
-        Paginated<AgentRequestSystemResponse>? res2 = await message2.Content.ReadFromJsonAsync<Paginated<AgentRequestSystemResponse>>();
-        Assert.True(res2 is not null);
-        var list = res2.Items.ToList();
+        HttpResponseMessage message = await client2.GetAsync(testEndpoint);
+        Assert.Equal(HttpStatusCode.OK, message.StatusCode);
+        Paginated<AgentRequestSystemResponse>? res = await message.Content.ReadFromJsonAsync<Paginated<AgentRequestSystemResponse>>();
+        Assert.True(res is not null);
+        var list = res.Items.ToList();
         Assert.NotEmpty(list);
         Assert.Equal(_paginationSize, list.Count);
         Assert.Contains(list, x => x.PartyOrgNo == "910493353");
-        Assert.NotNull(res2.Links.Next);
+        Assert.NotNull(res.Links.Next);
 
-        HttpResponseMessage message3 = await client2.GetAsync(res2.Links.Next);
-        Assert.Equal(HttpStatusCode.OK, message3.StatusCode);
-        Paginated<AgentRequestSystemResponse>? res3 = await message3.Content.ReadFromJsonAsync<Paginated<AgentRequestSystemResponse>>();
-        Assert.True(res3 is not null);
+        HttpResponseMessage message2 = await client2.GetAsync(res.Links.Next);
+        Assert.Equal(HttpStatusCode.OK, message2.StatusCode);
+        Paginated<AgentRequestSystemResponse>? res2 = await message2.Content.ReadFromJsonAsync<Paginated<AgentRequestSystemResponse>>();
+        Assert.True(res2 is not null);
+
+        var list2 = res2.Items.ToList();
+        Assert.Single(list2);
+        Assert.Null(res2.Links.Next);
+
+        // No agent Request is duplicated across or lost between the pages
+        List<Guid> allIds = [.. list.Select(x => x.Id), .. list2.Select(x => x.Id)];
+        Assert.Equal(_paginationSize + 1, allIds.Distinct().Count());
     }
 
     /// <summary>
@@ -3261,6 +3484,14 @@ public class RequestControllerTests(
         Paginated<AgentRequestSystemResponse>? res3 = await message3.Content.ReadFromJsonAsync<Paginated<AgentRequestSystemResponse>>();
         Assert.True(res3 is not null);
 
+        var agentPage2 = res3.Items.ToList();
+        Assert.Single(agentPage2);
+        Assert.Null(res3.Links.Next);
+
+        // No agent Request is duplicated across or lost between the pages
+        List<Guid> allAgentIds = [.. list.Select(x => x.Id), .. agentPage2.Select(x => x.Id)];
+        Assert.Equal(_paginationSize + 1, allAgentIds.Distinct().Count());
+
         // Get the Paginated Standard Requests
         HttpClient client3 = CreateClient();
         string token3 = AddSystemUserRequesReadTestTokenToClient(client3);
@@ -3280,6 +3511,14 @@ public class RequestControllerTests(
         Assert.Equal(HttpStatusCode.OK, message5.StatusCode);
         Paginated<RequestSystemResponse>? res5 = await message5.Content.ReadFromJsonAsync<Paginated<RequestSystemResponse>>();
         Assert.True(res5 is not null);
+
+        var standardPage2 = res5.Items.ToList();
+        Assert.Single(standardPage2);
+        Assert.Null(res5.Links.Next);
+
+        // No Request is duplicated across or lost between the pages
+        List<Guid> allStandardIds = [.. list2.Select(x => x.Id), .. standardPage2.Select(x => x.Id)];
+        Assert.Equal(_paginationSize + 1, allStandardIds.Distinct().Count());
     }
 
     [Fact]
@@ -4126,6 +4365,19 @@ public class RequestControllerTests(
 
         HttpRequestMessage request = new(HttpMethod.Post, $"/authentication/api/v1/systemregister/vendor/");
         request.Content = content;
+        HttpResponseMessage response = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead);
+        return response;
+    }
+
+    private async Task<HttpResponseMessage> DeleteSystemRegister(string systemId, DateTimeOffset? now = default)
+    {
+        now ??= TestTime;
+        HttpClient client = CreateClient();
+        string[] prefixes = { "altinn", "digdir" };
+        string token = PrincipalUtil.GetOrgToken("digdir", "991825827", "altinn:authentication/systemregister.admin", prefixes, now);
+        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+
+        HttpRequestMessage request = new(HttpMethod.Delete, $"/authentication/api/v1/systemregister/vendor/{systemId}/");
         HttpResponseMessage response = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead);
         return response;
     }

@@ -457,7 +457,7 @@ namespace Altinn.Platform.Authentication.Services
 
             if (rights is not null && rights.Count > 0)
             {
-                Result<bool> validatedRequestedRights = ValidateRights(rights, regSystem);
+                Result<bool> validatedRequestedRights = await ValidateRights(rights, regSystem, cancellationToken);
                 if (validatedRequestedRights.IsProblem)
                 {
                     validationProblems.Add(validatedRequestedRights.Problem);
@@ -673,7 +673,7 @@ namespace Altinn.Platform.Authentication.Services
         }
 
         /// <inheritdoc/>
-        public Result<bool> ValidateRights(List<Right> rights, RegisteredSystemResponse systemInfo)
+        public async Task<Result<bool>> ValidateRights(List<Right> rights, RegisteredSystemResponse systemInfo, CancellationToken cancellationToken = default)
         {
             if ((rights.Count > 0 && systemInfo.Rights is null) || (rights.Count > systemInfo.Rights!.Count))
             {
@@ -708,7 +708,54 @@ namespace Altinn.Platform.Authentication.Services
                 }
             }
 
-            return true;
+            // The rights match the registered system. The resources themselves can still have changed in the
+            // resource registry after the system was registered, so check them there as well.
+            return await ValidateResourcesInRegistry(rights, cancellationToken);
+        }
+
+        /// <summary>
+        /// Validates that the resources behind the rights are still usable in the resource registry: present, of a
+        /// supported resource type and delegable. A resource can have been deleted, changed type or turned
+        /// non-delegable after the system was registered. This check runs both when the vendor creates a request and
+        /// when the customer approves it, so a request that was valid when it was created is rejected at approval if
+        /// the resource has become unusable in the meantime. The approval would otherwise fail in the delegation
+        /// check anyway; this gives it a precise problem instead.
+        /// </summary>
+        private async Task<Result<bool>> ValidateResourcesInRegistry(List<Right> rights, CancellationToken cancellationToken)
+        {
+            var invalidResourceIds = await systemRegisterService.GetInvalidResourceIdsDetailed(rights, cancellationToken);
+
+            List<KeyValuePair<string, string>> invalidResourceDetails = [];
+            AddResourceIdsIfAny(invalidResourceDetails, "InvalidFormatResources", invalidResourceIds.InvalidFormatResourceIds);
+            AddResourceIdsIfAny(invalidResourceDetails, "NotFoundResources", invalidResourceIds.NotFoundResourceIds);
+            AddResourceIdsIfAny(invalidResourceDetails, "UnsupportedResourceTypes", invalidResourceIds.UnsupportedResourceTypeIds);
+            AddResourceIdsIfAny(invalidResourceDetails, "NotDelegableResources", invalidResourceIds.NotDelegableResourceIds);
+
+            if (invalidResourceDetails.Count == 0)
+            {
+                return true;
+            }
+
+            ProblemExtensionData extensionData = ProblemExtensionData.Create(invalidResourceDetails.ToArray());
+
+            // Report the precise problem when the delegable flag is the only thing standing in the way; the other
+            // categories mean the resource is missing or unusable rather than merely non-delegable.
+            bool onlyNotDelegable = invalidResourceIds.NotDelegableResourceIds.Count > 0
+                && invalidResourceIds.InvalidFormatResourceIds.Count == 0
+                && invalidResourceIds.NotFoundResourceIds.Count == 0
+                && invalidResourceIds.UnsupportedResourceTypeIds.Count == 0;
+
+            return onlyNotDelegable
+                ? Problem.Rights_ResourceNotDelegable.Create(extensionData)
+                : Problem.Rights_NotFound_Or_NotDelegable.Create(extensionData);
+        }
+
+        private static void AddResourceIdsIfAny(List<KeyValuePair<string, string>> details, string key, List<string> resourceIds)
+        {
+            if (resourceIds.Count > 0)
+            {
+                details.Add(new KeyValuePair<string, string>(key, string.Join(", ", resourceIds)));
+            }
         }
 
         /// <inheritdoc/>
@@ -914,7 +961,7 @@ namespace Altinn.Platform.Authentication.Services
             bool[] outerValidationSet = new bool[packages.Count];
             List<string> packageUrns = [.. packages.Select(p => p.Urn!)];
 
-            Result<List<ClientDelegationDto>> clients = await _accessManagementClient.GetClientsForFacilitator(provider, packageUrns, cancellationToken);
+            Result<List<ClientDelegationDto>> clients = await _accessManagementClient.GetClientsForFacilitator(provider, packageUrns, cancellationToken: cancellationToken);
             if (clients.IsProblem)
             {
                 return clients.Problem;
@@ -931,7 +978,7 @@ namespace Altinn.Platform.Authentication.Services
                         List<string> clientAccessPackages = [];
                         foreach (var package in access.Packages)
                         {
-                            if (packageUrns.Contains(package.Urn))
+                            if (package.Urn is not null && packageUrns.Contains(package.Urn))
                             {
                                 clientAccessPackages.Add(package.Urn);
                                 outerValidationSet[packages.FindIndex(p => p.Urn == package.Urn)] = true;
@@ -942,7 +989,7 @@ namespace Altinn.Platform.Authentication.Services
                         {
                             var roleAccess = new RoleAccessPackagesPrimitive()
                             {
-                                Role = access.Role.Urn,
+                                Role = access.Role.Urn ?? string.Empty,
                                 Packages = clientAccessPackages
                             };
                             clientAccessPrimitive.Add(roleAccess);
@@ -1159,19 +1206,20 @@ namespace Altinn.Platform.Authentication.Services
         /// <inheritdoc/>
         public async Task<Result<List<ExternalClientDto>>> GetClientsForFacilitator(Guid facilitator, List<string>? packages, IFeatureManager featureManager, CancellationToken cancellationToken)
         {
-            var res = await _accessManagementClient.GetClientsForFacilitator(facilitator, packages!, cancellationToken);
-            if (res.IsSuccess)
-            {
-                if (packages is not null && packages.Count > 0)
-                {
-                    // If a list of packages to filter on is provided, filter the clients based on those packages before converting to DTOs
-                    var filtered = res.Value.Where(client => client.Access.Any(access => access.Packages.Any(p => packages.Contains(p.Urn)))).ToList();
-                }
+            // The client must hold ALL requested packages (AND), otherwise partially-matching clients are
+            // listed and later fail delegation. v2 does AND via the match=all parameter; v1's enduser
+            // endpoint only supports OR, so use the internal API (which filters with AND) on v1.
+            bool useV2 = await featureManager.IsEnabledAsync(AccessManagementFeatureFlags.ClientDelegationApiV2);
+            Result<List<ClientDelegationDto>> res = useV2
+                ? await _accessManagementClient.GetClientsForFacilitator(facilitator, packages!, matchAllPackages: true, cancellationToken)
+                : await _accessManagementClient.GetClientsForFacilitatorFromInternalApi(facilitator, packages!, cancellationToken);
 
-                return ConvertConnectionDTOToClient(res.Value);
+            if (!res.IsSuccess)
+            {
+                return res.Problem ?? Problem.AgentSystemUser_FailedToGetClients;
             }
 
-            return res.Problem ?? Problem.AgentSystemUser_FailedToGetClients;
+            return ConvertConnectionDTOToClient(res.Value);
         }
 
         /// <inheritdoc/>
@@ -1256,24 +1304,6 @@ namespace Altinn.Platform.Authentication.Services
             return rights;
         }
 
-        private static Result<List<Customer>> OldConvertConnectionDTOToClient(List<ClientDto> value)
-        {
-            List<Customer> result = [];
-            foreach (var item in value)
-            {
-                var newCustomer = new Customer()
-                {
-                    DisplayName = item.Party.Name,
-                    OrganizationIdentifier = item.Party.OrganizationNumber,
-                    PartyUuid = item.Party.Id,
-                    Access = item.Access
-                };
-                result.Add(newCustomer);
-            }
-
-            return result;
-        }
-
         private static Result<List<ExternalClientDto>> ConvertConnectionDTOToClient(List<ClientDelegationDto> value)
         {
             List<ExternalClientDto> result = [];
@@ -1281,9 +1311,11 @@ namespace Altinn.Platform.Authentication.Services
             {
                 var newCustomer = new ExternalClientDto()
                 {
-                    DisplayName = item.Client.Name,
+                    DisplayName = item.Client.Name ?? string.Empty,
                     OrganizationIdentifier = item.Client.OrganizationIdentifier ?? string.Empty,
                     PartyUuid = item.Client.Id,
+                    UnitType = item.Client.Variant,
+                    IsDeleted = item.Client.IsDeleted,
                     Access = ConvertAccessToPrimitive(item.Access)
                 };
                 result.Add(newCustomer);
@@ -1318,8 +1350,8 @@ namespace Altinn.Platform.Authentication.Services
             {
                 RoleAccessPackagesPrimitive primitive = new()
                 {
-                    Role = item.Role.Urn,
-                    Packages = [.. item.Packages.Select(p => p.Urn!)]
+                    Role = item.Role.Urn ?? string.Empty,
+                    Packages = [.. item.Packages.Select(p => p.Urn ?? string.Empty)]
                 };
                 primitiveList.Add(primitive);
             }

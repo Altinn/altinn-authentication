@@ -19,31 +19,31 @@ public class CompactEntityDto
     /// Name
     /// </summary>
     [JsonPropertyName("name")]
-    public string Name { get; set; }
+    public string? Name { get; set; }
 
     /// <summary>
     /// Type
     /// </summary>
     [JsonPropertyName("type")]
-    public string Type { get; set; }
+    public string? Type { get; set; }
 
     /// <summary>
     /// Variant
     /// </summary>
     [JsonPropertyName("variant")]
-    public string Variant { get; set; }
+    public string? Variant { get; set; }
 
     /// <summary>
     /// Parent
     /// </summary>
     [JsonPropertyName("parent")]
-    public CompactEntityDto Parent { get; set; }
+    public CompactEntityDto? Parent { get; set; }
 
     /// <summary>
     /// Children
     /// </summary>
     [JsonPropertyName("children")]
-    public List<CompactEntityDto> Children { get; set; }
+    public List<CompactEntityDto>? Children { get; set; }
 
     /// <summary>
     /// PartyId

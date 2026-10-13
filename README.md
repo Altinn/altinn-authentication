@@ -34,7 +34,7 @@ In-repo documentation lives in **[`docs/`](docs/README.md)**:
 ### Prerequisites
 
 1. [.NET 10 SDK](https://dotnet.microsoft.com/download/dotnet/10.0)
-2. [Docker](https://www.docker.com/get-docker) — required to run the integration tests
+2. A container runtime — required to run the integration tests: [Docker](https://www.docker.com/get-docker) or [Podman](https://podman.io/)
 3. Newest [Git](https://git-scm.com/downloads)
 4. A code editor / IDE of your choice
 
@@ -53,11 +53,25 @@ Swagger UI is then available under `http://localhost:<port>/authentication/swagg
 
 ```bash
 dotnet build Altinn.Platform.Authentication.sln
-dotnet test test/Altinn.Platform.Authentication.Tests/Altinn.Platform.Authentication.Tests.csproj   # needs Docker
+dotnet test test/Altinn.Platform.Authentication.Tests/Altinn.Platform.Authentication.Tests.csproj   # needs a container runtime
 ```
 
-See [docs/development.md](docs/development.md) for details — note that a passing local build does **not** substitute for the Docker-backed test suite.
+See [docs/development.md](docs/development.md) for details — note that a passing local build does **not** substitute for the container-backed test suite.
 
+### Running tests with Podman on Windows
+
+Integration tests use Testcontainers. If tests fail with
+`ResourceReaperException: Initialization has been cancelled`, check your Podman version.
+Podman 6.0.2 has a known port-forwarding bug ([podman#29377](https://github.com/podman-container-tools/podman/issues/29377)).
+
+Upgrade to 6.1.2 or later (or lower), then recreate the machine so the server version matches the client:
+
+```powershell
+podman machine reset -f
+podman machine init --rootful
+podman machine start
+podman version   # Client and Server should show the same version
+```
 ## Contributing
 
 - Branch per change; open a pull request.

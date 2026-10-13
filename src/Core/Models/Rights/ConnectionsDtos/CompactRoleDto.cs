@@ -19,23 +19,23 @@ public class CompactRoleDto
     /// Value
     /// </summary>
     [JsonPropertyName("code")]
-    public string Code { get; set; }
+    public string? Code { get; set; }
 
     /// <summary>
     /// Value
     /// </summary>
     [JsonPropertyName("urn")]
-    public string Urn { get; set; }
+    public string? Urn { get; set; }
 
     /// <summary>
     /// Value
     /// </summary>
     [JsonPropertyName("legacyurn ")]
-    public string LegacyUrn { get; set; }
+    public string? LegacyUrn { get; set; }
 
     /// <summary>
     /// Children
     /// </summary>
     [JsonPropertyName("children")]
-    public List<CompactRoleDto> Children { get; set; }
+    public List<CompactRoleDto>? Children { get; set; }
 }

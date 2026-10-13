@@ -16,6 +16,16 @@
         public const string SYSTEM_ID = "/registersystemrequest/systemid";
 
         /// <summary>
+        /// Error path for system name
+        /// </summary>
+        public const string SYSTEM_NAME = "/registersystemrequest/name";
+
+        /// <summary>
+        /// Error path for system description
+        /// </summary>
+        public const string SYSTEM_DESCRIPTION = "/registersystemrequest/description";
+
+        /// <summary>
         /// Error path for allowedredirecturls
         /// </summary>
         public const string ALLOWEDREDIRECT_URLS = "/registersystemrequest/allowedredirecturls";

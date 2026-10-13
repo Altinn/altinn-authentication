@@ -1,70 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Altinn.Platform.Authentication.Core.Models.AccessPackages
 {
-    [ExcludeFromCodeCoverage]
-    /// <summary>
-    /// Entity
-    /// </summary>
-    public class Entity
-    {
-        /// <summary>
-        /// Id
-        /// </summary>
-        public Guid Id { get; set; }
-
-        /// <summary>
-        /// TypeId
-        /// </summary>
-        public Guid TypeId { get; set; }
-
-        /// <summary>
-        /// VariantId
-        /// </summary>
-        public Guid VariantId { get; set; }
-
-        /// <summary>
-        /// Name
-        /// </summary>
-        public string Name { get; set; }
-
-        /// <summary>
-        /// RefId
-        /// </summary>
-        public string RefId { get; set; }
-
-        /// <summary>
-        /// Parent identifier
-        /// </summary>
-        public Guid? ParentId { get; set; }
-    }
-
-    /// <summary>
-    /// Extended Entity
-    /// </summary>
-    public class ExtEntity : Entity
-    {
-        /// <summary>
-        /// Type
-        /// </summary>
-        public EntityType Type { get; set; }
-
-        /// <summary>
-        /// Variant
-        /// </summary>
-        public EntityVariant Variant { get; set; }
-
-        /// <summary>
-        /// Parent
-        /// </summary>
-        public Entity Parent { get; set; }
-    }
-
     /// <summary>
     /// Compact Entity Model
     /// </summary>
@@ -78,31 +16,32 @@ namespace Altinn.Platform.Authentication.Core.Models.AccessPackages
         /// <summary>
         /// Name
         /// </summary>
-        public string Name { get; set; }
+        public string? Name { get; set; }
 
         /// <summary>
         /// Type
         /// </summary>
-        public string Type { get; set; }
+        public string? Type { get; set; }
 
         /// <summary>
         /// Variant
         /// </summary>
-        public string Variant { get; set; }
+        public string? Variant { get; set; }
 
         /// <summary>
-        /// Values from entityLoookup
+        /// Values from entityLoookup. Access Management sends an explicit null for
+        /// entities without lookup values (e.g. a system user).
         /// </summary>
-        public Dictionary<string, string> KeyValues { get; set; }
+        public Dictionary<string, string>? KeyValues { get; set; }
 
         /// <summary>
-        /// Parent
+        /// Parent. Null for a top-level entity — Access Management sends "parent": null.
         /// </summary>
-        public CompactEntity Parent { get; set; }
+        public CompactEntity? Parent { get; set; }
 
         /// <summary>
-        /// Children
+        /// Children. Null for a leaf entity — Access Management sends "children": null.
         /// </summary>
-        public List<CompactEntity> Children { get; set; }
+        public List<CompactEntity>? Children { get; set; }
     }
 }

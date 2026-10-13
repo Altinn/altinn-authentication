@@ -368,7 +368,7 @@ namespace Altinn.Platform.Authentication.Helpers.Tests
                 l => l.Log(
                     LogLevel.Error,
                     It.IsAny<EventId>(),
-                    It.Is<It.IsAnyType>((state, _) => state.ToString()!.Contains("urn:valid") && state.ToString()!.Contains("Not allowed")),
+                    It.Is<It.IsAnyType>((state, _) => state!.ToString()!.Contains("urn:valid") && state!.ToString()!.Contains("Not allowed")),
                     It.IsAny<Exception?>(),
                     It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
                 Times.Once);
@@ -685,10 +685,10 @@ namespace Altinn.Platform.Authentication.Helpers.Tests
                     LogLevel.Error,
                     It.IsAny<EventId>(),
                     It.Is<It.IsAnyType>((state, _) =>
-                        state.ToString()!.Contains("not delegable")
-                        && state.ToString()!.Contains("MissingPackageAccess")
-                        && state.ToString()!.Contains("MissingRoleAccess")
-                        && state.ToString()!.Contains("MissingDelegationAccess")),
+                        state!.ToString()!.Contains("not delegable")
+                        && state!.ToString()!.Contains("MissingPackageAccess")
+                        && state!.ToString()!.Contains("MissingRoleAccess")
+                        && state!.ToString()!.Contains("MissingDelegationAccess")),
                     It.IsAny<Exception?>(),
                     It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
                 Times.Once);

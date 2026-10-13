@@ -530,8 +530,9 @@ public class DelegationHelper(
             // resolve the localized package name. Access Management returns no reason code for packages
             // today, so codes is empty; the log above keeps the raw AM text for support.
             List<DelegationReasonEntry> reasonEntries = notDelegable
-                .Where(r => !string.IsNullOrEmpty(r.Package?.Urn))
-                .Select(r => new DelegationReasonEntry("package", r.Package!.Urn, []))
+                .Select(r => r.Package?.Urn)
+                .Where(urn => !string.IsNullOrEmpty(urn))
+                .Select(urn => new DelegationReasonEntry("package", urn!, []))
                 .ToList();
 
             ProblemInstance problem = reasonEntries.Count == 0
@@ -596,7 +597,10 @@ public class DelegationHelper(
             if (rightCheckDto.Result)
             {
                 canDelegate = true;
-                rightKeys.Add(rightCheckDto.Right.Key);
+                if (rightCheckDto.Right.Key is not null)
+                {
+                    rightKeys.Add(rightCheckDto.Right.Key);
+                }
             }
 
             if (!rightCheckDto.Result)

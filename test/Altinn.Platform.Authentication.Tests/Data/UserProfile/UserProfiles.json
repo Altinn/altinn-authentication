@@ -41,6 +41,30 @@
   },
 
   {
+    "UserId": 20875912,
+    "UserUuid": "b6a019e8-96ba-489c-83cc-a3fe66d33b7a",
+    "UserName": "stilling",
+    "PhoneNumber": null,
+    "Email": null,
+    "PartyId": 50459464,
+    "Party": {
+      "PartyId": 50459464,
+      "PartyUuid": "b6a019e8-96ba-489c-83cc-a3fe66d33b7a",
+      "Name": "SMIGRENDE STILLING",
+      "SSN": "17899198255",
+      "Person": {
+        "FirstName": "SMIGRENDE",
+        "LastName": "STILLING",
+        "DateOfDeath": "2020-12-22T00:00:00"
+      }
+    },
+    "UserType": 1,
+    "ProfileSettingPreference": {
+      "Language": "nb"
+    }
+  },
+
+  {
     "UserId": 30303030,
     "UserUuid": "46eaad59-9d49-4546-8fca-accf764a8baa",
     "UserName": "uidp_ej2krar0cl833",

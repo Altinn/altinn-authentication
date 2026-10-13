@@ -13,7 +13,7 @@ public class ResourceDtoCheck
     /// <summary>
     /// Resource actions
     /// </summary>
-    public List<string> Actions { get; set; }
+    public List<string>? Actions { get; set; }
 
     /// <summary>
     /// Result of the delegation check.

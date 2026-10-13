@@ -16,5 +16,5 @@ public class TypeDto
     /// <summary>
     /// Name
     /// </summary>
-    public string Name { get; set; }
+    public string? Name { get; set; }
 }
