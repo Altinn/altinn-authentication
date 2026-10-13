@@ -103,10 +103,19 @@ public class SystemUserController : ControllerBase
     [Authorize(Policy = AuthzConstants.POLICY_CLIENT_ADMINISTRATION_READ)]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [HttpGet("agent/{party}/{facilitator}/{systemUserId}/delegations")]
-    public async Task<ActionResult<List<DelegationResponse>>> GetListOfDelegationsForAgentSystemUser(int party, Guid facilitator, Guid systemUserId)
+    public async Task<ActionResult<List<DelegationResponse>>> GetListOfDelegationsForAgentSystemUser(int party, Guid facilitator, Guid systemUserId, CancellationToken cancellationToken = default)
     {
         List<DelegationResponse> ret = [];
-        var result = await _systemUserService.GetListOfDelegationsForAgentSystemUser(party, facilitator, systemUserId);
+
+        // This endpoint is authorized on the {party} route value, but the delegations are looked up
+        // by facilitator partyUuid. Verify the two identify the same party before returning any data.
+        Result<bool> partyMatch = await _systemUserService.VerifyFacilitatorMatchesParty(party, facilitator, cancellationToken);
+        if (partyMatch.IsProblem)
+        {
+            return Ok(ret);
+        }
+
+        var result = await _systemUserService.GetListOfDelegationsForAgentSystemUser(facilitator, systemUserId);
         if (result.IsSuccess)
         {
             ret = result.Value;
