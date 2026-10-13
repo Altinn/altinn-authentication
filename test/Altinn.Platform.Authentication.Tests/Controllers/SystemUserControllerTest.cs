@@ -1645,6 +1645,31 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             Assert.True(list.Count == 1);
         }
 
+        /// <summary>
+        /// The delegations endpoint is authorized on the {party} route value but looks the delegations up by
+        /// the {facilitator} partyUuid. A caller authorized for party A must not be able to read party B's
+        /// delegations by passing B's partyUuid as facilitator.
+        /// </summary>
+        [Fact]
+        public async Task AgentSystemUser_GetDelegations_FacilitatorDoesNotMatchParty_ReturnsNoDelegations()
+        {
+            HttpClient client = CreateClient();
+
+            // Party 500000 has partyUuid 00000000-0000-0000-0005-000000000000; this is party 600000's partyUuid.
+            int partyId = 500000;
+            Guid otherPartysUuid = Guid.Parse("6bb78d06-70b2-45f6-85bc-19ca7b4d34d8");
+            Guid systemUserId = Guid.NewGuid();
+
+            HttpRequestMessage request = new(HttpMethod.Get, $"/authentication/api/v1/systemuser/agent/{partyId}/{otherPartysUuid}/{systemUserId}/delegations");
+            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3, now: TestTime));
+            HttpResponseMessage response = await client.SendAsync(request, HttpCompletionOption.ResponseContentRead);
+            List<DelegationResponse>? list = JsonSerializer.Deserialize<List<DelegationResponse>>(await response.Content.ReadAsStringAsync(), _options);
+
+            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+            Assert.NotNull(list);
+            Assert.Empty(list);
+        }
+
         [Fact]
         public async Task AgentSystemUser_DeleteAgent_ReturnsOk()
         {
