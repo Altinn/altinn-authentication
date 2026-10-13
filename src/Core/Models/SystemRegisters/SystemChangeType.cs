@@ -19,8 +19,8 @@ namespace Altinn.Platform.Authentication.Core.Models.SystemRegisters
 
         [JsonStringEnumMemberName("accesspackageupdate")]
         AccessPackageUpdate,
-        
-        [JsonStringEnumMemberName("delete")] 
+
+        [JsonStringEnumMemberName("delete")]
         Delete,
 
         [JsonStringEnumMemberName("unknown")]

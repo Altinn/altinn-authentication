@@ -70,7 +70,7 @@ namespace Mockporten.Controllers
                 SubjectTypesSupported = { "pairwise" },
 
                 // REQUIRED
-                IdTokenSigningAlgValuesSupported = {"RS256"},
+                IdTokenSigningAlgValuesSupported = { "RS256" },
 
                 FrontchannelLogoutSessionSupported = "false",
 
@@ -113,7 +113,12 @@ namespace Mockporten.Controllers
 
                 JwkDocument jwkDocument = new JwkDocument
                 {
-                    KeyType = "RSA", PublicKeyUse = "sig", KeyId = cert.Thumbprint, Exponent = exponent, Modulus = modulus, X509Chain = chain
+                    KeyType = "RSA",
+                    PublicKeyUse = "sig",
+                    KeyId = cert.Thumbprint,
+                    Exponent = exponent,
+                    Modulus = modulus,
+                    X509Chain = chain
                 };
 
                 jwksDocument.Keys.Add(jwkDocument);

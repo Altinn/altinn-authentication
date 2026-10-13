@@ -20,7 +20,7 @@ namespace Altinn.Platform.Authentication.Model
         /// Gets or sets the organization number associated with the client.
         /// </summary>
         public string ClientOrganizationNumber { get; set; }
-        
+
         /// <summary>
         /// Gets or sets the name of the client organization.
         /// </summary>

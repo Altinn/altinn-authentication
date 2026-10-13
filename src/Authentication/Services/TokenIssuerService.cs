@@ -84,7 +84,7 @@ namespace Altinn.Platform.Authentication.Services
 
             // Of the potential certs, return the newest one.
             if (potentialCerts.Count == 0)
-            { 
+            {
                 throw new InvalidOperationException("No valid JWT signing certificate available.");
             }
 

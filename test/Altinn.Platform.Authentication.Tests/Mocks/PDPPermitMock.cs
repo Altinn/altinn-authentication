@@ -7,7 +7,7 @@ using Altinn.Common.PEP.Interfaces;
 
 namespace Altinn.Platform.Authentication.Tests.Mocks
 {
-    public class PDPPermitMock: IPDP
+    public class PDPPermitMock : IPDP
     {
         /// <inheritdoc/>
         public Task<XacmlJsonResponse> GetDecisionForRequest(XacmlJsonRequestRoot xacmlJsonRequest)

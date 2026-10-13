@@ -80,7 +80,7 @@ public class DelegationHelper(
             }
 
             return new DelegationCheckResult(false, null, errors);
-        }     
+        }
 
         List<RightResponses> rightResponsesList = [];
         List<DetailExternal> allErrorDetails = [];
@@ -91,7 +91,7 @@ public class DelegationHelper(
             string resourceId = right.Resource.FirstOrDefault(attr => attr.Id == AttributeIdentifier.ResourceRegistryAttribute)?.Value ?? string.Empty;
 
             ResourceCheckDto? resourceCheckDto = await accessManagementClient.CheckDelegationAccess(partyUuid, resourceId, cancellationToken);
-            
+
             if (resourceCheckDto is null)
             {
                 // HTTP failure during the delegation check is already logged with the response body,
@@ -186,7 +186,7 @@ public class DelegationHelper(
     {
         var processedResource = new List<AttributePair>();
         foreach (var attributePair in resource)
-        {            
+        {
             if (attributePair.Id == AttributeIdentifier.ResourceRegistryAttribute)
             {
                 if (!string.IsNullOrEmpty(attributePair.Value) && attributePair.Value.StartsWith("app_"))
@@ -573,10 +573,10 @@ public class DelegationHelper(
                         Code = DetailCodeExternal.Unknown,
                         Description = "Unknown Error During DelegationCheck",
                         Parameters = parameters
-                    });                    
+                    });
                 }
 
-                canDelegate = false; 
+                canDelegate = false;
             }
         }
 
@@ -615,7 +615,7 @@ public class DelegationHelper(
                     }));
                 }
                 else if (rightCheckDto.ReasonCodes is not null && rightCheckDto.ReasonCodes.Any())
-                {                   
+                {
                     errors.AddRange(rightCheckDto.ReasonCodes.Select(code => new DetailExternal
                     {
                         Code = code
@@ -643,7 +643,7 @@ public class DelegationHelper(
         {
             return (true, rightsInSystem);
         }
-        
+
         List<Right> verifiedRights = [];
         List<Right> unknownRights = [];
         bool allVerified = true;
@@ -658,7 +658,7 @@ public class DelegationHelper(
                     verifiedRights.Add(right);
                     found = true;
                     break;
-                }                
+                }
             }
 
             if (!found)

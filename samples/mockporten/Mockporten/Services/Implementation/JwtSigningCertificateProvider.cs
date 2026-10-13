@@ -64,7 +64,7 @@ namespace Mockporten.Services
                 List<X509Certificate2> certificates = await GetAllCertificateVersions(
                     _keyVaultSettings.KeyVaultURI, _keyVaultSettings.MaskinPortenCertSecretId);
                 _certificates.AddRange(certificates);
-              
+
 
                 // Reuse the same list of certificates for 1 hour.
                 _certificateUpdateTime = DateTime.Now.AddHours(1);

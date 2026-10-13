@@ -313,7 +313,7 @@ namespace Altinn.Platform.Authentication.Helpers.Tests
 
             // Assert
             Assert.True(result.IsProblem);
-            Assert.Equal(Problem.AccessPackage_ValidationFailed.Title, result.Problem.Title);      
+            Assert.Equal(Problem.AccessPackage_ValidationFailed.Title, result.Problem.Title);
             Assert.Equal("AccessPackage { Urn = urn:invalid }", result.Problem.Extensions.GetValueOrDefault("Invalid Urn Details : "));
         }
 
@@ -472,12 +472,13 @@ namespace Altinn.Platform.Authentication.Helpers.Tests
             var systemRegisterService = new Mock<ISystemRegisterService>();
             var accessManagementClient = new Mock<IAccessManagementClient>();
 
-            var right = new Right 
-            { 
-                Action = "read", Resource = new List<AttributePair>
+            var right = new Right
+            {
+                Action = "read",
+                Resource = new List<AttributePair>
                 {
                     new() { Id = "urn:altinn:resource", Value = "report" }
-                } 
+                }
             };
 
             var requestedRights = new List<Right> { right };
@@ -540,7 +541,7 @@ namespace Altinn.Platform.Authentication.Helpers.Tests
             var accessManagementClient = new Mock<IAccessManagementClient>();
 
             var requestedRight = new Right { Action = "read", Resource = new List<AttributePair>() };
-            
+
             // System has no rights, so verification will fail
             systemRegisterService
                 .Setup(s => s.GetRightsForRegisteredSystem(It.IsAny<string>(), It.IsAny<CancellationToken>()))

@@ -177,7 +177,7 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
             systemChangeLog.SystemInternalId = internalId;
             await _systemChangeLogRepository.LogChangeAsync(systemChangeLog, conn, transaction, cancellationToken);
             await transaction.CommitAsync(cancellationToken);
-            
+
             return internalId;
         }
         catch (Exception ex)
@@ -547,7 +547,7 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
         };
     }
 
-    private async Task<bool> CreateClient(string clientId, Guid systemInteralId, NpgsqlConnection conn, NpgsqlTransaction transaction,  CancellationToken cancellationToken)
+    private async Task<bool> CreateClient(string clientId, Guid systemInteralId, NpgsqlConnection conn, NpgsqlTransaction transaction, CancellationToken cancellationToken)
     {
         const string QUERY = /*strpsql*/@"
             INSERT INTO business_application.maskinporten_client(

@@ -46,7 +46,7 @@ namespace Altinn.Platform.Authentication.Tests.Mocks
 
                 return Task.FromResult(userProfile);
             }
-        
+
             return Task.FromResult(userProfile);
         }
 

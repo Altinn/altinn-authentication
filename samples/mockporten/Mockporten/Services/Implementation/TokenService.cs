@@ -18,7 +18,7 @@ using System.Threading.Tasks;
 
 namespace Mockporten.Services.Implementation
 {
-    public class TokenService: IToken
+    public class TokenService : IToken
     {
         private const string TokenUseClaim = "token_use";
         private const string TokenUseAuthzCode = "authz_code";

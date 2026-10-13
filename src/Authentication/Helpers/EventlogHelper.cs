@@ -32,9 +32,9 @@ namespace Altinn.Platform.Authentication.Helpers
         /// <param name="isAuthenticated">true when the request is authenticated</param>
         /// <returns>authentication event</returns>
         public static AuthenticationEvent MapAuthenticationEvent(
-            string jwtToken, 
-            AuthenticationEventType eventType, 
-            IPAddress? ipadress, 
+            string jwtToken,
+            AuthenticationEventType eventType,
+            IPAddress? ipadress,
             DateTimeOffset currentDateTime,
             string? externalSessionId,
             bool isAuthenticated = true)
@@ -64,7 +64,7 @@ namespace Altinn.Platform.Authentication.Helpers
                             case AltinnCoreClaimTypes.AuthenticateMethod:
                                 AuthenticationMethod authenticationMethod;
                                 authenticationEvent.AuthenticationMethod = System.Enum.TryParse<AuthenticationMethod>(claim.Value, true, out authenticationMethod) ? authenticationMethod : AuthenticationMethod.NotDefined;
-                                                                
+
                                 break;
 
                             case AltinnCoreClaimTypes.AuthenticationLevel:

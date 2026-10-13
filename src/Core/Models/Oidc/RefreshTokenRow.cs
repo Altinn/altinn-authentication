@@ -3,7 +3,7 @@ using System.Text.Json.Serialization;
 
 namespace Altinn.Platform.Authentication.Core.Models.Oidc
 {
-    public sealed record RefreshTokenRow: OidcBindingContextBase
+    public sealed record RefreshTokenRow : OidcBindingContextBase
     {
         /// <summary>
         /// The unique identifier for the refresh token.
@@ -53,7 +53,7 @@ namespace Altinn.Platform.Authentication.Core.Models.Oidc
         /// <summary>
         /// The lookup key for the refresh token.
         /// </summary>
-        [JsonIgnore] 
+        [JsonIgnore]
         public byte[] LookupKey { get; init; } = Array.Empty<byte>(); // HMAC(pepper, token)
 
         /// <summary>
@@ -67,7 +67,7 @@ namespace Altinn.Platform.Authentication.Core.Models.Oidc
         /// <summary>
         /// The salt used in the PBKDF2 hashing of the refresh token.
         /// </summary>
-        [JsonIgnore] 
+        [JsonIgnore]
         public byte[] Salt { get; init; } = Array.Empty<byte>();
 
         /// <summary>

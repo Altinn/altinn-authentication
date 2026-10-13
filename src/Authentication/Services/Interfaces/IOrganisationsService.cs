@@ -5,7 +5,7 @@ namespace Altinn.Platform.Authentication.Services.Interfaces
     /// <summary>
     /// Interface handling methods for operations related to organisations
     /// </summary>
-    public interface IOrganisationsService 
+    public interface IOrganisationsService
     {
         /// <summary>
         /// Lookups an organisation and returns the altinn org identifier.

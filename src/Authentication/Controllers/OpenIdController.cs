@@ -109,7 +109,12 @@ namespace Altinn.Platform.Authentication.Controllers
 
                 JwkDocument jwkDocument = new JwkDocument
                 {
-                    KeyType = oidFriendlyName, PublicKeyUse = "sig", KeyId = cert.Thumbprint, Exponent = exponent, Modulus = modulus, X509Chain = chain
+                    KeyType = oidFriendlyName,
+                    PublicKeyUse = "sig",
+                    KeyId = cert.Thumbprint,
+                    Exponent = exponent,
+                    Modulus = modulus,
+                    X509Chain = chain
                 };
 
                 jwksDocument.Keys.Add(jwkDocument);

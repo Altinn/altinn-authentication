@@ -26,9 +26,9 @@ namespace Mockporten.Controllers
         [Consumes("application/x-www-form-urlencoded")]
         [HttpPost]
         public async Task<ActionResult> Index(
-            [FromForm] string client_id, 
-            [FromForm] string grant_type, 
-            [FromForm] string code, 
+            [FromForm] string client_id,
+            [FromForm] string grant_type,
+            [FromForm] string code,
             [FromForm] string redirect_uri,
             [FromForm] string code_verifier,
             [FromForm] string client_assertion_type,

@@ -3,7 +3,7 @@ using System.Text.Json.Serialization;
 
 namespace Altinn.Platform.Authentication.Core.Models.Rights.ConnectionsDtos;
 
-[ExcludeFromCodeCoverage]    
+[ExcludeFromCodeCoverage]
 public class DelegationBatchInputDto
 {
     [JsonPropertyName("values")]

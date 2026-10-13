@@ -13,7 +13,7 @@ public class CreateRequestSystemUser()
     /// An optional name used only in display on UI. If not set by the request it will default to the System-Name. 
     /// </summary>
     [JsonPropertyName("integrationTitle")]
-    public string? IntegrationTitle { get; set; } 
+    public string? IntegrationTitle { get; set; }
 
     /// <summary>
     /// Either just the same as the PartyOrgNo for the customer, 

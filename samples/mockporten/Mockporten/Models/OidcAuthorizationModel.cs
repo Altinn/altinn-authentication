@@ -30,7 +30,7 @@ namespace Mockporten.Models
         public string Claims { get; set; }
         public string Request_uri { get; set; }
 
-        public string Pid { get; set;}
+        public string Pid { get; set; }
 
         /// <summary>
         /// The single shared access password granting the right to use the

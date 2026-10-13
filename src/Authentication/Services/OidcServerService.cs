@@ -42,11 +42,11 @@ namespace Altinn.Platform.Authentication.Services
     /// <summary>
     /// Service that implements the OIDC <c>/authorize</c> front-channel flow for Altinn Authentication as an OP.
     /// </summary>
-    public partial class OidcServerService(ILogger<OidcServerService> logger, 
-        IOidcServerClientRepository oidcServerClientRepository, 
+    public partial class OidcServerService(ILogger<OidcServerService> logger,
+        IOidcServerClientRepository oidcServerClientRepository,
         ILoginTransactionRepository loginTransactionRepository,
         IUpstreamLoginTransactionRepository upstreamLoginTransactionRepository,
-        IAuthorizeRequestValidator authorizeRequestValidator, 
+        IAuthorizeRequestValidator authorizeRequestValidator,
         IAuthorizeClientPolicyValidator authorizeClientPolicyValidator,
         IOptions<OidcProviderSettings> oidcProviderSettings,
         TimeProvider timeProvider,
@@ -61,7 +61,7 @@ namespace Altinn.Platform.Authentication.Services
         IRefreshTokenRepository refreshTokenRepository,
         IUnregisteredClientRepository unregisteredClientRequestRepository,
         IEventLog eventLog,
-        IFeatureManager featureManager, 
+        IFeatureManager featureManager,
         IOidcDownstreamLogout oidcDownstreamLogout,
         IAcrValueCatalog acrValueCatalog,
         ISigningKeysRetriever signingKeysRetriever) : IOidcServerService
@@ -158,7 +158,7 @@ namespace Altinn.Platform.Authentication.Services
                 return AuthorizeResult.RedirectToDownstreamBasedOnReusedSession(
                     request.RedirectUri, // safe because validated
                     code,
-                    request.State!, 
+                    request.State!,
                     cookieInstructions);
             }
 
@@ -326,7 +326,7 @@ namespace Altinn.Platform.Authentication.Services
             int partyId = userIdenity.PartyID.HasValue ? userIdenity.PartyID.Value : 0;
             Guid partyUuid = userIdenity.PartyUuid.HasValue ? userIdenity.PartyUuid.Value : Guid.Empty;
 
-            if (userIdenity.PreSelectedPartyId.HasValue && userIdenity.PreSelectedPartyId.Value != partyId 
+            if (userIdenity.PreSelectedPartyId.HasValue && userIdenity.PreSelectedPartyId.Value != partyId
                 && userIdenity.PreselectedPartyUuid.HasValue && userIdenity.PreselectedPartyUuid.Value != partyUuid)
             {
                 partyId = userIdenity.PreSelectedPartyId.Value;
@@ -417,7 +417,7 @@ namespace Altinn.Platform.Authentication.Services
                     Cookies = [altinnStudioRuntime, altinnSessionCookie, altinnPartyCookie, altinnPartyUuidCookie]
                 };
             }
-            
+
             Debug.Assert(upstreamCallbackResult != null);
 
             // 6) Mark upstream transaction as completed
@@ -459,7 +459,7 @@ namespace Altinn.Platform.Authentication.Services
             {
                 throw new InvalidOperationException("No valid session found for sid");
             }
-            
+
             return session;
         }
 
@@ -577,7 +577,7 @@ namespace Altinn.Platform.Authentication.Services
                     UriBuilder logoutUriBuilder = new(provider.LogoutEndpoint!);
                     var queryParams = System.Web.HttpUtility.ParseQueryString(logoutUriBuilder.Query);
                     queryParams["client_id"] = provider.ClientId;
-                    queryParams["post_logout_redirect_uri"] = $"{_generalSettings.PlatformEndpoint.TrimEnd('/')}/authentication/api/v1/logout/handleloggedout"; 
+                    queryParams["post_logout_redirect_uri"] = $"{_generalSettings.PlatformEndpoint.TrimEnd('/')}/authentication/api/v1/logout/handleloggedout";
                     logoutUriBuilder.Query = queryParams.ToString()!;
                     redirect = logoutUriBuilder.Uri;
                 }
@@ -627,7 +627,7 @@ namespace Altinn.Platform.Authentication.Services
                 Expires = DateTimeOffset.UnixEpoch,
                 Domain = _generalSettings.HostName,
             };
-            
+
             List<CookieInstruction> finalCookies = new() { deleteRuntime, deleteSession };
 
             return new EndSessionResult
@@ -676,7 +676,7 @@ namespace Altinn.Platform.Authentication.Services
             foreach (var sid in localSids)
             {
                 IReadOnlyList<Guid> families = await _refreshTokenRepo.GetFamiliesByOpSidAsync(sid, cancellationToken);
-                
+
                 foreach (Guid familyGuid in families)
                 {
                     await _refreshTokenRepo.RevokeFamilyAsync(familyGuid, "frontchannel_logout", cancellationToken);
@@ -722,19 +722,19 @@ namespace Altinn.Platform.Authentication.Services
             if (oidcSession is not null
                   && oidcSession.ExpiresAt.HasValue
                   && oidcSession.ExpiresAt.Value > _timeProvider.GetUtcNow())
-            { 
+            {
                 string token = await _tokenService.CreateCookieToken(oidcSession, cancellationToken);
                 CookieInstruction cookieInstruction
                     = new()
-                {
-                    Name = _generalSettings.JwtCookieName,
-                    Value = token,
-                    HttpOnly = true,
-                    Secure = true,
-                    Path = "/",
-                    SameSite = SameSiteMode.Lax,
-                    Domain = _generalSettings.HostName,
-                };
+                    {
+                        Name = _generalSettings.JwtCookieName,
+                        Value = token,
+                        HttpOnly = true,
+                        Secure = true,
+                        Path = "/",
+                        SameSite = SameSiteMode.Lax,
+                        Domain = _generalSettings.HostName,
+                    };
 
                 await _oidcSessionRepo.SlideExpiryToAsync(oidcSession.Sid, _timeProvider.GetUtcNow().AddMinutes(_generalSettings.JwtValidityMinutes), cancellationToken);
                 return new AuthenticateFromSessionResult
@@ -1173,7 +1173,7 @@ namespace Altinn.Platform.Authentication.Services
             {
                 RequestId = tx.RequestId,
                 ExpiresAt = _timeProvider.GetUtcNow().AddMinutes(10),
-               
+
                 Provider = provider.IssuerKey ?? provider.Issuer, // stable key for routing/ops
                 UpstreamClientId = provider.ClientId,
 
@@ -1211,7 +1211,7 @@ namespace Altinn.Platform.Authentication.Services
             // NOTE: Store everything you need for callback + token exchange.
             UpstreamLoginTransactionCreate upstreamCreate = new()
             {
-                UnregisteredClientRequestId = request.RequestId, 
+                UnregisteredClientRequestId = request.RequestId,
                 ExpiresAt = _timeProvider.GetUtcNow().AddMinutes(10),
 
                 Provider = provider.IssuerKey ?? provider.Issuer, // stable key for routing/ops
@@ -1281,7 +1281,7 @@ namespace Altinn.Platform.Authentication.Services
                     Code = authCode,
                     ClientId = loginTx.ClientId,
                     SubjectId = session.SubjectId, // fallback
-                    ExternalId = session.ExternalId,    
+                    ExternalId = session.ExternalId,
                     SubjectPartyUuid = session.SubjectPartyUuid,
                     SubjectPartyId = session.SubjectPartyId,
                     SubjectUserId = session.SubjectUserId,
@@ -1452,7 +1452,7 @@ namespace Altinn.Platform.Authentication.Services
         {
             if (!string.IsNullOrWhiteSpace(key) && _oidcProviderSettings.TryGetValue(key, out var selected))
             {
-                 return selected;
+                return selected;
             }
 
             throw new ArgumentException("Invalid or unknown provider key.", nameof(key));
@@ -1728,7 +1728,6 @@ namespace Altinn.Platform.Authentication.Services
                 {
                     userAuthenticationModel.PreSelectedPartyId = userProfile.ProfileSettingPreference.PreSelectedPartyId;
                 }
-
             }
             else if (!string.IsNullOrEmpty(userAuthenticationModel.ExternalIdentity))
             {
@@ -1904,13 +1903,13 @@ namespace Altinn.Platform.Authentication.Services
                 string normalized = value.Replace('-', '+').Replace('_', '/');
                 int pad = (4 - (normalized.Length % 4)) % 4;
                 normalized = normalized + new string('=', pad);
-                try 
-                { 
-                    return Convert.FromBase64String(normalized); 
-                }
-                catch (Exception ex) 
+                try
                 {
-                    throw new ConfigurationErrorsException("Invalid OidcRefreshTokenPepper; must be Base64/Base64Url.", ex); 
+                    return Convert.FromBase64String(normalized);
+                }
+                catch (Exception ex)
+                {
+                    throw new ConfigurationErrorsException("Invalid OidcRefreshTokenPepper; must be Base64/Base64Url.", ex);
                 }
             }
         }

@@ -3,7 +3,7 @@ using Altinn.Platform.Authentication.Core.Models.Oidc;
 using Altinn.Platform.Authentication.Tests.Models;
 
 namespace Altinn.Platform.Authentication.Tests.Helpers
-{   
+{
     public static class OidcServerTestUtils
     {
         public static Dictionary<string, string> GetRefreshForm(OidcTestScenario testScenario, OidcClientCreate create, string refreshToken)

@@ -19,7 +19,7 @@ public interface IRequestRepository
     /// </summary>
     /// <param name="internalId">Internal Request guid</param>
     /// <returns>Create Request model</returns>
-    Task<RequestSystemResponse?> GetRequestByInternalId (Guid internalId);
+    Task<RequestSystemResponse?> GetRequestByInternalId(Guid internalId);
 
     /// <summary>
     /// Gets a Request model by the internal Guid ( which later is repurposed as the SystemUser Id )

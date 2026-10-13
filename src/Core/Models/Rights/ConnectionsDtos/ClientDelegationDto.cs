@@ -20,5 +20,5 @@ public class ClientDelegationDto
     /// Gets or sets a collection of all access information for the client 
     /// </summary>
     [JsonPropertyName("access")]
-    public List<RoleAccessPackages> Access { get; set; } = [];  
+    public List<RoleAccessPackages> Access { get; set; } = [];
 }

@@ -27,6 +27,6 @@ namespace Altinn.Platform.Authentication.Exceptions
         public OrganisationHarvestException(string message, Exception innerException)
                 : base(message, innerException)
         {
-        }        
+        }
     }
 }

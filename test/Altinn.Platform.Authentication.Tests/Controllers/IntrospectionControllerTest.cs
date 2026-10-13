@@ -24,19 +24,19 @@ using Xunit;
 
 namespace Altinn.Platform.Authentication.Tests.Controllers
 {
-    public class IntrospectionControllerTest(DbFixture dbFixture, WebApplicationFixture webApplicationFixture) 
-        : WebApplicationTests(dbFixture,  webApplicationFixture)
+    public class IntrospectionControllerTest(DbFixture dbFixture, WebApplicationFixture webApplicationFixture)
+        : WebApplicationTests(dbFixture, webApplicationFixture)
     {
         private static readonly JsonSerializerOptions _options = new(JsonSerializerDefaults.Web);
         private readonly Mock<IEFormidlingAccessValidator> _eformidlingValidatorService = new();
         private readonly string _baseUrl = "/authentication/api/v1/introspection";
-        
+
         protected override void ConfigureServices(IServiceCollection services)
         {
             base.ConfigureServices(services);
 
             services.AddSingleton<IEFormidlingAccessValidator>(_eformidlingValidatorService.Object);
-            services.AddSingleton<IAuthentication, AuthenticationCore>();            
+            services.AddSingleton<IAuthentication, AuthenticationCore>();
             services.AddSingleton<IPostConfigureOptions<JwtCookieOptions>, JwtCookiePostConfigureOptionsStub>();
         }
 

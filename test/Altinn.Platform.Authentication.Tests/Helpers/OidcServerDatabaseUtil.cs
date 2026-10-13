@@ -14,7 +14,7 @@ namespace Altinn.Platform.Authentication.Tests.Helpers
     public static class OidcServerDatabaseUtil
     {
         public static async Task<LoginTransaction?> GetDownstreamTransaction(string clientId, string state, NpgsqlDataSource DataSource, CancellationToken cancellationToken = default)
-        {        
+        {
             const string SQL_FIND_DOWNSTREAM = /*strpsql*/ @"
             SELECT *
             FROM oidcserver.login_transaction

@@ -7,7 +7,7 @@ public sealed class AuthenticationTelemetry
 {
     public static readonly string Name = "Altinn.Authentication";
     private static readonly ActivitySource _activitySource = new(Name);
-     
+
     /// <summary>
     /// Creates and starts a new <see cref="Activity"/> object if there is any listener to the Activity, returns null otherwise.
     /// </summary>

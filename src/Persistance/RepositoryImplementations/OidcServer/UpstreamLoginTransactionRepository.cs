@@ -24,13 +24,13 @@ namespace Altinn.Platform.Authentication.Persistance.RepositoryImplementations.O
         public async Task<UpstreamLoginTransaction> InsertAsync(UpstreamLoginTransactionCreate create, CancellationToken cancellationToken = default)
         {
             ArgumentNullException.ThrowIfNull(create);
-            bool hasDownstream = create.RequestId != null; 
-            bool hasUnregistered = create.UnregisteredClientRequestId != null; 
+            bool hasDownstream = create.RequestId != null;
+            bool hasUnregistered = create.UnregisteredClientRequestId != null;
 
             // Exactly one of hasDownstream or hasUnregistered must be true (not both, not neither)
-            if (hasDownstream == hasUnregistered) 
-            { 
-                throw new ArgumentException("Exactly one of RequestId or UnregisteredClientRequestId must be set.", nameof(create)); 
+            if (hasDownstream == hasUnregistered)
+            {
+                throw new ArgumentException("Exactly one of RequestId or UnregisteredClientRequestId must be set.", nameof(create));
             }
 
             if (string.IsNullOrWhiteSpace(create.Provider))

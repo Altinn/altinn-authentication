@@ -101,7 +101,7 @@ public class RequestSystemUserController : ControllerBase
     {
         string platform = _generalSettings.PlatformEndpoint;
         OrganisationNumber? vendorOrgNo = RetrieveOrgNoFromToken();
-        if (vendorOrgNo is null || vendorOrgNo == OrganisationNumber.Empty()) 
+        if (vendorOrgNo is null || vendorOrgNo == OrganisationNumber.Empty())
         {
             return ProblemInstance.Create(Altinn.Authentication.Core.Problems.Problem.Vendor_Orgno_NotFound).ToActionResult();
         }
@@ -109,7 +109,7 @@ public class RequestSystemUserController : ControllerBase
         string default_ext_ref = createRequest.PartyOrgNo;
         if (!string.IsNullOrEmpty(createRequest.ExternalRef))
         {
-            default_ext_ref=createRequest.ExternalRef;
+            default_ext_ref = createRequest.ExternalRef;
         }
 
         ExternalRequestId externalRequestId = new()
@@ -118,7 +118,7 @@ public class RequestSystemUserController : ControllerBase
             OrgNo = createRequest.PartyOrgNo,
             SystemId = createRequest.SystemId,
         };
-        
+
         SystemUserInternalDTO? existing = await _systemUserService.GetSystemUserByExternalRequestId(externalRequestId, cancellationToken);
         if (existing is not null)
         {
@@ -135,7 +135,7 @@ public class RequestSystemUserController : ControllerBase
 
         // This is a new Request
         response = await _requestSystemUser.CreateRequest(createRequest, vendorOrgNo, cancellationToken);
-        
+
         if (response.IsSuccess)
         {
             string fullCreatedUri = platform + CREATEDURIMIDSECTION + response.Value.Id;
@@ -158,7 +158,7 @@ public class RequestSystemUserController : ControllerBase
     public async Task<ActionResult<AgentRequestSystemResponse>> CreateAgentRequest([FromBody] CreateAgentRequestSystemUser createAgentRequest, CancellationToken cancellationToken = default)
     {
         string platform = _generalSettings.PlatformEndpoint;
-        
+
         OrganisationNumber? vendorOrgNo = RetrieveOrgNoFromToken();
         if (vendorOrgNo is null || vendorOrgNo == OrganisationNumber.Empty())
         {
@@ -306,12 +306,12 @@ public class RequestSystemUserController : ControllerBase
         };
 
         Result<RequestSystemResponse> response = await _requestSystemUser.GetRequestByExternalRef(externalRequestId, vendorOrgNo);
-        
+
         if (response.IsProblem)
         {
             return response.Problem.ToActionResult();
         }
-        
+
         if (response.IsSuccess)
         {
             response.Value.ConfirmUrl = CONFIRMURL_PREFIX + _generalSettings.HostName + CONFIRMURL_STANDARD_REQUEST + response.Value.Id + REPORTEESELECTIONPARAMETER;
@@ -441,7 +441,7 @@ public class RequestSystemUserController : ControllerBase
     /// <param name="cancellationToken">The cancellation token</param>
     /// <returns>Status response model CreateRequestSystemUserResponse</returns>
     [Authorize(Policy = AuthzConstants.POLICY_SCOPE_PORTAL)]
-    [Authorize(Policy = AuthzConstants.POLICY_ACCESS_MANAGEMENT_WRITE)]    
+    [Authorize(Policy = AuthzConstants.POLICY_ACCESS_MANAGEMENT_WRITE)]
     [HttpPost("{party}/{requestId}/approve")]
     public async Task<ActionResult<RequestSystemResponse>> ApproveSystemUserRequest(int party, Guid requestId, CancellationToken cancellationToken = default)
     {

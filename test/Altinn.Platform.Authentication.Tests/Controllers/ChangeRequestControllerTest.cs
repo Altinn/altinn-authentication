@@ -579,7 +579,7 @@ public class ChangeRequestControllerTest(
         {
             RequiredRights = [right2],
             UnwantedRights = [right],
-            RequiredAccessPackages = [accessPackage]            
+            RequiredAccessPackages = [accessPackage]
         };
 
         HttpRequestMessage verifyChangeRequestMessage = new(HttpMethod.Post, createChangeRequestEndpoint)
@@ -596,7 +596,7 @@ public class ChangeRequestControllerTest(
         Assert.NotNull(createdResponse.ConfirmUrl);
         Assert.True(DeepCompare(createdResponse.RequiredRights, change.RequiredRights));
         Guid systemUserIdFromChangeRequest = createdResponse.SystemUserId;
-                
+
         // Get and Approve the Change Request
         string requestId = createdResponse.Id.ToString();
         HttpClient client3 = CreateClient();
@@ -1147,7 +1147,7 @@ public class ChangeRequestControllerTest(
         Assert.NotNull(createdResponse2);
         Assert.NotEmpty(createdResponse2.RequiredAccessPackages);
         Assert.Contains("&DONTCHOOSEREPORTEE=true", createdResponse2.ConfirmUrl);
-        Assert.NotEqual(createdResponse2.ConfirmUrl, createdResponse.ConfirmUrl);        
+        Assert.NotEqual(createdResponse2.ConfirmUrl, createdResponse.ConfirmUrl);
     }
 
     /// <summary>
@@ -1769,14 +1769,14 @@ public class ChangeRequestControllerTest(
         if (requiredRights1.Count != requiredRights2.Count)
         {
             return false;
-        }               
+        }
 
-        foreach (Right right in requiredRights1) 
+        foreach (Right right in requiredRights1)
         {
             foreach (AttributePair pair in right.Resource)
             {
                 if (!DeepFind(requiredRights2, pair.Value))
-                {                    
+                {
                     return false;
                 }
             }
@@ -2085,7 +2085,7 @@ public class ChangeRequestControllerTest(
         ChangeRequestSystemUser change = new()
         {
             RequiredRights = [right],
-            UnwantedRights = []            
+            UnwantedRights = []
         };
 
         HttpRequestMessage createChangeRequestMessage = new(HttpMethod.Post, createChangeRequestEndpoint)
@@ -2557,7 +2557,7 @@ public class ChangeRequestControllerTest(
 
         // Arrange
         string systemId = "991825827_the_matrix";
-                
+
         await CreateSeveralChangeRequest(_paginationSize, systemId);
 
         // Get the Request
@@ -2572,7 +2572,7 @@ public class ChangeRequestControllerTest(
         var list = res.Items.ToList();
         Assert.NotEmpty(list);
 
-        Assert.Equal(_paginationSize, list.Count);        
+        Assert.Equal(_paginationSize, list.Count);
         Assert.Contains(list, x => x.PartyOrgNo == "910493353");
         Assert.NotNull(res.Links.Next);
 

@@ -50,7 +50,7 @@ public abstract class WebApplicationTests
     {
     }
 
-    protected virtual void ConfigureHost(IWebHostBuilder builder) 
+    protected virtual void ConfigureHost(IWebHostBuilder builder)
     {
     }
 
