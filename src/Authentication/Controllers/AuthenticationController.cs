@@ -560,8 +560,8 @@ namespace Altinn.Platform.Authentication.Controllers
 
                 if (!HasAltinnScope(scope) && !HasPartnerScope(scope))
                 {
-                     _logger.LogInformation("Missing scope");
-                     return Forbid();
+                    _logger.LogInformation("Missing scope");
+                    return Forbid();
                 }
 
                 if (string.IsNullOrWhiteSpace(authLevel))
@@ -789,7 +789,7 @@ namespace Altinn.Platform.Authentication.Controllers
         private static string? GetOrganisationNumberFromConsumerClaim(ClaimsPrincipal originalPrincipal)
         {
             string? consumerJson = originalPrincipal.FindFirstValue("consumer");
-            
+
             if (consumerJson == null)
             {
                 return null;
@@ -797,18 +797,18 @@ namespace Altinn.Platform.Authentication.Controllers
 
             JObject consumer = JObject.Parse(consumerJson);
             JToken? consumerAuthorityToken = consumer["authority"];
-            
+
             if (consumerAuthorityToken == null)
             {
                 return null;
-            }   
+            }
 
             string consumerAuthority = consumerAuthorityToken.ToString();
             if (!"iso6523-actorid-upis".Equals(consumerAuthority))
             {
                 return null;
             }
-           
+
             JToken? consumerValue = consumer["ID"];
 
             if (consumerValue == null)
@@ -964,7 +964,7 @@ namespace Altinn.Platform.Authentication.Controllers
                 .OrderByDescending(c => c.NotBefore)
                 .FirstOrDefault();
         }
-        
+
         private async Task<JwtSecurityToken> ValidateAndExtractOidcToken(string originalToken, string wellKnownConfigEndpoint, string alternativeWellKnownConfigEndpoint = null)
         {
             try
@@ -992,7 +992,7 @@ namespace Altinn.Platform.Authentication.Controllers
             {
                 ClaimsPrincipal originalPrincipal = _validator.ValidateToken(originalToken, validationParameters, out _);
                 return originalPrincipal;
-            }           
+            }
             catch (Exception)
             {
                 if (alternativeSigningKeys is null || alternativeSigningKeys.Count == 0)

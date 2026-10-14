@@ -50,12 +50,12 @@ namespace Altinn.Platform.Authentication.Tests.Controllers;
 #nullable enable
 
 public class RequestControllerTests(
-    DbFixture dbFixture, 
+    DbFixture dbFixture,
     WebApplicationFixture webApplicationFixture)
     : WebApplicationTests(dbFixture, webApplicationFixture)
 {
     private static readonly JsonSerializerOptions _options = new(JsonSerializerDefaults.Web);
-    
+
     private readonly Mock<IUserProfileService> _userProfileService = new();
 
     private readonly FakeTimeProvider timeProvider = new();
@@ -81,7 +81,7 @@ public class RequestControllerTests(
         IConfigurationSection generalSettingSection = configuration.GetSection("GeneralSettings");
         IConfigurationSection paginationSettingSection = configuration.GetSection("PaginationOptions");
 
-        services.Configure<GeneralSettings>(generalSettingSection);        
+        services.Configure<GeneralSettings>(generalSettingSection);
         services.Configure<PaginationOptions>(paginationSettingSection);
         _paginationSize = configuration.GetValue<int>("PaginationOptions:Size");
         services.AddSingleton<IOrganisationsService, OrganisationsServiceMock>();
@@ -100,7 +100,7 @@ public class RequestControllerTests(
         services.AddSingleton<IUserProfileService>(_userProfileService.Object);
         services.AddSingleton<IPDP, PepWithPDPAuthorizationMock>();
         services.AddSingleton<IPartiesClient, PartiesClientMock>();
-        services.AddSingleton<ISystemUserService, SystemUserService>();    
+        services.AddSingleton<ISystemUserService, SystemUserService>();
         services.AddSingleton<ISystemRegisterService, SystemRegisterService>();
         services.AddSingleton<IRequestSystemUser, RequestSystemUserService>();
         services.AddSingleton<IAccessManagementClient, AccessManagementClientMock>();
@@ -130,17 +130,17 @@ public class RequestControllerTests(
                     Id = "urn:altinn:resource",
                     Value = "ske-krav-og-betalinger"
                 }
-            ] 
+            ]
         };
 
         // Arrange
-        CreateRequestSystemUser req = new() 
+        CreateRequestSystemUser req = new()
         {
             ExternalRef = "external",
             SystemId = "991825827_the_matrix",
             PartyOrgNo = "910493353",
             Rights = [right],
-            AccessPackages = []            
+            AccessPackages = []
         };
 
         HttpRequestMessage request = new(HttpMethod.Post, endpoint)
@@ -149,8 +149,8 @@ public class RequestControllerTests(
         };
         HttpResponseMessage message = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead);
 
-        Assert.Equal(HttpStatusCode.Created, message.StatusCode);       
-        
+        Assert.Equal(HttpStatusCode.Created, message.StatusCode);
+
         RequestSystemResponse? res = await message.Content.ReadFromJsonAsync<RequestSystemResponse>();
         Assert.NotNull(res);
         Assert.Equal(req.ExternalRef, res.ExternalRef);
@@ -259,7 +259,7 @@ public class RequestControllerTests(
         };
         HttpResponseMessage message = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead);
 
-        Assert.Equal(HttpStatusCode.BadRequest, message.StatusCode);                
+        Assert.Equal(HttpStatusCode.BadRequest, message.StatusCode);
     }
 
     [Fact]
@@ -699,7 +699,7 @@ public class RequestControllerTests(
         {
             SystemId = "991825827_the_matrix",
             PartyOrgNo = "910493353",
-            AccessPackages = [accessPackage]         
+            AccessPackages = [accessPackage]
         };
 
         HttpRequestMessage request = new(HttpMethod.Post, endpoint)
@@ -936,7 +936,7 @@ public class RequestControllerTests(
             ExternalRef = "external",
             SystemId = "991825827_the_matrix",
             PartyOrgNo = "910493353",
-            AccessPackages = [accessPackage]            
+            AccessPackages = [accessPackage]
         };
 
         HttpRequestMessage request = new(HttpMethod.Post, endpoint)
@@ -1765,7 +1765,7 @@ public class RequestControllerTests(
         Assert.Single(requests);
         Assert.True(requests[0].Escalated);
     }
-       
+
     [Fact]
     public async Task Get_AgentRequest_Only_By_RequestId()
     {
@@ -1805,7 +1805,7 @@ public class RequestControllerTests(
 
         // Party Get Request
         HttpClient client2 = CreateClient();
-        client2.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1338, null, 3, addPortalScope:true, now: TestTime));
+        client2.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1338, null, 3, addPortalScope: true, now: TestTime));
 
         int partyId = 500000;
 
@@ -2073,7 +2073,7 @@ public class RequestControllerTests(
         // Party Get Request
         HttpClient client2 = CreateClient();
         client2.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3, now: TestTime));
-        
+
         // Wrong PartyId!
         int partyId = 9999;
         string partyEndpoint = $"/authentication/api/v1/systemuser/request/agent/{partyId}/{res.Id}";
@@ -2520,7 +2520,7 @@ public class RequestControllerTests(
     }
 
     [Fact]
-    public async Task Approve_Request_SecondTime_ReturnConflict() 
+    public async Task Approve_Request_SecondTime_ReturnConflict()
     {
         // Create System used for test
         string dataFileName = "Data/SystemRegister/Json/SystemRegister.json";
@@ -2635,7 +2635,7 @@ public class RequestControllerTests(
         HttpResponseMessage message2 = await client.SendAsync(request2, HttpCompletionOption.ResponseHeadersRead);
 
         // Return OK in stead of Created, signifying that the request already exists, and that the request is not created again.
-        Assert.Equal(HttpStatusCode.OK, message2.StatusCode);       
+        Assert.Equal(HttpStatusCode.OK, message2.StatusCode);
     }
 
     [Fact]
@@ -2749,7 +2749,7 @@ public class RequestControllerTests(
         RequestSystemResponse? res = await message.Content.ReadFromJsonAsync<RequestSystemResponse>();
         Assert.NotNull(res);
         Assert.Equal(req.ExternalRef, res.ExternalRef);
-                
+
         // Approve the SystemUser
         HttpClient client2 = CreateClient();
         client2.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3, true, now: TestTime));
@@ -3367,7 +3367,7 @@ public class RequestControllerTests(
 
         // Arrange
         string systemId = "991825827_the_matrix";
-        
+
         await CreateSeveralRequest(client, _paginationSize, systemId);
 
         // Get the Request
@@ -3569,7 +3569,7 @@ public class RequestControllerTests(
         string endpoint2 = $"/authentication/api/v1/systemuser/request/vendor/{testId}";
         HttpClient client2 = CreateClient();
         string token2 = AddSystemUserRequesReadTestTokenToClient(client2);
-        HttpResponseMessage message2 = await client2.GetAsync(endpoint2);        
+        HttpResponseMessage message2 = await client2.GetAsync(endpoint2);
         Assert.Equal(HttpStatusCode.OK, message2.StatusCode);
         RequestSystemResponse? res2 = await message2.Content.ReadFromJsonAsync<RequestSystemResponse>();
         Assert.True(res2 is not null);
@@ -3954,7 +3954,7 @@ public class RequestControllerTests(
         HttpClient client = CreateClient();
         string token = AddSystemUserRequestWriteTestTokenToClient(client);
         string endpoint = $"/authentication/api/v1/systemuser/request/vendor";
-                
+
         // Arrange
         CreateRequestSystemUser req = new()
         {
@@ -3971,7 +3971,7 @@ public class RequestControllerTests(
         };
         HttpResponseMessage message = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead);
 
-        Assert.Equal(HttpStatusCode.BadRequest, message.StatusCode);        
+        Assert.Equal(HttpStatusCode.BadRequest, message.StatusCode);
     }
 
     [Fact]
@@ -3996,7 +3996,7 @@ public class RequestControllerTests(
                 }
             ]
         };
-         
+
         // Arrange
         CreateRequestSystemUser req = new()
         {
@@ -4247,7 +4247,7 @@ public class RequestControllerTests(
             SystemId = systemId,
             PartyOrgNo = "910493353",
             Rights = [right]
-        }; 
+        };
 
         HttpRequestMessage request = new(HttpMethod.Post, $"/authentication/api/v1/systemuser/request/vendor")
         {

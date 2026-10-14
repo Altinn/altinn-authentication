@@ -26,10 +26,10 @@ namespace Altinn.Platform.Authentication.Core.Models.Oidc
             {
                 throw new ArgumentException("redirect_uri is required.", nameof(dto));
             }
-            
+
             if (!Uri.TryCreate(dto.RedirectUri, UriKind.Absolute, out var uri))
             {
-               throw new ArgumentException($"redirect_uri must be an absolute URI. Received: {dto.RedirectUri}", nameof(dto));
+                throw new ArgumentException($"redirect_uri must be an absolute URI. Received: {dto.RedirectUri}", nameof(dto));
             }
 
             if (string.IsNullOrWhiteSpace(dto.ClientId))

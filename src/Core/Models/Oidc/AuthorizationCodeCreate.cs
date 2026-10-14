@@ -18,7 +18,7 @@
         /// <summary>
         /// The unique party URN for the subject. Owned by Altinn Register. Example: urn:altinn:party:uuid:{partyuuid}
         /// </summary>
-        public required string SubjectId { get; init; }       
+        public required string SubjectId { get; init; }
 
         /// <summary>
         /// The global unique identifier for the subject, such as a PID, email, or other policy-defined value that externally identifies the user.
@@ -94,7 +94,7 @@
         /// Code challenge method for PKCE support.
         /// </summary>
         public required string CodeChallengeMethod { get; init; } = "S256";
-        
+
         /// <summary>
         /// Gets the date and time at which the token was issued.
         /// </summary>

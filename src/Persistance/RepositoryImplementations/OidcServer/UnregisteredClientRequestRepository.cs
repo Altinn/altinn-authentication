@@ -40,7 +40,7 @@ namespace Altinn.Platform.Authentication.Persistance.RepositoryImplementations.O
             cmd.Parameters.Add(new NpgsqlParameter("request_id", NpgsqlDbType.Uuid) { Value = create.RequestId });
             cmd.Parameters.Add(new NpgsqlParameter("created_at", NpgsqlDbType.TimestampTz) { Value = createdAt });
             cmd.Parameters.Add(new NpgsqlParameter("expires_at", NpgsqlDbType.TimestampTz) { Value = create.ExpiresAt });
-            cmd.Parameters.Add(new NpgsqlParameter("issuer", NpgsqlDbType.Text) { Value = (object?)create.Issuer ?? DBNull.Value }); 
+            cmd.Parameters.Add(new NpgsqlParameter("issuer", NpgsqlDbType.Text) { Value = (object?)create.Issuer ?? DBNull.Value });
             cmd.Parameters.Add(new NpgsqlParameter("goto_url", NpgsqlDbType.Text) { Value = (object?)create.GotoUrl ?? DBNull.Value });
 
             // INET can be null

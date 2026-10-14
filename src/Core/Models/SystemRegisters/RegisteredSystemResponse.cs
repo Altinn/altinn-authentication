@@ -31,7 +31,7 @@ namespace Altinn.Platform.Authentication.Core.SystemRegister.Models
         /// if creating new systems to replace the existing one. The old system's
         /// name should be changed prior to be reused, since it must be unique.
         /// </summary>        
-        public required string Id { get; set; } 
+        public required string Id { get; set; }
 
         /// <summary>
         /// The primary key to store and edit the Registered System.

@@ -91,7 +91,7 @@ namespace Altinn.Platform.Authentication.Core.Helpers
                 claims.Add(new Claim(AltinnCoreClaimTypes.Email, emailEncoded.Value));
                 claims.Add(new Claim(AltinnCoreClaimTypes.ExternalIdentifier, oidcBindingContext.ExternalId));
             }
-         
+
             if (oidcBindingContext.Acr != null)
             {
                 claims.Add(new Claim("acr", oidcBindingContext.Acr));
@@ -207,7 +207,7 @@ namespace Altinn.Platform.Authentication.Core.Helpers
                 claims.Add(new Claim(AltinnCoreClaimTypes.UserName, oidcSession.SubjectUserName, string.Empty));
             }
 
-            if (isAuthCookie && oidcSession.Provider != null)  
+            if (isAuthCookie && oidcSession.Provider != null)
             {
                 claims.Add(new Claim(OriginalIssClaimName, oidcSession.Provider));
             }
@@ -263,7 +263,7 @@ namespace Altinn.Platform.Authentication.Core.Helpers
                     claims.Add(new Claim(AltinnCoreClaimTypes.AuthenticateMethod, method.ToString()));
                 }
             }
-           
+
             if (oidcSession.AuthTime != null)
             {
                 long authTimeEpoch = ((DateTimeOffset)oidcSession.AuthTime).ToUnixTimeSeconds();

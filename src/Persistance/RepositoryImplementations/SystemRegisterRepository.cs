@@ -160,7 +160,7 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
             command.Parameters.AddWithValue(SystemRegisterFieldConstants.SYSTEM_DESCRIPTION, toBeInserted.Description);
             command.Parameters.AddWithValue(SystemRegisterFieldConstants.SYSTEM_CLIENTID, toBeInserted.ClientId);
             command.Parameters.AddWithValue(SystemRegisterFieldConstants.SYSTEM_IS_VISIBLE, toBeInserted.IsVisible);
-            command.Parameters.AddWithValue(SystemRegisterFieldConstants.SYSTEM_ALLOWED_REDIRECTURLS, toBeInserted.AllowedRedirectUrls.ConvertAll<string>(delegate(Uri u) { return u.ToString(); }));
+            command.Parameters.AddWithValue(SystemRegisterFieldConstants.SYSTEM_ALLOWED_REDIRECTURLS, toBeInserted.AllowedRedirectUrls.ConvertAll<string>(u => u.ToString()));
             command.Parameters.Add(new(SystemRegisterFieldConstants.SYSTEM_RIGHTS, NpgsqlDbType.Jsonb) { Value = (toBeInserted.Rights == null) ? DBNull.Value : toBeInserted.Rights });
             command.Parameters.Add(new(SystemRegisterFieldConstants.SYSTEM_ACCESSPACKAGES, NpgsqlDbType.Jsonb) { Value = (toBeInserted.AccessPackages == null) ? DBNull.Value : toBeInserted.AccessPackages });
 
@@ -177,7 +177,7 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
             systemChangeLog.SystemInternalId = internalId;
             await _systemChangeLogRepository.LogChangeAsync(systemChangeLog, conn, transaction, cancellationToken);
             await transaction.CommitAsync(cancellationToken);
-            
+
             return internalId;
         }
         catch (Exception ex)
@@ -219,7 +219,7 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
             command.Parameters.AddWithValue(SystemRegisterFieldConstants.SYSTEM_IS_VISIBLE, updatedSystem.IsVisible);
             command.Parameters.Add(new NpgsqlParameter(SystemRegisterFieldConstants.SYSTEM_RIGHTS, NpgsqlDbType.Jsonb) { Value = updatedSystem.Rights });
             command.Parameters.Add(new NpgsqlParameter(SystemRegisterFieldConstants.SYSTEM_ACCESSPACKAGES, NpgsqlDbType.Jsonb) { Value = updatedSystem.AccessPackages });
-            command.Parameters.AddWithValue(SystemRegisterFieldConstants.SYSTEM_ALLOWED_REDIRECTURLS, updatedSystem.AllowedRedirectUrls.ConvertAll<string>(delegate(Uri u) { return u.ToString(); }));
+            command.Parameters.AddWithValue(SystemRegisterFieldConstants.SYSTEM_ALLOWED_REDIRECTURLS, updatedSystem.AllowedRedirectUrls.ConvertAll<string>(u => u.ToString()));
             command.Parameters.AddWithValue(SystemRegisterFieldConstants.SYSTEM_CLIENTID, updatedSystem.ClientId);
 
             bool isUpdated = await command.ExecuteNonQueryAsync(cancellationToken) > 0;
@@ -519,7 +519,7 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
 
         if (!reader.IsDBNull(SystemRegisterFieldConstants.SYSTEM_ALLOWED_REDIRECTURLS))
         {
-            allowedRedirectUrls = reader.GetFieldValue<List<string>>(SystemRegisterFieldConstants.SYSTEM_ALLOWED_REDIRECTURLS).ConvertAll<Uri>(delegate(string u) { return new Uri(u); });
+            allowedRedirectUrls = reader.GetFieldValue<List<string>>(SystemRegisterFieldConstants.SYSTEM_ALLOWED_REDIRECTURLS).ConvertAll<Uri>(u => new Uri(u));
         }
 
         return new RegisteredSystemResponse
@@ -547,7 +547,7 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
         };
     }
 
-    private async Task<bool> CreateClient(string clientId, Guid systemInteralId, NpgsqlConnection conn, NpgsqlTransaction transaction,  CancellationToken cancellationToken)
+    private async Task<bool> CreateClient(string clientId, Guid systemInteralId, NpgsqlConnection conn, NpgsqlTransaction transaction, CancellationToken cancellationToken)
     {
         const string QUERY = /*strpsql*/@"
             INSERT INTO business_application.maskinporten_client(

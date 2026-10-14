@@ -165,66 +165,66 @@ namespace Altinn.Platform.Authentication.Persistance.RepositoryImplementations.O
                 backchannel_logout_uri;";
 
             try
+            {
+                await using var cmd = _datasource.CreateCommand(SQL);
+
+                // Required
+                cmd.Parameters.AddWithValue("client_id", create.ClientId);
+                cmd.Parameters.AddWithValue("client_name", create.ClientName);
+                cmd.Parameters.AddWithValue("client_type", create.ClientType.ToString()); // stored as TEXT
+                cmd.Parameters.AddWithValue("token_endpoint_auth_method", create.TokenEndpointAuthMethod.ToString()); // TEXT
+
+                // Arrays
+                var predirectUris = new NpgsqlParameter<string[]>("redirect_uris", redirectUris)
+                { NpgsqlDbType = NpgsqlDbType.Array | NpgsqlDbType.Text };
+                cmd.Parameters.Add(predirectUris);
+
+                var pallowedScopes = new NpgsqlParameter<string[]>("allowed_scopes", allowedScopes)
+                { NpgsqlDbType = NpgsqlDbType.Array | NpgsqlDbType.Text };
+                cmd.Parameters.Add(pallowedScopes);
+
+                // Optional secrets
+                cmd.Parameters.AddWithValue("client_secret_hash", (object?)create.ClientSecretHash ?? DBNull.Value);
+                cmd.Parameters.AddWithValue("client_secret_expires_at", (object?)create.ClientSecretExpiresAt ?? DBNull.Value);
+                cmd.Parameters.AddWithValue("secret_rotation_at", (object?)create.SecretRotationAt ?? DBNull.Value);
+
+                // JWKS
+                cmd.Parameters.AddWithValue("jwks_uri", (object?)create.JwksUri?.ToString() ?? DBNull.Value);
+
+                cmd.Parameters.AddWithValue("frontchannel_logout_uri", (object?)create.FrontchannelLogoutUri ?? DBNull.Value);
+                cmd.Parameters.AddWithValue("backchannel_logout_uri", (object?)create.BackchannelLogoutUri ?? DBNull.Value);
+
+                var pjwks = new NpgsqlParameter("jwks", NpgsqlDbType.Jsonb)
                 {
-                    await using var cmd = _datasource.CreateCommand(SQL);
+                    Value = (object?)create.JwksJson ?? DBNull.Value
+                };
+                cmd.Parameters.Add(pjwks);
 
-                    // Required
-                    cmd.Parameters.AddWithValue("client_id", create.ClientId);
-                    cmd.Parameters.AddWithValue("client_name", create.ClientName);
-                    cmd.Parameters.AddWithValue("client_type", create.ClientType.ToString()); // stored as TEXT
-                    cmd.Parameters.AddWithValue("token_endpoint_auth_method", create.TokenEndpointAuthMethod.ToString()); // TEXT
+                // Timestamps
+                cmd.Parameters.AddWithValue("created_at", now);
+                cmd.Parameters.AddWithValue("updated_at", DBNull.Value); // null at insert
 
-                    // Arrays
-                    var predirectUris = new NpgsqlParameter<string[]>("redirect_uris", redirectUris)
-                    { NpgsqlDbType = NpgsqlDbType.Array | NpgsqlDbType.Text };
-                    cmd.Parameters.Add(predirectUris);
-
-                    var pallowedScopes = new NpgsqlParameter<string[]>("allowed_scopes", allowedScopes)
-                    { NpgsqlDbType = NpgsqlDbType.Array | NpgsqlDbType.Text };
-                    cmd.Parameters.Add(pallowedScopes);
-
-                    // Optional secrets
-                    cmd.Parameters.AddWithValue("client_secret_hash", (object?)create.ClientSecretHash ?? DBNull.Value);
-                    cmd.Parameters.AddWithValue("client_secret_expires_at", (object?)create.ClientSecretExpiresAt ?? DBNull.Value);
-                    cmd.Parameters.AddWithValue("secret_rotation_at", (object?)create.SecretRotationAt ?? DBNull.Value);
-
-                    // JWKS
-                    cmd.Parameters.AddWithValue("jwks_uri", (object?)create.JwksUri?.ToString() ?? DBNull.Value);
-
-                    cmd.Parameters.AddWithValue("frontchannel_logout_uri", (object?)create.FrontchannelLogoutUri ?? DBNull.Value);
-                    cmd.Parameters.AddWithValue("backchannel_logout_uri", (object?)create.BackchannelLogoutUri ?? DBNull.Value);
-
-                    var pjwks = new NpgsqlParameter("jwks", NpgsqlDbType.Jsonb)
-                    {
-                        Value = (object?)create.JwksJson ?? DBNull.Value
-                    };
-                    cmd.Parameters.Add(pjwks);
-
-                    // Timestamps
-                    cmd.Parameters.AddWithValue("created_at", now);
-                    cmd.Parameters.AddWithValue("updated_at", DBNull.Value); // null at insert
-
-                    await using var reader = await cmd.ExecuteReaderAsync(cancellationToken);
-                    if (!await reader.ReadAsync(cancellationToken))
-                        {
-                            throw new DataException("INSERT client returned no row.");
-                        }
-
-                        // Reuse your existing mapper that reads by column name constants
-                    return await MapToOidcClient(reader, cancellationToken);
-                }
-                catch (PostgresException pex) when (pex.SqlState == PostgresErrorCodes.UniqueViolation)
+                await using var reader = await cmd.ExecuteReaderAsync(cancellationToken);
+                if (!await reader.ReadAsync(cancellationToken))
                 {
-                    // Assuming client.client_id is UNIQUE/PK
-                    _logger.LogWarning(pex, "Authentication // OidcServerRepository // InsertClientAsync // Unique violation for client_id={ClientId}", create.ClientId);
-                    throw;
+                    throw new DataException("INSERT client returned no row.");
                 }
-                catch (Exception ex)
-                {
-                    _logger.LogError(ex, "Authentication // OidcServerRepository // InsertClientAsync // client_id={ClientId}", create.ClientId);
-                    throw;
-                }
+
+                // Reuse your existing mapper that reads by column name constants
+                return await MapToOidcClient(reader, cancellationToken);
             }
+            catch (PostgresException pex) when (pex.SqlState == PostgresErrorCodes.UniqueViolation)
+            {
+                // Assuming client.client_id is UNIQUE/PK
+                _logger.LogWarning(pex, "Authentication // OidcServerRepository // InsertClientAsync // Unique violation for client_id={ClientId}", create.ClientId);
+                throw;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Authentication // OidcServerRepository // InsertClientAsync // client_id={ClientId}", create.ClientId);
+                throw;
+            }
+        }
 
         /// <inheritdoc/>
         public async Task<bool> TryUpgradeClientSecretHashAsync(string clientId, string expectedCurrentHash, string newClientSecretHash, CancellationToken cancellationToken = default)

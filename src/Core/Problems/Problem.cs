@@ -13,7 +13,7 @@ public static class Problem
     /// <summary>
     /// Gets a <see cref="ProblemDescriptor"/>.
     /// </summary>
-    public static ProblemDescriptor Reportee_Orgno_NotFound{ get; }
+    public static ProblemDescriptor Reportee_Orgno_NotFound { get; }
         = _factory.Create(0, HttpStatusCode.BadRequest, "Can't resolve the Organisation Number from the logged in Reportee PartyId.");
 
     /// <summary>
@@ -100,8 +100,8 @@ public static class Problem
     /// </summary>
     public static ProblemDescriptor UnableToDoDelegationCheck { get; }
         = _factory.Create(14, HttpStatusCode.Forbidden, "DelegationCheck failed with unknown error.");
-    
-     /// <summary>
+
+    /// <summary>
     /// Gets a <see cref="ProblemDescriptor"/>.
     /// </summary>
     public static ProblemDescriptor SystemUserNotFound { get; }

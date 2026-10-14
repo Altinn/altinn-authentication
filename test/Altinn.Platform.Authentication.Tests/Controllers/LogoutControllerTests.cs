@@ -36,7 +36,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
         : WebApplicationTests(dbFixture, webApplicationFixture)
     {
         private IConfiguration _configuration = null!; // set in ConfigureServices
-  
+
         private readonly Mock<IUserProfileService> _userProfileService = new();
         private readonly Mock<IOrganisationsService> _organisationsService = new();
         private readonly Mock<IEventsQueueClient> _eventQueue = new();
@@ -74,7 +74,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             services.AddSingleton(_featureManager.Object);
             services.AddSingleton(_eventQueue.Object);
             services.AddSingleton((TimeProvider)_timeProviderMock);
-            services.AddSingleton(_organisationsService.Object);            
+            services.AddSingleton(_organisationsService.Object);
             _configuration = configuration;
         }
 
@@ -168,7 +168,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             .Returns(Task.FromResult(true));
 
             SetupDateTimeMock();
-            
+
             HttpClient client = CreateClient();
 
             HttpRequestMessage requestMessage = new HttpRequestMessage(HttpMethod.Get, "/authentication/api/v1/logout");
@@ -415,7 +415,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
 
             AssertionUtil.AssertAuthenticationEvent(eventQueue, expectedAuthenticationEvent, Moq.Times.Never());
         }
-       
+
         private static string GetConfigPath()
         {
             string unitTestFolder = Path.GetDirectoryName(new Uri(typeof(AuthenticationControllerTests).Assembly.Location).LocalPath)!; // assembly location always has a directory
@@ -429,7 +429,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             authenticationEvent.AuthenticationMethod = authMethod;
             authenticationEvent.AuthenticationLevel = authLevel;
             authenticationEvent.OrgNumber = orgNumber;
-            authenticationEvent.EventType = authEventType;            
+            authenticationEvent.EventType = authEventType;
             authenticationEvent.UserId = userId;
             authenticationEvent.IsAuthenticated = isAuthenticated;
 

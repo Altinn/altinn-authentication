@@ -13,37 +13,37 @@ namespace Altinn.Platform.Authentication.Enum
         /// <summary>
         /// The authentication method is not defined
         /// </summary>
-        NotDefined = -1, 
+        NotDefined = -1,
 
         /// <summary>
         /// User is logged in with AltinnPin
         /// </summary>
-        AltinnPIN = 0, 
+        AltinnPIN = 0,
 
         /// <summary>
         /// User is logged in with BankID
         /// </summary>
-        BankID = 1, 
+        BankID = 1,
 
         /// <summary>
         /// User is logged in with help of BuyPass
         /// </summary>
-        BuyPass = 2, 
+        BuyPass = 2,
 
         /// <summary>
         /// User is logged in with help of SAML
         /// </summary>
-        SAML2 = 3, 
+        SAML2 = 3,
 
         /// <summary>
         /// User is logged in with help of SMS pin
         /// </summary>
-        SMSPIN = 4, 
+        SMSPIN = 4,
 
         /// <summary>
         /// User is logged in with help of static password
         /// </summary>
-        StaticPassword = 5, 
+        StaticPassword = 5,
 
         /// <summary>
         /// User is logged in with help of TaxPIN
@@ -53,22 +53,22 @@ namespace Altinn.Platform.Authentication.Enum
         /// <summary>
         /// This value was used until March 2017 for MinIDOTC, BankIDMobil and EIDAS
         /// </summary>
-        FederationNotUsedAnymore = 7, 
+        FederationNotUsedAnymore = 7,
 
         /// <summary>
         /// User is logged in with help of Self Identified
         /// </summary>
-        SelfIdentified = 8, 
+        SelfIdentified = 8,
 
         /// <summary>
         /// User is logged in with help of Enterprise Identified
         /// </summary>
-        EnterpriseIdentified = 9, 
+        EnterpriseIdentified = 9,
 
         /// <summary>
         /// User is logged in with Commfides
         /// </summary>
-        Commfides = 10, 
+        Commfides = 10,
 
         /// <summary>
         /// User is logged in with MinID PIN
@@ -78,7 +78,7 @@ namespace Altinn.Platform.Authentication.Enum
         /// <summary>
         /// User is logged in with SFTP
         /// </summary>
-        OpenSshIdentified = 12, 
+        OpenSshIdentified = 12,
 
         /// <summary>
         /// User is logged in with eIDAS

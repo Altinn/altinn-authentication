@@ -10,7 +10,7 @@ namespace Altinn.Platform.Authentication.Mappers
         /// <summary>
         /// Initializes a new instance of the <see cref="AuthenticationMapper"/> class.
         /// </summary>
-        public AuthenticationMapper() 
+        public AuthenticationMapper()
         {
             AllowNullCollections = true;
             CreateMap<SystemUserInternalDTO, SystemUserExternalDTO>();

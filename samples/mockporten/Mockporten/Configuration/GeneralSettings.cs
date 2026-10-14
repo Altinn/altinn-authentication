@@ -47,7 +47,7 @@ namespace Mockporten.Configuration
         /// Gets or sets the number of minutes the JSON Web Token and the cookie is valid.
         /// </summary>
         public int JwtValidityMinutes { get; set; }
-        
+
         /// <summary>
         /// Gets or sets the number of hours to wait before a new certificate is being used to
         /// sign new JSON Web tokens.

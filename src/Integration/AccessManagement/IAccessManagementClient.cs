@@ -55,7 +55,7 @@ public interface IAccessManagementClient
     /// </summary>
     /// <returns></returns>
     Task<Result<bool>> RevokeClientFromAgentSystemUser(Guid provider, Guid client, Guid systemuser, CancellationToken cancellationToken);
-   
+
     /// <summary>
     /// Retrieves the access package for the given urn value
     /// </summary>

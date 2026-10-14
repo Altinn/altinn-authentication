@@ -149,7 +149,7 @@ public class AccessManagementClient : IAccessManagementClient
         }
     }
 
-    public async Task<ResourceCheckDto?> CheckDelegationAccess(Guid partyUuid, string resource, CancellationToken cancellationToken) 
+    public async Task<ResourceCheckDto?> CheckDelegationAccess(Guid partyUuid, string resource, CancellationToken cancellationToken)
     {
         try
         {
@@ -195,8 +195,8 @@ public class AccessManagementClient : IAccessManagementClient
             try
             {
                 using HttpResponseMessage response = await _client.GetAsync(token, endpointUrl, cancellationToken: cancellationToken);
-                
-                if(response.StatusCode == HttpStatusCode.OK)
+
+                if (response.StatusCode == HttpStatusCode.OK)
                 {
                     paginatedAccessPackages = await response.Content.ReadFromJsonAsync<PaginatedInput<AccessPackageDto.Check>>(_serializerOptions, cancellationToken);
                 }
@@ -211,7 +211,7 @@ public class AccessManagementClient : IAccessManagementClient
                         responseContent);
                     problemInstance = ProblemInstance.Create(Problem.AccessPackage_DelegationCheckFailed);
                 }
-                
+
             }
             catch (Exception ex)
             {
@@ -219,22 +219,22 @@ public class AccessManagementClient : IAccessManagementClient
                 throw;
             }
 
-            if(problemInstance is not null)
-            {                
+            if (problemInstance is not null)
+            {
                 yield return new Result<AccessPackageDto.Check>(problemInstance);
                 yield break;
             }
 
             if (paginatedAccessPackages is null)
             {
-               _logger.LogError("Authentication // AccessManagementClient // CheckDelegationAccessForAccessPackage");
+                _logger.LogError("Authentication // AccessManagementClient // CheckDelegationAccessForAccessPackage");
                 throw new InvalidOperationException("Received null response from Access Management for delegation check.");
             }
             foreach (AccessPackageDto.Check accessPackageCheck in paginatedAccessPackages.Items)
             {
                 yield return accessPackageCheck;
             }
-            
+
             endpointUrl = paginatedAccessPackages.Links.Next;
 
         } while (endpointUrl is not null);
@@ -564,7 +564,7 @@ public class AccessManagementClient : IAccessManagementClient
                 if (result.IsProblem)
                 {
                     return false;
-                }                
+                }
             }
             return true;
         }
@@ -574,12 +574,12 @@ public class AccessManagementClient : IAccessManagementClient
             throw;
         }
     }
-    
+
     /// <inheritdoc />
     public async Task<Result<List<DelegationDto>>> DelegateCustomerToAgentSystemUser(Guid systemUser, DelegationBatchInputDto batch, Guid provider, Guid client, CancellationToken cancellationToken)
     {
         string token = JwtTokenUtil.GetTokenFromContext(_httpContextAccessor.HttpContext!, _platformSettings.JwtCookieName!)!;
-        
+
         try
         {
             var (basePath, clientParam, agentParam) = await ResolveClientDelegationRouteAsync();
@@ -593,7 +593,7 @@ public class AccessManagementClient : IAccessManagementClient
                 if (found is not null && found.Count > 0)
                 {
                     return found;
-                }            
+                }
             }
 
             return Problem.Rights_FailedToDelegate;
@@ -674,7 +674,7 @@ public class AccessManagementClient : IAccessManagementClient
             {
                 var result = await response.Content.ReadFromJsonAsync<IEnumerable<ResourcePermissionDto>>(_serializerOptions, cancellationToken) ?? [];
                 List<RightDelegation> delegations = MapPermissionsDtoToRightDelegations(result);
-                return delegations;    
+                return delegations;
             }
 
             _logger.LogError($"Authentication // AccessManagementClient // GetSingleRightDelegationsForStandardUser // Failed to get delegated rights from access management for {systemUserId} with party {partyUuid}. StatusCode: {response.StatusCode}");
@@ -706,11 +706,11 @@ public class AccessManagementClient : IAccessManagementClient
             // there is only one resource per resource, the old DTO needs a list though
             // the frontend does not care about the from and to, we only need to fill out
             // the rights list in the systemuser.
-            resourceList.Add( new AttributeMatchExternal
+            resourceList.Add(new AttributeMatchExternal
             {
                 Id = "urn:altinn:resource",
                 Value = r.Resource.RefId
-            });                        
+            });
 
             RightDelegation delegation = new()
             {
@@ -758,7 +758,7 @@ public class AccessManagementClient : IAccessManagementClient
             if (response.IsSuccessStatusCode)
             {
                 var res = await response.Content.ReadFromJsonAsync<PaginatedResult<List<ClientDelegationDto>>>(_serializerOptions, cancellationToken);
-                var all = res?.Data ?? [];               
+                var all = res?.Data ?? [];
                 return all;
             }
             else
@@ -780,7 +780,7 @@ public class AccessManagementClient : IAccessManagementClient
                     [
                         new KeyValuePair<string, string>("Problem Detail : ", problemDetails?.Detail ?? "")
                     ]);
-                    return ProblemInstance.Create(Problem.AgentSystemUser_FailedToGetClients, problemExtensionData);                    
+                    return ProblemInstance.Create(Problem.AgentSystemUser_FailedToGetClients, problemExtensionData);
                 }
             }
         }
@@ -896,7 +896,7 @@ public class AccessManagementClient : IAccessManagementClient
             if (response.IsSuccessStatusCode)
             {
                 var res = await response.Content.ReadFromJsonAsync<PaginatedResult<List<ClientDelegationDto>>>(_serializerOptions, cancellationToken);
-                return res?.Data ?? [];                                
+                return res?.Data ?? [];
             }
             else
             {

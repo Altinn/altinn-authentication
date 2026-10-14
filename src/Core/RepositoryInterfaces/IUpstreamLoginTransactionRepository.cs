@@ -42,5 +42,5 @@ namespace Altinn.Platform.Authentication.Core.RepositoryInterfaces
           string? idTokenJti,
           string? upstreamSid,
           CancellationToken cancellationToken = default);
-    }       
+    }
 }

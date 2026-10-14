@@ -29,7 +29,7 @@ namespace Altinn.Platform.Authentication.Tests.Utils
             Assert.Equal(expected.InternalId, actual.InternalId);
             Assert.Equal(expected.Id, actual.Id);
             Assert.Equal(expected.SystemVendorOrgName, actual.SystemVendorOrgName);
-            Assert.Equal(expected.SystemVendorOrgNumber, actual.SystemVendorOrgNumber);            
+            Assert.Equal(expected.SystemVendorOrgNumber, actual.SystemVendorOrgNumber);
             Assert.Equal(expected.ClientId, actual.ClientId);
             Assert.Equal(expected.IsVisible, actual.IsVisible);
             Assert.Equal(expected.IsDeleted, actual.IsDeleted);

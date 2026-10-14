@@ -122,7 +122,7 @@ public interface ISystemUserService
     /// <param name="party">The User id for the Facilitator for the Agent SystemUser currently logged in at the FrontEnd.</param> 
     /// <returns>List of Agent SystemUsers</returns>
     Task<List<SystemUserInternalDTO>?> GetListOfAgentSystemUsersForParty(int party);
-    
+
     /// <summary>
     /// Creates a new delegation of a customer to an Agent SystemUser.
     /// The service is idempotent.
@@ -134,7 +134,7 @@ public interface ISystemUserService
     /// <param name="cancellationToken">CancellationToken</param>
     /// <returns>Result of True or False</returns> 
     Task<Result<List<DelegationResponse>>> DelegateToAgentSystemUser(SystemUserInternalDTO systemUser, Guid provider, Guid client, int userId, CancellationToken cancellationToken);
-    
+
     /// <summary>
     /// Returns a list of the Delegations (of clients) to an Agent SystemUser,
     /// retrieved in turn from the AccessManagement db.

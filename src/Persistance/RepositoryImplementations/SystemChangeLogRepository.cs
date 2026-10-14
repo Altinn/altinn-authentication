@@ -53,7 +53,7 @@ public class SystemChangeLogRepository : ISystemChangeLogRepository
 
             command.Parameters.AddWithValue("system_internal_id", systemChangeLog.SystemInternalId);
             command.Parameters.AddWithValue("changedby_orgnumber", (object?)systemChangeLog.ChangedByOrgNumber ?? DBNull.Value);
-            command.Parameters.Add<SystemChangeType>("change_type").TypedValue = systemChangeLog.ChangeType;            
+            command.Parameters.Add<SystemChangeType>("change_type").TypedValue = systemChangeLog.ChangeType;
             command.Parameters.Add(new NpgsqlParameter("changed_data", NpgsqlDbType.Jsonb)
             {
                 Value = JsonSerializer.Serialize(systemChangeLog.ChangedData)
@@ -96,7 +96,7 @@ public class SystemChangeLogRepository : ISystemChangeLogRepository
             {
                 string dbValue = reader.GetString(reader.GetOrdinal("change_type"));
                 string enumValue = string.Concat(dbValue.Split('_').Select(s => char.ToUpperInvariant(s[0]) + s.Substring(1)));
-                
+
                 var log = new SystemChangeLog
                 {
                     SystemInternalId = reader.GetGuid(reader.GetOrdinal("system_internal_id")),

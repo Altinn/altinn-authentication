@@ -261,9 +261,9 @@ namespace Altinn.Platform.Authentication.Controllers
             {
                 return Forbid();
             }
-            
+
             Result<bool> removeResult = await SystemUserService.DeleteClientDelegationToAgentSystemUser(party.PartyId.ToString(), agent, client, party.PartyUuid.Value, cancellationToken);
-            
+
             if (removeResult.IsProblem)
             {
                 return removeResult.Problem.ToActionResult();

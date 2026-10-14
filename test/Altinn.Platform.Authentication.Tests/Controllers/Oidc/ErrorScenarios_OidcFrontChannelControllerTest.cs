@@ -147,7 +147,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
                 "&code_challenge_method=plain"; // not allowed
 
             var resp = await client.GetAsync(url);
-            Assert.Equal(HttpStatusCode.BadRequest, resp.StatusCode);        
+            Assert.Equal(HttpStatusCode.BadRequest, resp.StatusCode);
         }
 
         [Fact]
@@ -245,7 +245,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
                 $"&client_id={testScenario.DownstreamClientId}" +
                 "&response_type=code" +
                 "&state=s123" +
-                
+
                 // nonce missing
                 "&code_challenge=CoD_rETvp22kce_Kts2NQdGWc1E0m7bgRcg6oip3DDU" +
                 "&code_challenge_method=S256";
@@ -270,7 +270,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
                 "&scope=openid" +
                 $"&client_id={testScenario.DownstreamClientId}" +
                 "&response_type=code" +
-                
+
                 // state missing
                 "&nonce=n123" +
                 "&code_challenge=CoD_rETvp22kce_Kts2NQdGWc1E0m7bgRcg6oip3DDU" +
@@ -328,7 +328,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
                 "&code_challenge_method=S256";
 
             var resp = await client.GetAsync(url);
-            
+
             Assert.Equal(HttpStatusCode.BadRequest, resp.StatusCode);
         }
 

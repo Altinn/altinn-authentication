@@ -15,6 +15,6 @@ namespace Altinn.Platform.Authentication.Model
         /// <summary>
         /// Gets or sets the organization associated with the system user.
         /// </summary>
-        public string SystemUserOwnerOrg { get; set; }  
+        public string SystemUserOwnerOrg { get; set; }
     }
 }
