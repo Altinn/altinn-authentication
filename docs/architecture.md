@@ -55,17 +55,17 @@ flowchart TB
 
 ## Solution layout
 
-The solution (`Altinn.Platform.Authentication.sln`) is layered:
+The solution (`Altinn.Authentication.slnx`) is layered:
 
 | Project | Responsibility |
 | --- | --- |
-| `src/Authentication` | The web host: controllers, application services (OIDC server, token issuing, sessions, system-user), DI wiring, configuration. |
-| `src/Core` | Domain models, interfaces, and pure helpers (e.g. PKCE, hashing, claim helpers). No I/O. |
-| `src/Integration` | Outbound clients to other systems (Register/`PartiesClient`, Access Management, Profile, Maskinporten/OIDC providers). |
-| `src/Persistance` | PostgreSQL repositories and SQL migrations (versioned directories under `Migration/`). |
-| `src/jwtcookie` | `Altinn.Common.Authentication` — the shared JWT-cookie authentication handler library. |
-| `test/Altinn.Platform.Authentication.Tests` | Unit + integration tests (integration tests use Testcontainers PostgreSQL — **Docker required**). |
-| `test/Altinn.Platform.Authentication.PerformanceTests` | k6/performance tests. |
+| `src/apps/Altinn.Authentication/src/Altinn.Platform.Authentication` | The web host: controllers, application services (OIDC server, token issuing, sessions, system-user), DI wiring, configuration. |
+| `src/apps/Altinn.Authentication/src/Altinn.Platform.Authentication.Core` | Domain models, interfaces, and pure helpers (e.g. PKCE, hashing, claim helpers). No I/O. |
+| `src/apps/Altinn.Authentication/src/Altinn.Platform.Authentication.Integration` | Outbound clients to other systems (Register/`PartiesClient`, Access Management, Profile, Maskinporten/OIDC providers). |
+| `src/apps/Altinn.Authentication/src/Altinn.Platform.Authentication.Persistance` | PostgreSQL repositories and SQL migrations (versioned directories under `Migration/`). |
+| `src/pkgs/JWTCookieAuthentication` | `Altinn.Common.Authentication` — the shared JWT-cookie authentication handler library. |
+| `src/apps/Altinn.Authentication/test/Altinn.Platform.Authentication.Tests` | Unit + integration tests (integration tests use Testcontainers PostgreSQL — **Docker required**). |
+| `src/apps/Altinn.Authentication/test/K6` | k6/performance tests. |
 
 **Layering rule:** dependencies point inward — `Authentication` → `Integration` → `Core`, and `Persistance` → `Core`. `Core` depends on nothing in the solution.
 

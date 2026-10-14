@@ -1,0 +1,6 @@
+{
+  "image": {
+    "source": "src/Mockporten"
+  },
+  "sonarcloud": false
+}

@@ -4,7 +4,7 @@ How the service is configured, observed, and operated.
 
 ## Configuration
 
-Configuration is standard ASP.NET Core layered config: `appsettings.json` (base) → `appsettings.{Environment}.json` → environment variables / Key Vault. Settings are bound into option classes, the largest being `GeneralSettings` (`src/Authentication/Configuration/GeneralSettings.cs`).
+Configuration is standard ASP.NET Core layered config: `appsettings.json` (base) → `appsettings.{Environment}.json` → environment variables / Key Vault. Settings are bound into option classes, the largest being `GeneralSettings` (`src/apps/Altinn.Authentication/src/Altinn.Platform.Authentication/Configuration/GeneralSettings.cs`).
 
 Notable settings:
 
@@ -21,7 +21,7 @@ Notable settings:
 
 ## Feature flags
 
-Uses `Microsoft.FeatureManagement`; flags are defined in `src/Authentication/Configuration/FeatureFlags.cs`.
+Uses `Microsoft.FeatureManagement`; flags are defined in `src/apps/Altinn.Authentication/src/Altinn.Platform.Authentication/Configuration/FeatureFlags.cs`.
 
 | Flag | Effect |
 | --- | --- |

@@ -10,14 +10,14 @@ Altinn Platform Authentication — an ASP.NET Core (.NET 10) service that authen
 
 ```bash
 # Build
-dotnet build Altinn.Platform.Authentication.sln
+dotnet build Altinn.Authentication.slnx
 
 # Test (a container runtime MUST be running — Testcontainers PostgreSQL).
 # Podman works as a drop-in for Docker; if it fails to connect, try `podman machine start`.
-dotnet test test/Altinn.Platform.Authentication.Tests/Altinn.Platform.Authentication.Tests.csproj
+dotnet test src/apps/Altinn.Authentication/test/Altinn.Platform.Authentication.Tests/Altinn.Platform.Authentication.Tests.csproj
 
 # Compile-only check of one project (fast)
-dotnet build src/Authentication/Altinn.Platform.Authentication.csproj -clp:ErrorsOnly --nologo
+dotnet build src/apps/Altinn.Authentication/src/Altinn.Platform.Authentication/Altinn.Platform.Authentication.csproj -clp:ErrorsOnly --nologo
 ```
 
 ## Critical workflow rules
@@ -29,7 +29,7 @@ dotnet build src/Authentication/Altinn.Platform.Authentication.csproj -clp:Error
 
 ## Where things live
 
-- `src/Authentication` — host, controllers, app services, config. `src/Core` — models/interfaces/pure helpers (no I/O). `src/Integration` — outbound clients (Register/`PartiesClient`, Access Management, Profile). `src/Persistance` — Postgres + SQL migrations. `src/jwtcookie` — shared JWT-cookie library.
+- `src/apps/Altinn.Authentication/src/Altinn.Platform.Authentication` — host, controllers, app services, config. `src/apps/Altinn.Authentication/src/Altinn.Platform.Authentication.Core` — models/interfaces/pure helpers (no I/O). `src/apps/Altinn.Authentication/src/Altinn.Platform.Authentication.Integration` — outbound clients (Register/`PartiesClient`, Access Management, Profile). `src/apps/Altinn.Authentication/src/Altinn.Platform.Authentication.Persistance` — Postgres + SQL migrations. `src/pkgs/JWTCookieAuthentication` — shared JWT-cookie library.
 - Auth flows are documented in [`docs/flows/`](docs/flows/). The **why** behind the design is in [`docs/adr/`](docs/adr/) — **read the relevant ADR before changing an auth flow.**
 
 ## Landmines — do NOT "fix" these without understanding

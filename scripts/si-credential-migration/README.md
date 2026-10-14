@@ -4,7 +4,7 @@ One-off manual data migration of self-identified (SI) user credentials. Tracked 
 
 - **Source:** Altinn 2 SQL Server, `[AuthenticationDB].[dbo].[AUTHN_UserProfile]`
 - **Target:** Altinn 3 Postgres, `oidcserver.selfidentified_user_credential`
-  (created by migration `src/Persistance/Migration/v0.27/`)
+  (created by migration `src/apps/Altinn.Authentication/src/Altinn.Platform.Authentication.Persistance/Migration/v0.27/`)
 
 ## Procedure
 

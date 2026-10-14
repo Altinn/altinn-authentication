@@ -10,10 +10,10 @@
 
 ```bash
 # Build the whole solution
-dotnet build Altinn.Platform.Authentication.sln
+dotnet build Altinn.Authentication.slnx
 
 # Run the service locally
-cd src/Authentication
+cd src/apps/Altinn.Authentication/src/Altinn.Platform.Authentication
 dotnet run
 # Swagger UI: http://localhost:<port>/authentication/swagger
 ```
@@ -24,12 +24,12 @@ Local runtime config comes from `appsettings.Development.json`; secrets should c
 
 ```bash
 # Unit + integration tests (a container runtime MUST be running)
-dotnet test test/Altinn.Platform.Authentication.Tests/Altinn.Platform.Authentication.Tests.csproj
+dotnet test src/apps/Altinn.Authentication/test/Altinn.Platform.Authentication.Tests/Altinn.Platform.Authentication.Tests.csproj
 ```
 
 - **Integration tests need a container runtime.** Most controller tests run through a `WebApplicationFixture` backed by a Testcontainers PostgreSQL instance, applying migrations on startup. They are slow but cover real request/DB behaviour.
 - **A green local `dotnet build` is not enough.** Compilation passing does not mean the tests pass. The authoritative signal is the CI **Build and Test** job (it runs the container-backed suite). When you can't run containers locally, push and watch CI.
-- `test/.../PerformanceTests` holds the **opt-in** k6 suites that hit deployed environments / put on load — not part of the normal loop.
+- `src/apps/Altinn.Authentication/test/K6` holds the **opt-in** k6 suites that hit deployed environments / put on load — not part of the normal loop.
 - **End-to-end tests live in [`Altinn/altinn-platform-validation-tests`](https://github.com/Altinn/altinn-platform-validation-tests)** — k6 suites under `K6/api/tests/authentication` and `K6/api/domain-checks/authentication`, run from that repo against deployed environments.
 
 ### Container runtime
@@ -55,7 +55,7 @@ export DOCKER_HOST="unix://$(podman info --format '{{.Host.RemoteSocket.Path}}')
 
 ## Migrations
 
-SQL migrations live under `src/Persistance/Migration/` in versioned directories (`v0.xx-...`), plus lifecycle folders (`_pre`, `_post`, `_init`, `_erase`, `_draft`). They are applied automatically when the test/host database starts.
+SQL migrations live under `src/apps/Altinn.Authentication/src/Altinn.Platform.Authentication.Persistance/Migration/` in versioned directories (`v0.xx-...`), plus lifecycle folders (`_pre`, `_post`, `_init`, `_erase`, `_draft`). They are applied automatically when the test/host database starts.
 
 ## Conventions
 

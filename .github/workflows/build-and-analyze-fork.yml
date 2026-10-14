@@ -19,15 +19,15 @@ jobs:
           fetch-depth: 0  # Shallow clones should be disabled for a better relevancy of analysis
 
       - name: dotnet build
-        run: dotnet build Altinn.Platform.Authentication.sln -v m
+        run: dotnet build Altinn.Authentication.slnx -v m
 
       - name: dotnet test
-        run: dotnet test test/Altinn.Platform.Authentication.Tests/Altinn.Platform.Authentication.Tests.csproj --results-directory TestResults/ --collect:"XPlat Code Coverage" -v m --filter "Category!=IntegrationTest"
+        run: dotnet test src/apps/Altinn.Authentication/test/Altinn.Platform.Authentication.Tests/Altinn.Platform.Authentication.Tests.csproj --results-directory TestResults/ --collect:"XPlat Code Coverage" -v m --filter "Category!=IntegrationTest"
 
       - name: Build & Test Mockporten
         run: |
-          dotnet build samples/mockporten/Mockporten.sln -v m
-          dotnet test samples/mockporten/Mockporten.Tests/Mockporten.Tests.csproj -v m
+          dotnet build src/apps/Altinn.Mockporten/Altinn.Mockporten.slnx -v m
+          dotnet test src/apps/Altinn.Mockporten/test/Mockporten.Tests/Mockporten.Tests.csproj -v m
 
       - name: Generate coverage results
         run: |
