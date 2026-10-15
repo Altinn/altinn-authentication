@@ -6,7 +6,31 @@ on:
     branches: [main]
     types: [opened, synchronize, reopened]
   workflow_dispatch:
-jobs:   
+env:
+  # renovate: datasource=nuget depName=Altinn.Authorization.RepoCtl
+  repoctlVersion: "1.2.0"
+
+jobs:
+  check-repo:
+    name: Check repository
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Setup .NET
+        uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+        with:
+          dotnet-version: |
+            10.0.x
+
+      - name: Install RepoCtl
+        run: |
+          dotnet tool install --global Altinn.Authorization.RepoCtl --version "${{ env.repoctlVersion }}"
+
+          repoctl --version
+
+      # Solution files, release-please config and `dotnet format --verify-no-changes`
+      - name: Check repository
+        run: repoctl check
   build-and-test:
     name: Build and Test
     if: ((github.event_name == 'pull_request' && github.event.pull_request.head.repo.fork == false) || github.event_name == 'push') && github.repository_owner == 'Altinn' && github.actor != 'dependabot[bot]' 
@@ -24,12 +48,12 @@ jobs:
             10.0.x
       - name: Build & Test
         run: |
-           dotnet build Altinn.Platform.Authentication.sln -v m
-           dotnet test test/Altinn.Platform.Authentication.Tests/Altinn.Platform.Authentication.Tests.csproj -v m
+           dotnet build Altinn.Authentication.slnx -v m
+           dotnet test src/apps/Altinn.Authentication/test/Altinn.Platform.Authentication.Tests/Altinn.Platform.Authentication.Tests.csproj -v m
       - name: Build & Test Mockporten
         run: |
-           dotnet build samples/mockporten/Mockporten.sln -v m
-           dotnet test samples/mockporten/Mockporten.Tests/Mockporten.Tests.csproj -v m
+           dotnet build src/apps/Altinn.Mockporten/Altinn.Mockporten.slnx -v m
+           dotnet test src/apps/Altinn.Mockporten/test/Mockporten.Tests/Mockporten.Tests.csproj -v m
   analyze:
     name: Analyze
     if: ((github.event_name == 'pull_request' && github.event.pull_request.head.repo.fork == false) || github.event_name == 'push') && github.repository_owner == 'Altinn' && github.actor != 'dependabot[bot]' 
@@ -83,7 +107,7 @@ jobs:
             /d:sonar.cs.vscoveragexml.reportsPaths="TestResults/coverage.xml" \
             /d:sonar.cpd.exclusions="**/Swagger/*Filter.cs"
 
-          dotnet build --no-incremental
-          dotnet coverage collect 'dotnet test test/Altinn.Platform.Authentication.Tests/Altinn.Platform.Authentication.Tests.csproj --no-build --results-directory TestResults/' -f xml -o 'TestResults/coverage.xml'
+          dotnet build src/apps/Altinn.Authentication/Altinn.Authentication.slnx --no-incremental
+          dotnet coverage collect 'dotnet test src/apps/Altinn.Authentication/test/Altinn.Platform.Authentication.Tests/Altinn.Platform.Authentication.Tests.csproj --no-build --results-directory TestResults/' -f xml -o 'TestResults/coverage.xml'
 
           ./.sonar/scanner/dotnet-sonarscanner end /d:sonar.token="${{ secrets.SONAR_TOKEN }}"

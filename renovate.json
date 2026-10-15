@@ -11,5 +11,15 @@
       "groupSlug": "testcontainers-for-dotnet",
       "matchUpdateTypes": ["major"]
     }
+  ],
+  "customManagers": [
+    {
+      "customType": "regex",
+      "description": "Update annotated NuGet tool versions in GitHub workflows",
+      "managerFilePatterns": ["/^\\.github/workflows/.*\\.ya?ml$/"],
+      "matchStrings": [
+        "# renovate: datasource=(?<datasource>\\S+) depName=(?<depName>\\S+)\\s+[a-z][A-Za-z0-9]*Version:\\s*[\\\"']?(?<currentValue>[^\\s\\\"']+)"
+      ]
+    }
   ]
 }

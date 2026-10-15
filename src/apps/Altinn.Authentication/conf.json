@@ -1,0 +1,11 @@
+{
+  "image": {
+    "source": "src/Altinn.Platform.Authentication"
+  },
+  "deps": [
+    "pkg:JWTCookieAuthentication"
+  ],
+  "sonarcloud": {
+    "projectKey": "Altinn_altinn-authentication"
+  }
+}

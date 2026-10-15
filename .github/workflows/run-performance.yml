@@ -47,13 +47,13 @@ on:
             testSuitePath:
                 description: 'Path to test suite to run'
                 required: true
-                default: 'test/Altinn.Platform.Authentication.PerformanceTests/createAndConfirmSystemUser.js'
+                default: 'src/apps/Altinn.Authentication/test/K6/createAndConfirmSystemUser.js'
                 type: choice
                 options:
-                - 'test/Altinn.Platform.Authentication.PerformanceTests/createAndConfirmSystemUser.js'
-                - 'test/Altinn.Platform.Authentication.PerformanceTests/createClientDelegations.js'
-                - 'test/Altinn.Platform.Authentication.PerformanceTests/getSystemUser.js'
-                - 'test/Altinn.Platform.Authentication.PerformanceTests/partiesQuery.js'
+                - 'src/apps/Altinn.Authentication/test/K6/createAndConfirmSystemUser.js'
+                - 'src/apps/Altinn.Authentication/test/K6/createClientDelegations.js'
+                - 'src/apps/Altinn.Authentication/test/K6/getSystemUser.js'
+                - 'src/apps/Altinn.Authentication/test/K6/partiesQuery.js'
 
 permissions:
   id-token: write
@@ -97,7 +97,7 @@ jobs:
         echo "Running k6 test suite ${{ inputs.testSuitePath }} with ${{ inputs.vus }} VUs for ${{ inputs.duration }} on ${{ inputs.parallelism }} parallelism"
         k6configName=$(basename "${{ inputs.testSuitePath }}" .js)
         k6configName="k6-${k6configName}"
-        ./test/Altinn.Platform.Authentication.PerformanceTests/run-test-in-k8s.sh \
+        ./src/apps/Altinn.Authentication/test/K6/run-test-in-k8s.sh \
           -f "${{ inputs.testSuitePath }}" \
           -c "$k6configName" \
           -n "$k6configName" \

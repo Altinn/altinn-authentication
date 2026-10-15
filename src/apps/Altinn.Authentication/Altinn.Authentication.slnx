@@ -1,0 +1,16 @@
+<Solution>
+  <Folder Name="/deps/" />
+  <Folder Name="/deps/JWTCookieAuthentication/">
+    <Project Path="../../pkgs/JWTCookieAuthentication/src/Altinn.Common.Authentication/Altinn.Common.Authentication.csproj" />
+  </Folder>
+  <Folder Name="/src/">
+    <Project Path="src/Altinn.Platform.Authentication/Altinn.Platform.Authentication.csproj" />
+    <Project Path="src/OidcClientCreator/OidcClientCreator.csproj" />
+    <Project Path="src/Altinn.Platform.Authentication.Core/Altinn.Platform.Authentication.Core.csproj" />
+    <Project Path="src/Altinn.Platform.Authentication.Integration/Altinn.Platform.Authentication.Integration.csproj" />
+    <Project Path="src/Altinn.Platform.Authentication.Persistance/Altinn.Platform.Authentication.Persistance.csproj" />
+  </Folder>
+  <Folder Name="/test/">
+    <Project Path="test/Altinn.Platform.Authentication.Tests/Altinn.Platform.Authentication.Tests.csproj" />
+  </Folder>
+</Solution>

@@ -1,0 +1,26 @@
+<Solution>
+  <Folder Name="/apps/" />
+  <Folder Name="/apps/Altinn.Authentication/" />
+  <Folder Name="/apps/Altinn.Authentication/src/">
+    <Project Path="src/apps/Altinn.Authentication/src/Altinn.Platform.Authentication/Altinn.Platform.Authentication.csproj" />
+    <Project Path="src/apps/Altinn.Authentication/src/OidcClientCreator/OidcClientCreator.csproj" />
+    <Project Path="src/apps/Altinn.Authentication/src/Altinn.Platform.Authentication.Core/Altinn.Platform.Authentication.Core.csproj" />
+    <Project Path="src/apps/Altinn.Authentication/src/Altinn.Platform.Authentication.Integration/Altinn.Platform.Authentication.Integration.csproj" />
+    <Project Path="src/apps/Altinn.Authentication/src/Altinn.Platform.Authentication.Persistance/Altinn.Platform.Authentication.Persistance.csproj" />
+  </Folder>
+  <Folder Name="/apps/Altinn.Authentication/test/">
+    <Project Path="src/apps/Altinn.Authentication/test/Altinn.Platform.Authentication.Tests/Altinn.Platform.Authentication.Tests.csproj" />
+  </Folder>
+  <Folder Name="/apps/Altinn.Mockporten/" />
+  <Folder Name="/apps/Altinn.Mockporten/src/">
+    <Project Path="src/apps/Altinn.Mockporten/src/Mockporten/Mockporten.csproj" />
+  </Folder>
+  <Folder Name="/apps/Altinn.Mockporten/test/">
+    <Project Path="src/apps/Altinn.Mockporten/test/Mockporten.Tests/Mockporten.Tests.csproj" />
+  </Folder>
+  <Folder Name="/pkgs/" />
+  <Folder Name="/pkgs/JWTCookieAuthentication/" />
+  <Folder Name="/pkgs/JWTCookieAuthentication/src/">
+    <Project Path="src/pkgs/JWTCookieAuthentication/src/Altinn.Common.Authentication/Altinn.Common.Authentication.csproj" />
+  </Folder>
+</Solution>

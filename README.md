@@ -40,10 +40,10 @@ In-repo documentation lives in **[`docs/`](docs/README.md)**:
 
 ### Run locally
 
-Clone the repo and run the component from `src/Authentication`:
+Clone the repo and run the component from `src/apps/Altinn.Authentication/src/Altinn.Platform.Authentication`:
 
 ```bash
-cd src/Authentication
+cd src/apps/Altinn.Authentication/src/Altinn.Platform.Authentication
 dotnet run
 ```
 
@@ -52,8 +52,8 @@ Swagger UI is then available under `http://localhost:<port>/authentication/swagg
 ### Build & test
 
 ```bash
-dotnet build Altinn.Platform.Authentication.sln
-dotnet test test/Altinn.Platform.Authentication.Tests/Altinn.Platform.Authentication.Tests.csproj   # needs a container runtime
+dotnet build Altinn.Authentication.slnx
+dotnet test src/apps/Altinn.Authentication/test/Altinn.Platform.Authentication.Tests/Altinn.Platform.Authentication.Tests.csproj   # needs a container runtime
 ```
 
 See [docs/development.md](docs/development.md) for details — note that a passing local build does **not** substitute for the container-backed test suite.

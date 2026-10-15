@@ -67,9 +67,9 @@ An **agent** system user acts on behalf of **multiple clients** — the classic 
 
 ## Where to look in code
 
-- **Models:** `src/Core/Models/SystemUsers/` (e.g. `CreateRequestSystemUser`, `CreateAgentRequestSystemUser`, `RequestStatus`, `ExternalRequestId`, `AgentDelegation*`, `ClientDto`) and `src/Core/Models/SystemRegisters/`.
+- **Models:** `src/apps/Altinn.Authentication/src/Altinn.Platform.Authentication.Core/Models/SystemUsers/` (e.g. `CreateRequestSystemUser`, `CreateAgentRequestSystemUser`, `RequestStatus`, `ExternalRequestId`, `AgentDelegation*`, `ClientDto`) and `src/apps/Altinn.Authentication/src/Altinn.Platform.Authentication.Core/Models/SystemRegisters/`.
 - **Services:** `SystemUserService` (large — a decomposition candidate, see [#2074](https://github.com/Altinn/altinn-authentication/issues/2074)), `SystemRegisterService`, `RequestSystemUserService`, `ChangeRequestSystemUserService`.
-- **Persistence:** repositories + migrations under `src/Persistance` (the `systemuserprofile` / system-register tables).
+- **Persistence:** repositories + migrations under `src/apps/Altinn.Authentication/src/Altinn.Platform.Authentication.Persistance` (the `systemuserprofile` / system-register tables).
 
 ## Related
 
