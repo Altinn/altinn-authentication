@@ -1,0 +1,3 @@
+# Imported from altinn-authentication, which had no .editorconfig. Stops altinn-auth's
+# .editorconfig from applying until this vertical converges on the shared settings.
+root = true

@@ -1,0 +1,9 @@
+<Project>
+
+  <!-- Imported from altinn-authentication with inline package versions. Converge on altinn-auth's
+       central package management in a follow-up. -->
+  <PropertyGroup>
+    <ManagePackageVersionsCentrally>false</ManagePackageVersionsCentrally>
+  </PropertyGroup>
+
+</Project>
